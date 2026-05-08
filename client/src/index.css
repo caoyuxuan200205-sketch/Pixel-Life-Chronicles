@@ -1,0 +1,508 @@
+@import url('https://fonts.googleapis.com/css2?family=DotGothic16&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+:root {
+  /* Retro Pixel Theme (Warm Dark) */
+  --bg-dark: #161412;
+  --bg-mid: #1d1a18;
+  --bg-surface: #25221f;
+  --bg-card: #2a2623;
+
+  /* Accent Colors */
+  --primary: #e2b553;
+  --primary-dim: #4a391a;
+  --primary-glow: #e2b553;
+  --primary-shadow: 2px 2px 0px #805c19;
+
+  /* Accents */
+  --mystic: #FFFFFF;
+  --mystic-dim: rgba(255, 255, 255, 0.08);
+  --mystic-glow: rgba(255, 255, 255, 0.15);
+
+  --cyan: #e2b553; 
+  
+  /* Text Colors */
+  --text-primary: #eae3d9;
+  --text-secondary: #a69c90;
+  --text-muted: #736b60;
+
+  /* Pixel Borders */
+  --pixel-border-color: #4a433a;
+  --pixel-border-dark: #0f0d0b;
+  
+  --glass-bg: var(--bg-surface);
+  --glass-border: var(--pixel-border-color);
+  --glass-glow: none;
+  --pixel-border: 2px solid var(--pixel-border-color);
+
+  /* Typography */
+  --font-main: 'DotGothic16', 'SimSun', 'Press Start 2P', monospace;
+  --font-mystic: 'DotGothic16', 'SimSun', 'Press Start 2P', monospace;
+  --font-mono: 'Press Start 2P', 'DotGothic16', monospace;
+
+  /* Border Radius - NO RADIUS IN PIXEL ART */
+  --radius-sm: 0px;
+  --radius-md: 0px;
+  --radius-lg: 0px;
+  --radius-xl: 0px;
+
+  --nav-height: 80px;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--bg-dark);
+  color: var(--text-primary);
+  font-family: var(--font-main);
+  -webkit-font-smoothing: none;
+  -moz-osx-font-smoothing: grayscale;
+  font-smooth: never;
+  image-rendering: pixelated;
+  min-height: 100dvh;
+  overflow-x: hidden;
+}
+
+/* CRT Scanline Overlay */
+body::after {
+  content: " ";
+  display: block;
+  position: absolute;
+  top: 0; left: 0; bottom: 0; right: 0;
+  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.15) 50%);
+  z-index: 9999;
+  background-size: 100% 4px;
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+#root {
+  width: 100%;
+  min-height: 100dvh;
+  display: flex;
+  justify-content: center;
+}
+
+/* ===== APP SHELL ===== */
+.app-shell {
+  width: 100%;
+  max-width: 480px;
+  min-height: 100dvh;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--bg-dark);
+}
+
+/* Premium Minimalist Background Glow */
+.app-shell::before {
+  content: '';
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-image:
+    radial-gradient(circle at 50% 0%, rgba(255, 195, 0, 0.08) 0%, transparent 50%),
+    radial-gradient(circle at 50% 100%, rgba(255, 195, 0, 0.05) 0%, transparent 40%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ===== PAGE WRAPPER ===== */
+.page {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  z-index: 1;
+  padding-bottom: var(--nav-height);
+  min-height: calc(100dvh - var(--nav-height));
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.page--fullscreen {
+  padding: 0;
+  overflow: hidden;
+}
+
+/* ===== PREMIUM CARDS & GLASS -> PIXEL CARDS ===== */
+.glass {
+  background: var(--bg-surface);
+  border: 2px solid var(--pixel-border-color);
+  border-radius: 0;
+  box-shadow: 4px 4px 0px var(--pixel-border-dark);
+}
+
+/* ===== PIXEL PANELS (Matched to reference) ===== */
+.pixel-panel {
+  background: var(--bg-surface);
+  border: 2px solid var(--pixel-border-color);
+  box-shadow: 
+    inset -2px -2px 0px rgba(0,0,0,0.3),
+    inset 2px 2px 0px rgba(255,255,255,0.05),
+    4px 4px 0px var(--pixel-border-dark);
+  position: relative;
+  border-radius: 0;
+}
+
+/* Pixel Panel Corners Decor */
+.pixel-panel::before,
+.pixel-panel::after {
+  content: '';
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  background: var(--bg-surface);
+  border: 2px solid var(--pixel-border-color);
+}
+.pixel-panel::before {
+  top: -4px; left: -4px;
+  border-right: none; border-bottom: none;
+}
+.pixel-panel::after {
+  bottom: -4px; right: -4px;
+  border-left: none; border-top: none;
+}
+
+/* ===== TYPOGRAPHY ===== */
+.font-mystic { font-family: var(--font-mystic); }
+.font-mono { font-family: var(--font-mono); }
+
+.text-gradient-gold {
+  background: linear-gradient(135deg, #FFE169, #FFC300);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.text-gradient-mystic {
+  background: linear-gradient(135deg, #FFFFFF, #CCCCCC);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.text-gradient-full {
+  color: #fff;
+  text-shadow: 2px 2px 0px var(--primary), 4px 4px 0px #886800;
+}
+
+/* ===== WORLD-CLASS BUTTONS -> PIXEL BUTTONS ===== */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 24px;
+  font-family: var(--font-main);
+  font-size: 1rem;
+  font-weight: normal;
+  cursor: pointer;
+  transition: transform 0.1s;
+  outline: none;
+  border-radius: 0 !important;
+  border: var(--pixel-border);
+  box-shadow: 4px 4px 0px #000;
+  text-shadow: 1px 1px 0px rgba(0,0,0,0.5);
+  letter-spacing: 1px;
+  position: relative;
+  overflow: hidden;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.btn:active {
+  transform: translate(4px, 4px);
+  box-shadow: 0px 0px 0px #000;
+}
+
+.btn-primary {
+  background: var(--primary);
+  color: #000000;
+  border-color: #fff;
+  text-shadow: none;
+}
+
+.btn-primary:active {
+  background: #e6b000;
+}
+
+.btn-ghost {
+  background: #2a2a2a;
+  color: var(--text-primary);
+  border-color: #555;
+}
+
+.btn-ghost:active {
+  background: #111;
+}
+
+.btn-mystic {
+  background: var(--bg-surface);
+  border: 0.5px solid var(--primary-dim);
+  color: var(--primary);
+}
+
+.btn-full { width: 100%; }
+.btn-lg { padding: 18px 32px; font-size: 1.15rem; }
+.btn-sm { padding: 10px 20px; font-size: 0.9rem; border-radius: var(--radius-lg); }
+
+/* ===== TAGS / BADGES ===== */
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 14px;
+  border-radius: 100px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.tag-gold {
+  background: var(--primary-dim);
+  color: var(--primary);
+  border: 0.5px solid rgba(255, 195, 0, 0.3);
+}
+
+.tag-mystic {
+  background: var(--mystic-dim);
+  color: var(--text-primary);
+  border: 0.5px solid var(--glass-border);
+}
+
+.tag-cyan {
+  background: var(--primary-dim);
+  color: var(--primary);
+  border: 0.5px solid rgba(255, 195, 0, 0.2);
+}
+
+.tag-neutral {
+  background: var(--bg-surface);
+  color: var(--text-secondary);
+  border: 0.5px solid var(--glass-border);
+}
+
+/* ===== DIVIDER ===== */
+.divider {
+  height: 1px;
+  background: var(--glass-border);
+  margin: 20px 0;
+}
+
+/* ===== ANIMATIONS ===== */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
+}
+
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { opacity: 0.8; box-shadow: 0 0 10px var(--primary-glow); }
+  50% { opacity: 1; box-shadow: 0 0 25px var(--primary-glow); }
+}
+
+.anim-float { animation: float 4s ease-in-out infinite; }
+.anim-spin-slow { animation: spin-slow 30s linear infinite; }
+
+/* ===== TAROT CARD (Clean Meituan Style) ===== */
+.tarot-spread {
+  perspective: 1200px;
+  position: relative;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.tarot-card {
+  position: absolute;
+  transform-style: preserve-3d;
+  cursor: pointer;
+  border-radius: 20px;
+}
+
+.tarot-face {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+.tarot-back {
+  background: var(--bg-surface);
+  border: 1px solid var(--glass-border);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+}
+
+.tarot-front {
+  transform: rotateY(180deg);
+  background: var(--bg-surface);
+  border: 1px solid var(--primary);
+  box-shadow: 0 12px 40px rgba(255, 195, 0, 0.15);
+}
+
+/* Subtle pattern for card backs */
+.tarot-back::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.03) 0px, transparent 1px, transparent 10px, rgba(255, 255, 255, 0.03) 10px);
+}
+
+/* ===== PREMIUM NAVIGATION BAR ===== */
+.nav-bar {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 480px;
+  height: var(--nav-height);
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  padding: 0 16px;
+  padding-bottom: env(safe-area-inset-bottom, 12px);
+  z-index: 100;
+  background: rgba(17, 17, 17, 0.85);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-top: 0.5px solid var(--glass-border);
+}
+
+.nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 16px;
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-size: 0.75rem;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.nav-item svg {
+  width: 24px;
+  height: 24px;
+  transition: all 0.2s ease;
+  stroke-width: 2px;
+}
+
+.nav-item.active {
+  color: var(--primary);
+}
+
+.nav-item.active svg {
+  stroke-width: 2.5px;
+}
+
+/* Clean Indicator Dot */
+.nav-item.active::after {
+  content: '';
+  position: absolute;
+  bottom: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--primary);
+}
+
+/* ===== MAP PAGE ===== */
+.map-container {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+
+/* Clean Map Fog Overlay */
+.fog-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 10;
+}
+
+/* ===== CAMERA PAGE ===== */
+.camera-viewfinder {
+  position: relative;
+  aspect-ratio: 3/4;
+  background: #000;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+}
+
+.camera-corner {
+  position: absolute;
+  width: 32px;
+  height: 32px;
+  border-color: var(--primary);
+  border-style: solid;
+  z-index: 5;
+  border-radius: 8px; /* Slightly rounded corners for modern feel */
+}
+
+.camera-corner--tl { top: 16px; left: 16px; border-width: 3px 0 0 3px; border-bottom-right-radius: 0; border-top-right-radius: 0; border-bottom-left-radius: 0;}
+.camera-corner--tr { top: 16px; right: 16px; border-width: 3px 3px 0 0; border-bottom-left-radius: 0; border-top-left-radius: 0; border-bottom-right-radius: 0;}
+.camera-corner--bl { bottom: 16px; left: 16px; border-width: 0 0 3px 3px; border-top-right-radius: 0; border-bottom-right-radius: 0; border-top-left-radius: 0;}
+.camera-corner--br { bottom: 16px; right: 16px; border-width: 0 3px 3px 0; border-top-left-radius: 0; border-bottom-left-radius: 0; border-top-right-radius: 0;}
+
+/* ===== SCROLL ===== */
+::-webkit-scrollbar { width: 0; background: transparent; }
+
+/* ===== UTILITY ===== */
+.sr-only {
+  position: absolute; width: 1px; height: 1px;
+  padding: 0; margin: -1px; overflow: hidden;
+  clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+}
+
+.pixel-font-style {
+  image-rendering: pixelated;
+  font-family: var(--font-mono);
+  letter-spacing: 0.1em;
+}
+
+/* Loading spinner (Clean) */
+.spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--primary-dim);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 0.8s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+}
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}

@@ -1,0 +1,17 @@
+{
+  "name": "pixel-life-chronicles",
+  "private": true,
+  "description": "Pixel Life Chronicles - AI-Native City Adventure Game",
+  "workspaces": [
+    "client",
+    "server"
+  ],
+  "scripts": {
+    "client": "npm run dev --workspace=client",
+    "server": "npm run dev --workspace=server",
+    "dev": "concurrently \"npm run client\" \"npm run server\""
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

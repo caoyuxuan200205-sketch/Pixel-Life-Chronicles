@@ -1,0 +1,24 @@
+/* App.css - component-level overrides */
+
+/* Ensure AMap canvas takes full space */
+#amap-container canvas {
+  display: block;
+}
+
+/* Pixel stamp display */
+.stamp-display {
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+/* Shimmer loading skeleton */
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(255,255,255,0.03) 0%,
+    rgba(255,255,255,0.08) 50%,
+    rgba(255,255,255,0.03) 100%
+  );
+  background-size: 200% auto;
+  animation: shimmer 2s linear infinite;
+}
