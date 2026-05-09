@@ -53,8 +53,8 @@ export interface AIReadingResult {
 // ==========================================
 const DOUBAO_CONFIG = {
   endpoint: 'https://ark.cn-beijing.volces.com/api/v3/chat/completions',
-  apiKey: 'ark-68e0d61c-2646-4a0e-8ac1-7ea35da99d21-a6c8f',       
-  modelId: 'ep-20260423222610-xbx2l',      
+  apiKey: import.meta.env.VITE_DOUBAO_API_KEY || '',       
+  modelId: import.meta.env.VITE_DOUBAO_MODEL_ID || '',      
   timeout: 60000,
 };
 

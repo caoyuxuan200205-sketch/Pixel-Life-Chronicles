@@ -143,8 +143,14 @@ export const HomePage = () => {
       setPhase('revealing');
       try {
         setLoadingMsg('定位当前坐标...');
-        (window as any)._AMapSecurityConfig = { securityJsCode: '978b5cbccd4135876cc68dcddcd36977' };
-        const AMap = await AMapLoader.load({ key: '11fc39157bd652ff8c9a3faa0af916a2', version: '2.0', plugins: ['AMap.Geolocation', 'AMap.PlaceSearch'] });
+        (window as any)._AMapSecurityConfig = { 
+          securityJsCode: import.meta.env.VITE_AMAP_SECURITY_JS_CODE 
+        };
+        const AMap = await AMapLoader.load({ 
+          key: import.meta.env.VITE_AMAP_KEY, 
+          version: '2.0', 
+          plugins: ['AMap.Geolocation', 'AMap.PlaceSearch'] 
+        });
 
         const geolocation = new AMap.Geolocation({ enableHighAccuracy: true, timeout: 5000 });
         let center: [number, number] = [116.397, 39.900];
