@@ -1,7 +1,5 @@
-import { useState } from 'react';
-import { BrowserRouter, Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, Map, Camera, Box } from 'lucide-react';
+import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-dom';
+import { AnimatePresence } from 'framer-motion';
 import './App.css';
 import { HomePage } from './pages/HomePage';
 import { MapPage } from './pages/MapPage';
@@ -9,7 +7,6 @@ import { CameraPage } from './pages/CameraPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { AuthPage } from './pages/AuthPage';
 import { CollectionPage } from './pages/CollectionPage';
-import { User } from 'lucide-react';
 
 // --- Components ---
 
@@ -17,7 +14,6 @@ import { getCurrentReading } from './store';
 
 const NavBar = () => {
   const location = useLocation();
-  const navigate = useNavigate();
   const hasReading = !!getCurrentReading();
   
   const navItems = [

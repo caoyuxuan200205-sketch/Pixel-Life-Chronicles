@@ -21,6 +21,7 @@ export interface POIData {
   location: [number, number]; // [lng, lat]
   openHours: string;
   coupon?: string;
+  address?: string;
 }
 
 export interface BeadPattern {

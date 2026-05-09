@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { User, Settings, ChevronRight, Box, Award, Shield, LogOut, Camera, Trash2, Book, Map as MapIcon, Calendar, ShoppingCart, MapPin, Scissors, Info, Loader2, Sparkles, X } from 'lucide-react';
+import { ChevronRight, ShoppingCart, MapPin, Scissors, Info, Loader2, Sparkles, X } from 'lucide-react';
 import { getStamps, clearStamps, getCurrentUser, logout, type StampRecord } from '../store';
 
 export const ProfilePage = () => {
@@ -10,7 +10,6 @@ export const ProfilePage = () => {
   const user = getCurrentUser();
 
   const [showSettings, setShowSettings] = useState(false);
-  const [showAchievements, setShowAchievements] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [selectedStamp, setSelectedStamp] = useState<StampRecord | null>(null);

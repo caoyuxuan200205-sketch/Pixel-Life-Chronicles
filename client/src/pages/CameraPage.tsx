@@ -1,6 +1,6 @@
 import { useRef, useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Camera, Save, RotateCcw, ChevronLeft, ShoppingCart, MapPin, Scissors, Info, Loader2, Sparkles, X, ChevronRight } from 'lucide-react';
+import { Save, ShoppingCart, MapPin, Scissors, Info, Loader2, Sparkles, X, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { saveStamp, type StampRecord, getCurrentReading, getCurrentUser, type BeadPattern } from '../store';
 

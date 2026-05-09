@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, Clock, MapPin, ChevronRight, Wand2, Compass, User as UserIcon, Calendar, Clock4 } from 'lucide-react';
+import { Clock, MapPin, ChevronRight, Wand2, Compass, User as UserIcon, Calendar, Clock4 } from 'lucide-react';
 import AMapLoader from '@amap/amap-jsapi-loader';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -88,14 +88,12 @@ export const HomePage = () => {
   const [selectedMood, setSelectedMood] = useState<MoodTag | null>(null);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [result, setResult] = useState<ReadingResult | null>(null);
-  const [hasExisting, setHasExisting] = useState(false);
   const [canDrawCard, setCanDrawCard] = useState(true);
   const [textRevealed, setTextRevealed] = useState(false);
   const [loadingMsg, setLoadingMsg] = useState<string>('');
 
   useEffect(() => {
     const existing = getCurrentReading();
-    setHasExisting(existing !== null);
     if (existing) {
       setResult(existing);
       setPhase('done');
@@ -202,7 +200,6 @@ export const HomePage = () => {
     setPhase('intro');
     setSelectedIndex(null);
     setResult(null);
-    setHasExisting(false);
     setTextRevealed(false);
     setCanDrawCard(true);
     setSelectedMood(null);

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Camera, X, Trash2, Info, ShoppingCart, MapPin, Scissors, Calendar, Loader2, Sparkles, Cpu, Globe, ChevronRight } from 'lucide-react';
+import { Camera, X, Trash2, Info, ShoppingCart, MapPin, Scissors, Calendar, Loader2, Sparkles, ChevronRight } from 'lucide-react';
 import { getStamps, clearStamps, type StampRecord } from '../store';
 
 interface NearbyShop {
@@ -12,6 +12,8 @@ interface NearbyShop {
   type: string;
   rating: number;
   tags: string[];
+  phone?: string;
+  openTime?: string;
 }
 
 const SEARCH_STATUSES = [

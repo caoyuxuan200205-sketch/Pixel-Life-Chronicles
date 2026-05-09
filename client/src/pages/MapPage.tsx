@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Compass, Star, Camera, Navigation, ChevronRight, ChevronLeft } from 'lucide-react';
+import { Camera, Navigation, ChevronRight, ChevronLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import AMapLoader from '@amap/amap-jsapi-loader';
 import { getCurrentReading, getCurrentUser, type ReadingResult } from '../store';
