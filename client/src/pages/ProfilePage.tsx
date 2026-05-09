@@ -109,7 +109,7 @@ export const ProfilePage = () => {
   };
 
   const handleSettings = () => setShowSettings(true);
-  const handleAchievements = () => setShowAchievements(true);
+  const handleAchievements = () => alert('🏆 成就系统正在初始化中...\n\n继续收集印章以解锁“先锋探索者”称号！');
   const handlePrivacy = () => {
     alert('🔒 你的隐私已被“像素加密”。\n\n所有数据均存储在本地（LocalStorage），我们不会上传你的位置或代号。');
   };
@@ -212,7 +212,7 @@ export const ProfilePage = () => {
       <div style={{ padding: '0 20px', position: 'relative' }}>
         <div className="pixel-panel" style={{ padding: 0 }}>
           {[
-            { icon: '🏅', label: '我的成就', value: '4', onClick: handleAchievements },
+            { icon: '🏅', label: '我的成就', value: '敬请期待', onClick: handleAchievements },
             { icon: '🛡️', label: '隐私与安全', value: '', onClick: handlePrivacy },
             ...(user ? [{ icon: '🚪', label: '退出登录', value: '', danger: true, onClick: handleLogoutClick }] : []),
           ].map((item, idx, arr) => (
