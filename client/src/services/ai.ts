@@ -51,6 +51,10 @@ export interface AIReadingResult {
 // ==========================================
 // 豆包 API 配置
 // ==========================================
+// 在 Vercel 部署时，请在环境变量中设置 VITE_BACKEND_URL 为您的后端地址
+// 如果不设置，默认回退到本地开发地址
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001';
+
 const DOUBAO_CONFIG = {
   endpoint: 'https://ark.cn-beijing.volces.com/api/v3/chat/completions',
   apiKey: import.meta.env.VITE_DOUBAO_API_KEY || '',       
@@ -77,7 +81,8 @@ export function loadDoubaoConfig(): boolean {
 }
 
 export function isAIConfigured(): boolean {
-  return !!(DOUBAO_CONFIG.apiKey && DOUBAO_CONFIG.modelId);
+  // 现在优先使用后端，如果后端地址存在，则认为已配置
+  return !!BACKEND_URL || !!(DOUBAO_CONFIG.apiKey && DOUBAO_CONFIG.modelId);
 }
 
 function getTimeContext(): string {
@@ -181,48 +186,49 @@ ${poisJson}
 // 调用豆包 API
 // ==========================================
 async function callDoubaoAPI(mood: MoodTag | null, pois: POIData[], method: string, baziInfo?: BaziInfo): Promise<AIReadingResult> {
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), DOUBAO_CONFIG.timeout);
-
+  // 优先调用后端代理
   try {
-    const response = await fetch(DOUBAO_CONFIG.endpoint, {
+    const response = await fetch(`${BACKEND_URL}/api/ai/reading`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${DOUBAO_CONFIG.apiKey}`,
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: DOUBAO_CONFIG.modelId,
-        messages: [
-          { role: 'system', content: buildSystemPrompt(method) },
-          { role: 'user', content: buildUserPrompt(mood, pois, method, baziInfo) },
-        ],
-        temperature: 0.8,
-        max_tokens: 500,
-      }),
-      signal: controller.signal,
+        mood,
+        pois,
+        method,
+        baziInfo,
+        timeContext: getTimeContext()
+      })
     });
 
-    clearTimeout(timeoutId);
-
-    if (!response.ok) {
-      throw new Error(`API 返回 ${response.status}: ${await response.text()}`);
+    if (response.ok) {
+      return await response.json();
     }
-
-    const data = await response.json();
-    const content = data.choices?.[0]?.message?.content;
-
-    if (!content) throw new Error('AI 返回内容为空');
-
-    let jsonStr = content.trim();
-    const jsonMatch = jsonStr.match(/```(?:json)?\s*([\s\S]*?)```/);
-    if (jsonMatch) jsonStr = jsonMatch[1].trim();
-
-    return JSON.parse(jsonStr);
-  } catch (err) {
-    clearTimeout(timeoutId);
-    throw err;
+  } catch (e) {
+    console.warn('后端代理失效，尝试前端直连...', e);
   }
+
+  // 这里的逻辑作为兜底（如果用户配置了前端环境变量）
+  if (!DOUBAO_CONFIG.apiKey) throw new Error('No AI configuration available');
+
+  const response = await fetch(DOUBAO_CONFIG.endpoint, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${DOUBAO_CONFIG.apiKey}`,
+    },
+    body: JSON.stringify({
+      model: DOUBAO_CONFIG.modelId,
+      messages: [
+        { role: 'system', content: buildSystemPrompt(method) },
+        { role: 'user', content: buildUserPrompt(mood, pois, method, baziInfo) },
+      ],
+      temperature: 0.8,
+    })
+  });
+
+  if (!response.ok) throw new Error('Frontend direct AI call failed');
+  const data = await response.json();
+  return JSON.parse(data.choices?.[0]?.message?.content || '{}');
 }
 
 // ==========================================

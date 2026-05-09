@@ -252,20 +252,21 @@ export const HomePage = () => {
               transition={{ delay: 0.3, type: 'spring', damping: 15 }}
               className="pixel-panel" 
               style={{ 
-                padding: '36px 52px', 
-                background: 'rgba(20, 18, 16, 0.95)', 
-                border: '3px solid var(--primary)',
-                boxShadow: '0 0 50px rgba(255, 208, 0, 0.25), inset 0 0 20px rgba(255, 208, 0, 0.1)',
+                padding: '16px 40px', 
+                background: 'rgba(20, 18, 16, 0.8)', 
+                backdropFilter: 'blur(4px)',
+                border: '1px solid var(--primary)',
+                boxShadow: '0 0 30px rgba(255, 208, 0, 0.15)',
                 position: 'relative',
                 zIndex: 10,
-                marginTop: '40px'
+                marginTop: '60px'
               }}
             >
-              <div style={{ position: 'absolute', inset: '4px', border: '1px solid rgba(255, 208, 0, 0.2)', pointerEvents: 'none' }} />
+              <div style={{ position: 'absolute', inset: '2px', border: '1px solid rgba(255, 208, 0, 0.1)', pointerEvents: 'none' }} />
               <motion.div 
-                animate={{ opacity: [0.9, 1, 0.9], scale: [1, 1.02, 1] }} 
+                animate={{ opacity: [0.8, 1, 0.8] }} 
                 transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }} 
-                style={{ fontSize: '1.8rem', fontWeight: 900, color: 'var(--primary)', letterSpacing: '6px', textShadow: '0 0 15px var(--primary)' }}
+                style={{ fontSize: '1.2rem', fontWeight: 900, color: 'var(--primary)', letterSpacing: '4px', textShadow: '0 0 10px var(--primary)' }}
               >
                 ✦ 探索你的命定周末 ✦
               </motion.div>
