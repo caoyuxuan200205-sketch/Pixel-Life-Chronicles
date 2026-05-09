@@ -73,16 +73,44 @@ body {
 }
 
 /* CRT Scanline Overlay */
-body::after {
-  content: " ";
-  display: block;
+.crt-overlay {
   position: absolute;
   top: 0; left: 0; bottom: 0; right: 0;
-  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.15) 50%);
-  z-index: 9999;
+  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%);
   background-size: 100% 4px;
+  z-index: 100;
   pointer-events: none;
-  opacity: 0.5;
+  opacity: 0.3;
+  animation: scanline 10s linear infinite;
+}
+
+@keyframes scanline {
+  0% { background-position: 0 0; }
+  100% { background-position: 0 100%; }
+}
+
+@keyframes flicker {
+  0% { opacity: 0.27861; }
+  5% { opacity: 0.34769; }
+  10% { opacity: 0.23604; }
+  15% { opacity: 0.90626; }
+  20% { opacity: 0.18128; }
+  25% { opacity: 0.83891; }
+  30% { opacity: 0.65583; }
+  35% { opacity: 0.57807; }
+  40% { opacity: 0.26559; }
+  45% { opacity: 0.84693; }
+  50% { opacity: 0.96019; }
+  55% { opacity: 0.08594; }
+  60% { opacity: 0.20313; }
+  65% { opacity: 0.71988; }
+  70% { opacity: 0.53455; }
+  75% { opacity: 0.37288; }
+  80% { opacity: 0.71428; }
+  85% { opacity: 0.70419; }
+  90% { opacity: 0.7003; }
+  95% { opacity: 0.36108; }
+  100% { opacity: 0.24387; }
 }
 
 #root {
@@ -193,7 +221,11 @@ body::after {
 
 .text-gradient-full {
   color: #fff;
-  text-shadow: 2px 2px 0px var(--primary), 4px 4px 0px #886800;
+  text-shadow: 
+    0 0 10px rgba(255, 208, 0, 0.5),
+    2px 2px 0px #886800, 
+    4px 4px 0px rgba(0,0,0,0.8);
+  letter-spacing: 2px;
 }
 
 /* ===== WORLD-CLASS BUTTONS -> PIXEL BUTTONS ===== */

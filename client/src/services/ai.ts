@@ -17,7 +17,7 @@ export interface MoodTag {
   id: string;
   emoji: string;
   label: string;
-  description: string; // 给 AI 的上下文描述
+  description: string;
 }
 
 export const MOOD_TAGS: MoodTag[] = [
@@ -28,6 +28,14 @@ export const MOOD_TAGS: MoodTag[] = [
   { id: 'social',   emoji: '🍻', label: '想找人聊聊',   description: '用户想社交、聚会、和朋友或陌生人产生连接' },
   { id: 'creative', emoji: '🎨', label: '灵感枯竭',     description: '用户需要创意灵感，想去有艺术氛围、能激发创造力的地方' },
 ];
+
+export interface BaziInfo {
+  name: string;
+  gender: 'male' | 'female';
+  birthDate: string; // YYYY-MM-DD
+  birthTime: string; // HH:mm
+  birthPlace?: string;
+}
 
 // ==========================================
 // AI 返回结果类型
@@ -44,28 +52,19 @@ export interface AIReadingResult {
 // 豆包 API 配置
 // ==========================================
 const DOUBAO_CONFIG = {
-  // 火山引擎 Ark API 端点
   endpoint: 'https://ark.cn-beijing.volces.com/api/v3/chat/completions',
-  // 用户真实的 API Key 和模型 Endpoint ID
   apiKey: 'ark-68e0d61c-2646-4a0e-8ac1-7ea35da99d21-a6c8f',       
   modelId: 'ep-20260423222610-xbx2l',      
-  timeout: 60000,    // 推理大模型思考时间长，放宽到 60s
+  timeout: 60000,
 };
 
-/**
- * 配置豆包 API 凭证
- */
 export function configureDoubao(apiKey: string, modelId: string) {
   DOUBAO_CONFIG.apiKey = apiKey;
   DOUBAO_CONFIG.modelId = modelId;
-  // 持久化到 localStorage
   localStorage.setItem('plc_doubao_api_key', apiKey);
   localStorage.setItem('plc_doubao_model_id', modelId);
 }
 
-/**
- * 从 localStorage 恢复配置
- */
 export function loadDoubaoConfig(): boolean {
   const apiKey = localStorage.getItem('plc_doubao_api_key');
   const modelId = localStorage.getItem('plc_doubao_model_id');
@@ -77,16 +76,10 @@ export function loadDoubaoConfig(): boolean {
   return false;
 }
 
-/**
- * 检查是否已配置 API
- */
 export function isAIConfigured(): boolean {
   return !!(DOUBAO_CONFIG.apiKey && DOUBAO_CONFIG.modelId);
 }
 
-// ==========================================
-// 获取当前环境上下文
-// ==========================================
 function getTimeContext(): string {
   const now = new Date();
   const hour = now.getHours();
@@ -107,69 +100,87 @@ function getTimeContext(): string {
 }
 
 // ==========================================
-// 构建 System Prompt
+// 构建 System Prompt (融入 bazi-skill 逻辑)
 // ==========================================
-function buildSystemPrompt(): string {
-  return `你是"像素生活志"APP中的一位神秘占卜师。你精通塔罗牌占卜，同时对城市中的隐藏好去处了如指掌。
+function buildSystemPrompt(method: string = 'tarot'): string {
+  const isBazi = method === 'bazi';
+  
+  let basePrompt = `你是"像素生活志"APP中的一位顶级神秘学大师。你不仅精通${isBazi ? '四柱八字命理（通晓《三命通会》、《穷通宝鉴》）' : '西方神秘塔罗（通晓金龙黎明会体系）'}，还是一位极具洞察力的城市空间策展人。
 
 你的任务：
-1. 根据用户当前的【时间】和【情绪状态】，从提供的塔罗牌列表中选出最贴切的一张牌。
-2. 从提供的真实商户列表(JSON)中，挑选最能治愈/匹配用户当前状态的一家店。
-3. 写一段60-80字的占卜判词，将塔罗牌的寓意与这家店的氛围巧妙融合。
+1. ${isBazi ? '根据用户的【出生信息】进行深度排盘。分析日主（日元）的强弱、五行的盈亏、以及命局中的"格"与"局"（如：食神吐秀格、建禄格等）。' : '根据用户当前的【时间】和【情绪状态】，从提供的塔罗牌列表中选出最具灵魂共鸣的一张牌。'}
+2. 从提供的真实商户列表(JSON)中，锁定那家能够作为用户"能量补给站"的唯一店面。
+3. 撰写一段具有**绝对说服力**和**宿命感**的占卜判词。
 
-语气要求：神秘、克制、温暖，像一个真正懂你的占卜师在低语。不要用"推荐"、"建议"这类直白的词，要用命运、星象、结界等意象来包装。
+判词结构要求（必须融合，不要生硬拆分）：
+- 【宿命点破】：${isBazi ? '一针见血地指出用户命局当前的能量失衡点（如：金多水浊、火旺木焚）。' : '揭示当下宇宙能量对用户的心理映射。'}
+- 【时空共振】：解释为什么这家店（及其地理属性）是破解当前能量僵局的"钥匙"。
+- 【改运指引】：用极具文学美感的语言，指引用户如何在此处与时空能量达成和解。
+
+语气要求：${isBazi ? '权威、犀利、透彻。像一位看透天机的老友在为你点拨迷津。大量使用专业的命理术语（如：劫财夺财、伤官见官、化气格、喜用神），但要表达得如诗如画。' : '神秘、克制、温暖。使用命运、星象、结界等意象。'}`;
+
+  if (isBazi) {
+    basePrompt += `
+【八字深度逻辑】：
+- 必须基于用户的出生时间推算出日主。
+- 推荐逻辑必须严密：如果用户命局燥烈，必须推荐具有"壬癸水"意象的场所（如河畔、蓝调咖啡馆、安静角落）；如果用户命局阴寒，则推荐具有"丙丁火"意象的场所（如暖光灯、阳光房、热闹集市）。
+- 严禁空洞的祝福，必须有逻辑支撑。`;
+  }
+
+  basePrompt += `
 
 你必须严格按照以下 JSON 格式返回，不要输出任何其他内容：
 {
-  "cardName": "塔罗牌名称",
+  "cardName": "${isBazi ? '八字格局名称' : '塔罗牌名称'}",
   "emoji": "对应emoji",
-  "meaning": "4-8字的牌面寓意短语",
+  "meaning": "4-8字的寓意短语",
   "poiId": "商户的id字段",
   "reading": "60-80字的占卜判词"
-}`;
+}
+`;
+  return basePrompt;
 }
 
 // ==========================================
 // 构建 User Prompt
 // ==========================================
-function buildUserPrompt(mood: MoodTag, pois: POIData[]): string {
+function buildUserPrompt(mood: MoodTag | null, pois: POIData[], method: string, baziInfo?: BaziInfo): string {
   const timeContext = getTimeContext();
+  const moodDesc = mood ? `${mood.emoji} ${mood.label} — ${mood.description}` : '用户未选择明确情绪，听凭天命。';
 
-  const cardsJson = JSON.stringify(
-    TAROT_CARDS.map((c) => ({ name: c.name, emoji: c.emoji, meaning: c.meaning })),
-    null,
-    2
-  );
+  let userContent = `【当前环境】${timeContext}
+【用户倾向】${moodDesc}
+【占卜方式】${method === 'bazi' ? '东方八字' : '西方塔罗'}
+`;
+
+  if (method === 'bazi' && baziInfo) {
+    userContent += `【用户出生信息】姓名：${baziInfo.name}，性别：${baziInfo.gender === 'male' ? '男' : '女'}，出生：${baziInfo.birthDate} ${baziInfo.birthTime}\n`;
+  }
 
   const poisJson = JSON.stringify(
-    pois.map((p) => ({
+    pois.slice(0, 15).map((p) => ({
       id: p.id,
       name: p.name,
       type: p.type,
       rating: p.rating,
-      distance: `${(p.distance / 1000).toFixed(1)}km`,
       address: p.address || '',
     })),
     null,
     2
   );
 
-  return `【环境】${timeContext}
-【用户情绪】${mood.emoji} ${mood.label} — ${mood.description}
-
-可选塔罗牌：
-${cardsJson}
-
-可选真实商户：
+  userContent += `
+【候选商户】：
 ${poisJson}
 
-请根据以上信息，选择最合适的牌和商户，生成占卜结果。仅返回JSON。`;
+请进行占卜解析并仅返回 JSON。`;
+  return userContent;
 }
 
 // ==========================================
 // 调用豆包 API
 // ==========================================
-async function callDoubaoAPI(mood: MoodTag, pois: POIData[]): Promise<AIReadingResult> {
+async function callDoubaoAPI(mood: MoodTag | null, pois: POIData[], method: string, baziInfo?: BaziInfo): Promise<AIReadingResult> {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), DOUBAO_CONFIG.timeout);
 
@@ -183,10 +194,10 @@ async function callDoubaoAPI(mood: MoodTag, pois: POIData[]): Promise<AIReadingR
       body: JSON.stringify({
         model: DOUBAO_CONFIG.modelId,
         messages: [
-          { role: 'system', content: buildSystemPrompt() },
-          { role: 'user', content: buildUserPrompt(mood, pois) },
+          { role: 'system', content: buildSystemPrompt(method) },
+          { role: 'user', content: buildUserPrompt(mood, pois, method, baziInfo) },
         ],
-        temperature: 0.85,
+        temperature: 0.8,
         max_tokens: 500,
       }),
       signal: controller.signal,
@@ -201,25 +212,13 @@ async function callDoubaoAPI(mood: MoodTag, pois: POIData[]): Promise<AIReadingR
     const data = await response.json();
     const content = data.choices?.[0]?.message?.content;
 
-    if (!content) {
-      throw new Error('AI 返回内容为空');
-    }
+    if (!content) throw new Error('AI 返回内容为空');
 
-    // 从返回内容中提取 JSON（兼容 markdown code block 包裹的情况）
     let jsonStr = content.trim();
     const jsonMatch = jsonStr.match(/```(?:json)?\s*([\s\S]*?)```/);
-    if (jsonMatch) {
-      jsonStr = jsonMatch[1].trim();
-    }
+    if (jsonMatch) jsonStr = jsonMatch[1].trim();
 
-    const result: AIReadingResult = JSON.parse(jsonStr);
-
-    // 校验必要字段
-    if (!result.cardName || !result.poiId || !result.reading) {
-      throw new Error('AI 返回的 JSON 缺少必要字段');
-    }
-
-    return result;
+    return JSON.parse(jsonStr);
   } catch (err) {
     clearTimeout(timeoutId);
     throw err;
@@ -227,12 +226,12 @@ async function callDoubaoAPI(mood: MoodTag, pois: POIData[]): Promise<AIReadingR
 }
 
 // ==========================================
-// 本地兜底生成（当 AI 不可用时）
+// 本地兜底生成
 // ==========================================
-function generateLocalFallback(mood: MoodTag, pois: POIData[]): AIReadingResult {
-  if (!pois || pois.length === 0) pois = POI_DATABASE; // 保底
-
-  // 根据情绪做简单的启发式匹配
+function generateLocalFallback(mood: MoodTag | null, pois: POIData[]): AIReadingResult {
+  const validPois = (pois && pois.length > 0) ? pois : POI_DATABASE;
+  const moodId = mood?.id || 'wander';
+  
   const moodPoiMap: Record<string, string[]> = {
     tired:    ['咖啡', '公园', '风景'],
     bored:    ['体验', '娱乐', '展览'],
@@ -242,43 +241,35 @@ function generateLocalFallback(mood: MoodTag, pois: POIData[]): AIReadingResult 
     creative: ['书店', '展览', '艺术'],
   };
 
-  const preferredKeywords = moodPoiMap[mood.id] || [];
-  let poi = pois.find((p) => preferredKeywords.some(kw => p.type.includes(kw) || p.name.includes(kw)));
-  if (!poi) {
-    poi = pois[Math.floor(Math.random() * pois.length)];
-  }
+  const preferredKeywords = moodPoiMap[moodId] || [];
+  let poi = validPois.find((p) => preferredKeywords.some(kw => p.type.includes(kw) || p.name.includes(kw)));
+  if (!poi) poi = validPois[Math.floor(Math.random() * validPois.length)];
 
-  // 根据情绪选一张"感觉对的"牌
   const moodCardMap: Record<string, number> = {
-    tired: 7,     // 隐者
-    bored: 0,     // 愚者
-    wander: 4,    // 月亮
-    hungry: 5,    // 太阳
-    social: 6,    // 命运之轮
-    creative: 1,  // 魔法师
+    tired: 7, bored: 0, wander: 4, hungry: 5, social: 6, creative: 1,
   };
 
-  const cardIndex = moodCardMap[mood.id] ?? Math.floor(Math.random() * TAROT_CARDS.length);
+  const cardIndex = moodCardMap[moodId] ?? Math.floor(Math.random() * TAROT_CARDS.length);
   const card = TAROT_CARDS[cardIndex];
-
-  const reading = generateLocalReading(poi, card);
 
   return {
     cardName: card.name,
     emoji: card.emoji,
     meaning: card.meaning,
     poiId: poi.id,
-    reading,
+    reading: generateLocalReading(poi, card),
   };
 }
 
 // ==========================================
-// 主入口：AI 抽卡（带自动降级）
+// 主入口：AI 抽卡 (更新支持方法与八字)
 // ==========================================
 export async function performAIReading(
-  mood: MoodTag,
+  mood: MoodTag | null,
   pois: POIData[],
-  onStatusChange?: (status: string) => void
+  onStatusChange?: (status: string) => void,
+  method: string = 'tarot',
+  baziInfo?: BaziInfo
 ): Promise<{
   aiResult: AIReadingResult;
   card: TarotCard;
@@ -287,44 +278,35 @@ export async function performAIReading(
 }> {
   let aiResult: AIReadingResult;
   let isAI = false;
-  
-  // 如果调用方没有传 POI，使用本地兜底库
   const validPois = (pois && pois.length > 0) ? pois : POI_DATABASE;
 
   if (isAIConfigured()) {
     try {
-      onStatusChange?.('正在感应当前星象…');
-      await delay(1500);
-      onStatusChange?.('星空之门正在开启 (AI 思考中)…');
+      onStatusChange?.('正在感应命运轨迹…');
+      await delay(1200);
+      onStatusChange?.(method === 'bazi' ? '正在排布乾坤八字…' : '星空之门正在开启…');
       
-      aiResult = await callDoubaoAPI(mood, validPois);
+      aiResult = await callDoubaoAPI(mood, validPois, method, baziInfo);
       isAI = true;
-
       onStatusChange?.('命运已揭晓');
     } catch (err) {
-      console.warn('AI 调用失败，降级到本地生成:', err);
-      onStatusChange?.('星象信号微弱，启用本地占卜…');
+      console.warn('AI 失败:', err);
+      onStatusChange?.('信号微弱，启用本地占卜…');
       await delay(500);
       aiResult = generateLocalFallback(mood, validPois);
     }
   } else {
-    onStatusChange?.('星象解析中…');
-    await delay(1200);
+    onStatusChange?.('解析中…');
+    await delay(1000);
     aiResult = generateLocalFallback(mood, validPois);
   }
 
-  // 匹配完整的 Card 和 POI 对象
   const card = TAROT_CARDS.find((c) => c.name === aiResult.cardName)
     || TAROT_CARDS.find((c) => c.emoji === aiResult.emoji)
-    || TAROT_CARDS[Math.floor(Math.random() * TAROT_CARDS.length)];
+    || TAROT_CARDS[0];
 
   const poi = validPois.find((p) => p.id === aiResult.poiId)
     || validPois[Math.floor(Math.random() * validPois.length)];
-
-  // 如果 AI 返回了自定义的 meaning，覆盖到 card 上
-  if (aiResult.meaning && aiResult.meaning !== card.meaning) {
-    card.meaning = aiResult.meaning;
-  }
 
   return {
     aiResult,
