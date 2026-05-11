@@ -182,7 +182,27 @@ const STORAGE_KEYS = {
   LAST_DRAW_WEEK: 'plc_last_draw_week',
   CURRENT_USER: 'plc_current_user',
   USERS_DB: 'plc_users_db',
+  ROUTE_CACHE: 'plc_route_cache',
 } as const;
+
+export interface CachedRoute {
+  distance: string;
+  duration: string;
+  path: [number, number][];
+}
+
+export function saveRouteCache(cache: CachedRoute): void {
+  localStorage.setItem(STORAGE_KEYS.ROUTE_CACHE, JSON.stringify(cache));
+}
+
+export function getRouteCache(): CachedRoute | null {
+  const raw = localStorage.getItem(STORAGE_KEYS.ROUTE_CACHE);
+  return raw ? JSON.parse(raw) : null;
+}
+
+export function clearRouteCache(): void {
+  localStorage.removeItem(STORAGE_KEYS.ROUTE_CACHE);
+}
 
 function getWeekId(): string {
   const now = new Date();

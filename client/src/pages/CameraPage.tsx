@@ -759,7 +759,14 @@ export const CameraPage = () => {
         {showPatternView && beadResult && (
           <motion.div 
             initial={{ opacity: 0, scale: 1.1 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 1.1 }}
-            style={{ position: 'fixed', inset: 0, background: 'var(--bg-dark)', zIndex: 2000, padding: '24px', overflowY: 'auto' }}
+            style={{ 
+              position: 'fixed', 
+              inset: 0, 
+              background: 'var(--bg-dark)', 
+              zIndex: 2000, 
+              padding: '24px 24px var(--nav-height) 24px', 
+              overflowY: 'auto' 
+            }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
               <div>

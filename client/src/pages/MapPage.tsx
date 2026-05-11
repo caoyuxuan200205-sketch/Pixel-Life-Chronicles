@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { Camera, Navigation, ChevronRight, ChevronLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import AMapLoader from '@amap/amap-jsapi-loader';
-import { getCurrentReading, getCurrentUser, type ReadingResult } from '../store';
+import { getCurrentReading, getCurrentUser, getRouteCache, saveRouteCache, type ReadingResult } from '../store';
 
 export const MapPage = () => {
   const navigate = useNavigate();
@@ -13,6 +13,7 @@ export const MapPage = () => {
   const walkingRef = useRef<any>(null);
   const routeLineRef = useRef<any>(null);
   const userMarkerRef = useRef<any>(null);
+  const isMapLoaded = useRef(false);
 
   useEffect(() => {
     if (!getCurrentUser()) {
@@ -31,13 +32,13 @@ export const MapPage = () => {
       mapRef.current.remove(routeLineRef.current);
     }
 
-    // 绘制像素风格路径：粗体 + 描边
+    // 绘制像素风格路径
     const polyline = new (window as any).AMap.Polyline({
       path: path,
       isOutline: true,
       outlineColor: '#000',
       borderWeight: 2,
-      strokeColor: "#e2b553", // 直接使用 Hex 色值，高德 API 不支持 CSS 变量
+      strokeColor: "#e2b553",
       strokeOpacity: 1,
       strokeWeight: 6,
       strokeStyle: "solid",
@@ -48,7 +49,11 @@ export const MapPage = () => {
 
     mapRef.current.add(polyline);
     routeLineRef.current = polyline;
-    mapRef.current.setFitView([polyline, userMarkerRef.current].filter(Boolean), false, [60, 60, 320, 60]);
+    
+    // 只有在非初次恢复缓存时才自动调整视角，避免进入页面时的突兀跳转
+    if (isMapLoaded.current) {
+      mapRef.current.setFitView([polyline, userMarkerRef.current].filter(Boolean), false, [60, 60, 320, 60]);
+    }
   };
 
   const planRoute = (userPos: any) => {
@@ -63,10 +68,14 @@ export const MapPage = () => {
           const path = route.steps.reduce((acc: any[], step: any) => [...acc, ...step.path], []);
           drawRoute(path);
           
-          // 格式化距离和时间
           const dist = route.distance > 1000 ? (route.distance / 1000).toFixed(1) + 'km' : route.distance + 'm';
           const time = Math.ceil(route.time / 60) + '分钟';
-          setRouteInfo({ distance: dist, duration: time });
+          
+          const info = { distance: dist, duration: time };
+          setRouteInfo(info);
+          
+          // 缓存路线
+          saveRouteCache({ ...info, path });
         }
       }
     );
@@ -95,6 +104,8 @@ export const MapPage = () => {
           viewMode: '2D',
         });
 
+        mapRef.current = mapInstance;
+
         // 目的地 Marker
         const markerContent = document.createElement('div');
         markerContent.innerHTML = `
@@ -108,6 +119,13 @@ export const MapPage = () => {
           offset: new AMap.Pixel(-16, -16),
         });
         mapInstance.add(marker);
+
+        // 立即尝试恢复缓存路线
+        const cached = getRouteCache();
+        if (cached) {
+          setRouteInfo({ distance: cached.distance, duration: cached.duration });
+          drawRoute(cached.path);
+        }
 
         // 初始化导航插件
         walkingRef.current = new AMap.Walking({ map: null, hideMarkers: true });
@@ -137,10 +155,10 @@ export const MapPage = () => {
           }
         });
 
-        // 初次尝试获取位置并规划
+        // 初次尝试获取位置并规划（静默更新）
         geolocation.getCurrentPosition();
-
-        mapRef.current = mapInstance;
+        
+        isMapLoaded.current = true;
       } catch (err) {
         console.error('Map init error:', err);
       }
