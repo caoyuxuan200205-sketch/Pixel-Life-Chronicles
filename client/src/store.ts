@@ -27,6 +27,8 @@ export interface POIData {
 export interface BeadPattern {
   grid: number[][]; // 颜色索引网格
   palette: string[]; // 调色盘（Hex颜色列表）
+  codes?: string[];  // 对应色号 (如 A1, B15)
+  names?: string[];  // 对应颜色名称
 }
 
 export interface StampRecord {

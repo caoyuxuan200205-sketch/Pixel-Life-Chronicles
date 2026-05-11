@@ -5,10 +5,40 @@ import axios from 'axios';
 import sharp from 'sharp';
 import { PDFDocument } from 'pdf-lib';
 
+import fs from 'fs';
+import path from 'path';
+
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+
+// 加载 Artkal 标准色板
+interface ArtkalBead {
+  code: string;
+  name_zh: string;
+  hex: string;
+  rgb: [number, number, number];
+}
+
+let ARTKAL_DATA: ArtkalBead[] = [];
+try {
+  // 适配 Vercel 环境和本地环境的路径
+  const dataPath = path.join(process.cwd(), 'server', 'data', 'artkal_m_series.json');
+  const fallbackPath = path.join(process.cwd(), 'data', 'artkal_m_series.json');
+  const finalPath = fs.existsSync(dataPath) ? dataPath : fallbackPath;
+  
+  if (fs.existsSync(finalPath)) {
+    ARTKAL_DATA = JSON.parse(fs.readFileSync(finalPath, 'utf-8'));
+    console.log(`Successfully loaded ${ARTKAL_DATA.length} Artkal colors.`);
+  }
+} catch (e) {
+  console.error('Failed to load Artkal palette:', e);
+}
+
+const FULL_BEAD_PALETTE = ARTKAL_DATA.map(b => b.hex.toUpperCase());
+const FULL_BEAD_NAMES = ARTKAL_DATA.map(b => b.name_zh);
+const FULL_BEAD_CODES = ARTKAL_DATA.map(b => b.code);
 
 app.use(cors());
 app.use(express.json({ limit: '20mb' }));
@@ -37,27 +67,13 @@ interface BeadGenerateResponse {
   pattern: {
     grid: number[][];
     palette: string[];
+    codes: string[];
+    names: string[];
   };
   colorCount: number;
   totalBeads: number;
-  colorSummary: Array<{ index: number; hex: string; count: number }>;
+  colorSummary: Array<{ index: number; hex: string; count: number; code: string; name: string }>;
 }
-
-function buildPalette221(): string[] {
-  const colors: string[] = [];
-  const steps = [0, 51, 102, 153, 204, 255];
-  for (const r of steps) {
-    for (const g of steps) {
-      for (const b of steps) {
-        colors.push(`#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`.toUpperCase());
-      }
-    }
-  }
-  colors.push('#111111', '#333333', '#777777', '#BBBBBB', '#F3F3F3');
-  return colors.slice(0, 221);
-}
-
-const FULL_BEAD_PALETTE = buildPalette221();
 const PRESET_COUNTS: Record<'96' | '120' | '144' | '168' | '221', number> = {
   '96': 96,
   '120': 120,
@@ -365,6 +381,8 @@ app.post('/api/bead/generate', async (req, res) => {
 
     const presetCount = PRESET_COUNTS[palettePreset] ?? 221;
     const activePalette = FULL_BEAD_PALETTE.slice(0, presetCount);
+    const activeNames = FULL_BEAD_NAMES.slice(0, presetCount);
+    const activeCodes = FULL_BEAD_CODES.slice(0, presetCount);
     const paletteRgb = activePalette.map(hexToRgb);
 
     // 1) 在中间分辨率上量化（可选 Floyd-Steinberg 抖动）
@@ -390,7 +408,7 @@ app.post('/api/bead/generate', async (req, res) => {
             if (tx < 0 || ty < 0 || tx >= midW || ty >= midH) return;
             const ti = (ty * midW + tx) * 3;
             work[ti] += er * ratio;
-            work[ti + 1] += eg * ratio;
+            work[ti + 1] += eg * eg * ratio;
             work[ti + 2] += eb * ratio;
           };
           spread(x + 1, y, 7 / 16);
@@ -427,13 +445,16 @@ app.post('/api/bead/generate', async (req, res) => {
     grid = capMaxColors(grid, paletteRgb, Math.max(0, Math.min(64, maxColors)));
     grid = smoothEdges(grid);
     if (removeBg) grid = removeBackground(grid);
-
-    const colorCount = countColors(grid).size;
-
     const colorCounter = countColors(grid);
     const colorSummary = [...colorCounter.entries()]
       .sort((a, b) => b[1] - a[1])
-      .map(([index, count]) => ({ index, hex: activePalette[index], count }));
+      .map(([index, count]) => ({ 
+        index, 
+        hex: activePalette[index], 
+        count,
+        code: activeCodes[index],
+        name: activeNames[index]
+      }));
     const totalBeads = safeGridW * safeGridH;
 
     const { raw: previewRaw, width: previewW, height: previewH } = renderPatternRaw(grid, paletteRgb, 8, true);
@@ -443,11 +464,7 @@ app.post('/api/bead/generate', async (req, res) => {
 
     const sessionId = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
     beadSessions.set(sessionId, { grid, palette: activePalette });
-    if (beadSessions.size > 100) {
-      const first = beadSessions.keys().next().value;
-      if (first) beadSessions.delete(first);
-    }
-
+    
     const payload: BeadGenerateResponse = {
       pixelUrl: `data:image/png;base64,${previewBuffer.toString('base64')}`,
       source: 'backend',
@@ -455,6 +472,8 @@ app.post('/api/bead/generate', async (req, res) => {
       pattern: {
         grid,
         palette: activePalette,
+        codes: activeCodes,
+        names: activeNames
       },
       colorCount: colorSummary.length,
       totalBeads,
@@ -481,7 +500,13 @@ app.post('/api/bead/update-cell', (req, res) => {
     if (colorIndex < 0 || colorIndex >= session.palette.length) return res.status(400).json({ error: 'Invalid colorIndex' });
     session.grid[row][col] = colorIndex;
     const counter = countColors(session.grid);
-    const colorSummary = [...counter.entries()].sort((a, b) => b[1] - a[1]).map(([index, count]) => ({ index, hex: session.palette[index], count }));
+    const colorSummary = [...counter.entries()].sort((a, b) => b[1] - a[1]).map(([index, count]) => ({ 
+      index, 
+      hex: session.palette[index], 
+      count,
+      code: FULL_BEAD_CODES[index],
+      name: FULL_BEAD_NAMES[index]
+    }));
     return res.json({ success: true, colorSummary, totalBeads: h * w, colorCount: colorSummary.length });
   } catch (error: any) {
     return res.status(500).json({ error: error?.message || 'Update failed' });

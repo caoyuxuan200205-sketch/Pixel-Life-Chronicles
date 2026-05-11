@@ -45,16 +45,21 @@ export const ProfilePage = () => {
   };
 
   // 计算颗粒数统计
-  const getColorSummary = (grid: number[][], palette: string[]) => {
+  const getColorSummary = (grid: number[][], palette: string[], codes?: string[], names?: string[]) => {
     const counts: Record<number, number> = {};
     grid.flat().forEach(idx => {
       counts[idx] = (counts[idx] || 0) + 1;
     });
-    return Object.entries(counts).map(([idx, count]) => ({
-      index: parseInt(idx),
-      hex: palette[parseInt(idx)],
-      count
-    })).sort((a, b) => b.count - a.count);
+    return Object.entries(counts).map(([idx, count]) => {
+      const i = parseInt(idx);
+      return {
+        index: i,
+        hex: palette[i],
+        count,
+        code: codes ? codes[i] : null,
+        name: names ? names[i] : null
+      };
+    }).sort((a, b) => b.count - a.count);
   };
 
   // AI 探测状态
@@ -696,12 +701,17 @@ export const ProfilePage = () => {
             <div className="pixel-panel" style={{ padding: '20px', background: 'rgba(255,255,255,0.02)' }}>
               <div style={{ fontSize: '0.8rem', color: 'var(--primary)', marginBottom: '16px', fontWeight: 'bold' }}>使用的豆子详情</div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                {getColorSummary(selectedStamp.beadPattern.grid, selectedStamp.beadPattern.palette).slice(0, 12).map((c) => (
+                {getColorSummary(
+                  selectedStamp.beadPattern.grid, 
+                  selectedStamp.beadPattern.palette,
+                  selectedStamp.beadPattern.codes,
+                  selectedStamp.beadPattern.names
+                ).slice(0, 16).map((c) => (
                   <div key={c.index} style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'rgba(0,0,0,0.3)', padding: '10px' }}>
                     <div style={{ width: '16px', height: '16px', background: c.hex, border: '1px solid rgba(255,255,255,0.2)' }} />
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: '0.7rem', color: '#fff' }}>#{c.index}</div>
-                      <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }}>{c.count} 颗</div>
+                      <div style={{ fontSize: '0.7rem', color: '#fff' }}>{c.code || `#${c.index}`}</div>
+                      <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }}>{c.name || '未知颜色'} · {c.count} 颗</div>
                     </div>
                   </div>
                 ))}

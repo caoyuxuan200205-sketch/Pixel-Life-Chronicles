@@ -801,12 +801,12 @@ export const CameraPage = () => {
             <div className="pixel-panel" style={{ padding: '20px', background: 'rgba(255,255,255,0.02)' }}>
               <div style={{ fontSize: '0.8rem', color: 'var(--primary)', marginBottom: '16px', fontWeight: 'bold' }}>使用的豆子详情</div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                {beadResult.colorSummary?.slice(0, 12).map((c) => (
+                {beadResult.colorSummary?.slice(0, 16).map((c: any) => (
                   <div key={c.index} style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'rgba(0,0,0,0.3)', padding: '10px' }}>
                     <div style={{ width: '16px', height: '16px', background: c.hex, border: '1px solid rgba(255,255,255,0.2)' }} />
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: '0.7rem', color: '#fff' }}>#{c.index}</div>
-                      <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }}>{c.count} 颗</div>
+                      <div style={{ fontSize: '0.7rem', color: '#fff' }}>{c.code || `#${c.index}`}</div>
+                      <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }}>{c.name || '未知颜色'} · {c.count} 颗</div>
                     </div>
                   </div>
                 ))}
