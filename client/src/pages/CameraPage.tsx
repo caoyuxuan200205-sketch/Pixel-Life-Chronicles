@@ -330,10 +330,11 @@ export const CameraPage = () => {
       setBeadResult(result);
       setSelectedColorIndex(0);
       if (result.source === 'local') {
-        setProcessingTip('后端超时或不可用，已自动回退本地生成。');
+        setProcessingTip('后端不可用（可能是部署配置问题），已回退本地生成。');
       }
-    } catch {
-      setProcessingTip('生成失败，请重试或重拍。');
+    } catch (err: any) {
+      console.error('Processing failed:', err);
+      setProcessingTip(`生成失败: ${err.message || '未知错误'}。请检查 Vercel Logs。`);
     } finally {
       setIsProcessing(false);
     }

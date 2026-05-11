@@ -13,5 +13,12 @@
   },
   "devDependencies": {
     "concurrently": "^8.2.2"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "cors": "^2.8.5",
+    "axios": "^1.6.8",
+    "sharp": "^0.33.4",
+    "dotenv": "^16.4.5"
   }
 }
