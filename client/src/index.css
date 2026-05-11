@@ -118,6 +118,16 @@ body {
   100% { opacity: 0.24387; }
 }
 
+/* Animations */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.anim-spin {
+  animation: spin 1s linear infinite;
+}
+
 #root {
   width: 100%;
   min-height: 100dvh;

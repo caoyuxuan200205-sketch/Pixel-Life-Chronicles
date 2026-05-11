@@ -67,6 +67,32 @@ export const ProfilePage = () => {
   const [showMeituanModal, setShowMeituanModal] = useState(false);
   const [showProxyModal, setShowProxyModal] = useState(false);
   const [bookingSuccess, setBookingSuccess] = useState(false);
+  const [isPaying, setIsPaying] = useState(false);
+  const [isOrdering, setIsOrdering] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+  const [showToast, setShowToast] = useState(false);
+
+  const triggerToast = (msg: string) => {
+    setToastMessage(msg);
+    setShowToast(true);
+    setTimeout(() => setShowToast(false), 3000);
+  };
+
+  const handleMeituanPay = async () => {
+    setIsPaying(true);
+    await new Promise(r => setTimeout(r, 1500));
+    setIsPaying(false);
+    setShowMeituanModal(false);
+    triggerToast('🚀 支付成功！美团骑手已出发，预计 30 分钟送达');
+  };
+
+  const handleProxyOrder = async () => {
+    setIsOrdering(true);
+    await new Promise(r => setTimeout(r, 2000));
+    setIsOrdering(false);
+    setShowProxyModal(false);
+    triggerToast('🎨 契约已达成！工坊职人已接收图纸，制作完成后将第一时间顺丰寄出');
+  };
 
   const SEARCH_STATUSES = [
     "正在解析印章像素指纹...",
@@ -538,18 +564,25 @@ export const ProfilePage = () => {
         {/* 美团闪购模拟 */}
         {showMeituanModal && (
           <div style={{ position: 'fixed', inset: 0, zIndex: 4000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowMeituanModal(false)} style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.9)', backdropFilter: 'blur(8px)' }} />
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => !isPaying && setShowMeituanModal(false)} style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.9)', backdropFilter: 'blur(8px)' }} />
             <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="pixel-panel" style={{ width: '100%', maxWidth: '360px', background: '#FFD000', color: '#000', padding: '24px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
                 <h3 style={{ fontWeight: 900 }}>美团闪购</h3>
-                <X onClick={() => setShowMeituanModal(false)} style={{ cursor: 'pointer' }} />
+                <X onClick={() => !isPaying && setShowMeituanModal(false)} style={{ cursor: 'pointer' }} />
               </div>
               <div style={{ background: '#fff', padding: '16px', marginBottom: '20px' }}>
                 <div style={{ fontSize: '1.1rem', fontWeight: 900, marginBottom: '8px' }}>[全套] 命定拼豆材料包</div>
                 <div style={{ fontSize: '0.8rem', color: '#666', marginBottom: '16px' }}>包含：全色系拼豆、背板、镊子、熨烫纸、收纳盒</div>
                 <div style={{ fontSize: '1.5rem', fontWeight: 900, color: '#f40' }}>¥ 19.9 <span style={{ fontSize: '0.7rem', fontWeight: 'normal', color: '#999', textDecoration: 'line-through' }}>¥ 35.0</span></div>
               </div>
-              <button className="btn btn-primary" style={{ width: '100%', background: '#000', color: '#FFD000', border: 'none', padding: '16px' }}>确认支付并配送</button>
+              <button 
+                className="btn btn-primary" 
+                disabled={isPaying}
+                onClick={handleMeituanPay}
+                style={{ width: '100%', background: '#000', color: '#FFD000', border: 'none', padding: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}
+              >
+                {isPaying ? <><Loader2 className="anim-spin" size={18} /> 量子加密支付中...</> : '确认支付并配送'}
+              </button>
             </motion.div>
           </div>
         )}
@@ -557,11 +590,11 @@ export const ProfilePage = () => {
         {/* 代制作模拟 */}
         {showProxyModal && (
           <div style={{ position: 'fixed', inset: 0, zIndex: 4000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowProxyModal(false)} style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.9)', backdropFilter: 'blur(8px)' }} />
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => !isOrdering && setShowProxyModal(false)} style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.9)', backdropFilter: 'blur(8px)' }} />
             <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="pixel-panel" style={{ width: '100%', maxWidth: '360px', background: 'var(--bg-dark)', padding: '24px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
                 <h3 className="font-mystic" style={{ color: 'var(--primary)' }}>工坊代制作契约</h3>
-                <X onClick={() => setShowProxyModal(false)} style={{ cursor: 'pointer' }} />
+                <X onClick={() => !isOrdering && setShowProxyModal(false)} style={{ cursor: 'pointer' }} />
               </div>
               <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '24px' }}>
                 <p style={{ marginBottom: '12px' }}>您可以将生成的像素图纸发送给我们的“命定工坊”，由专业职人为您手工制作并快递寄送。</p>
@@ -571,10 +604,34 @@ export const ProfilePage = () => {
                   <div>• 代工费用：¥ 39.0 起</div>
                 </div>
               </div>
-              <button className="btn btn-primary" style={{ width: '100%', padding: '16px' }}>同步图纸并下单</button>
+              <button 
+                className="btn btn-primary" 
+                disabled={isOrdering}
+                onClick={handleProxyOrder}
+                style={{ width: '100%', padding: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}
+              >
+                {isOrdering ? <><Loader2 className="anim-spin" size={18} /> 图纸时空同步中...</> : '同步图纸并下单'}
+              </button>
             </motion.div>
           </div>
         )}
+
+        {/* 统一成功提示 Toast */}
+        <AnimatePresence>
+          {showToast && (
+            <motion.div 
+              initial={{ opacity: 0, y: 50 }} 
+              animate={{ opacity: 1, y: 0 }} 
+              exit={{ opacity: 0, y: 50 }}
+              style={{ position: 'fixed', bottom: '100px', left: '20px', right: '20px', zIndex: 9000, pointerEvents: 'none', display: 'flex', justifyContent: 'center' }}
+            >
+              <div className="pixel-panel" style={{ background: 'var(--primary)', color: '#000', padding: '12px 20px', fontWeight: 900, display: 'flex', alignItems: 'center', gap: '10px', boxShadow: '0 10px 30px rgba(255,208,0,0.4)', fontSize: '0.8rem' }}>
+                <Sparkles size={16} />
+                <span>{toastMessage}</span>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* 预约成功提示 */}
         {bookingSuccess && (
