@@ -14,6 +14,48 @@ export const ProfilePage = () => {
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [selectedStamp, setSelectedStamp] = useState<StampRecord | null>(null);
   const [showPatternInDetail, setShowPatternInDetail] = useState(false);
+  const [showPatternView, setShowPatternView] = useState(false);
+
+  // 导出逻辑
+  const downloadByDataUrl = (dataUrl: string, filename: string) => {
+    const a = document.createElement('a');
+    a.href = dataUrl;
+    a.download = filename;
+    a.click();
+  };
+
+  const handleExport = async (type: 'png' | 'pdf') => {
+    if (!selectedStamp) return;
+    const BACKEND_URL = ''; // 使用相对路径适配生产环境
+    const resp = await fetch(`${BACKEND_URL}/api/bead/export/${type}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        grid: selectedStamp.beadPattern.grid,
+        palette: selectedStamp.beadPattern.palette,
+        cellSize: 14,
+        showGrid: true,
+      }),
+    });
+    if (!resp.ok) return;
+    const data = await resp.json();
+    if (data?.dataUrl) {
+      downloadByDataUrl(data.dataUrl, `bead-pattern-${selectedStamp.poiName}-${Date.now()}.${type}`);
+    }
+  };
+
+  // 计算颗粒数统计
+  const getColorSummary = (grid: number[][], palette: string[]) => {
+    const counts: Record<number, number> = {};
+    grid.flat().forEach(idx => {
+      counts[idx] = (counts[idx] || 0) + 1;
+    });
+    return Object.entries(counts).map(([idx, count]) => ({
+      index: parseInt(idx),
+      hex: palette[parseInt(idx)],
+      count
+    })).sort((a, b) => b.count - a.count);
+  };
 
   // AI 探测状态
   const [nearbyShops, setNearbyShops] = useState<any[]>([]);
@@ -304,23 +346,10 @@ export const ProfilePage = () => {
               </div>
 
               <div style={{ display: 'flex', gap: '10px', marginBottom: '24px' }}>
-                <button className="btn btn-ghost" style={{ flex: 1, fontSize: '0.75rem' }} onClick={() => setShowPatternInDetail(!showPatternInDetail)}>
-                  <Info size={14} /> {showPatternInDetail ? '隐藏图纸' : '查看拼豆图纸'}
+                <button className="btn btn-primary" style={{ flex: 1, fontSize: '0.85rem' }} onClick={() => setShowPatternView(true)}>
+                  <Info size={16} /> 进入操作图纸界面
                 </button>
               </div>
-
-              {showPatternInDetail && (
-                <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} style={{ marginBottom: '24px', textAlign: 'center' }}>
-                  <div style={{ background: '#fff', padding: '4px', display: 'inline-block' }}>
-                    <div style={{ display: 'grid', gridTemplateColumns: `repeat(${selectedStamp.beadPattern.grid[0].length}, 1fr)`, width: '200px' }}>
-                      {selectedStamp.beadPattern.grid.flat().map((cIdx, i) => (
-                        <div key={i} style={{ aspectRatio: '1', background: selectedStamp.beadPattern.palette[cIdx], border: '0.1px solid rgba(0,0,0,0.05)' }} />
-                      ))}
-                    </div>
-                  </div>
-                  <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)', marginTop: '8px' }}>拼豆图纸：32x32 标准规格</div>
-                </motion.div>
-              )}
 
               {/* 商业化模块 */}
               <div style={{ borderTop: '2px solid var(--pixel-border-color)', paddingTop: '20px' }}>
@@ -558,6 +587,71 @@ export const ProfilePage = () => {
             <div className="pixel-panel" style={{ background: 'var(--primary)', color: '#000', padding: '12px 24px', fontWeight: 900, display: 'flex', alignItems: 'center', gap: '10px', boxShadow: '0 10px 30px rgba(255,208,0,0.4)' }}>
               <Sparkles size={18} />
               <span>预约成功！时空锚点已为您锁定</span>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* 图纸弹窗 - 全屏沉浸式 (与创作界面一致) */}
+      <AnimatePresence>
+        {showPatternView && selectedStamp && (
+          <motion.div 
+            initial={{ opacity: 0, scale: 1.1 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 1.1 }}
+            style={{ 
+              position: 'fixed', 
+              inset: 0, 
+              background: 'var(--bg-dark)', 
+              zIndex: 6000, 
+              padding: '24px 24px var(--nav-height) 24px', 
+              overflowY: 'auto' 
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+              <div>
+                <h3 className="font-mystic" style={{ color: 'var(--primary)', fontSize: '1.2rem' }}>拼豆操作图纸</h3>
+                <p style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>规格：{selectedStamp.beadPattern.grid[0].length} x {selectedStamp.beadPattern.grid.length}</p>
+              </div>
+              <button className="btn btn-ghost" onClick={() => setShowPatternView(false)} style={{ border: 'none', background: 'rgba(255,255,255,0.05)' }}>
+                <X size={20} />
+              </button>
+            </div>
+
+            <div style={{ background: '#fff', padding: '8px', display: 'flex', justifyContent: 'center', marginBottom: '24px', boxShadow: '0 0 50px rgba(0,0,0,0.5)' }}>
+               <div style={{ 
+                display: 'grid', 
+                gridTemplateColumns: `repeat(${selectedStamp.beadPattern.grid[0].length}, 1fr)`,
+                width: '100%',
+                maxWidth: '600px'
+              }}>
+                {selectedStamp.beadPattern.grid.flat().map((cIdx, i) => (
+                  <div key={i} style={{ aspectRatio: '1', background: selectedStamp.beadPattern.palette[cIdx], border: '0.1px solid rgba(0,0,0,0.1)' }} />
+                ))}
+              </div>
+            </div>
+
+            {/* 导出按钮 */}
+            <div style={{ display: 'flex', gap: '10px', marginBottom: '32px' }}>
+              <button className="btn btn-ghost" style={{ flex: 1, fontSize: '0.8rem' }} onClick={() => handleExport('png')}>导出图片</button>
+              <button className="btn btn-ghost" style={{ flex: 1, fontSize: '0.8rem' }} onClick={() => handleExport('pdf')}>导出 PDF</button>
+            </div>
+
+            {/* 颜色详情 */}
+            <div className="pixel-panel" style={{ padding: '20px', background: 'rgba(255,255,255,0.02)' }}>
+              <div style={{ fontSize: '0.8rem', color: 'var(--primary)', marginBottom: '16px', fontWeight: 'bold' }}>使用的豆子详情</div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                {getColorSummary(selectedStamp.beadPattern.grid, selectedStamp.beadPattern.palette).slice(0, 12).map((c) => (
+                  <div key={c.index} style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'rgba(0,0,0,0.3)', padding: '10px' }}>
+                    <div style={{ width: '16px', height: '16px', background: c.hex, border: '1px solid rgba(255,255,255,0.2)' }} />
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: '0.7rem', color: '#fff' }}>#{c.index}</div>
+                      <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }}>{c.count} 颗</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div style={{ marginTop: '20px', color: 'var(--text-secondary)', fontSize: '0.75rem' }}>
+              💡 提示：每一格代表一颗拼豆，请对照颜色进行排列。
             </div>
           </motion.div>
         )}
