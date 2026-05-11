@@ -13,7 +13,7 @@ const BEAD_COLORS = [
   '#A52A2A', '#808080', '#FFC0CB', '#FFE4B5', '#40E0D0'
 ];
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001';
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || '';
 
 /**
  * 将图片转换为拼豆图纸数据
@@ -244,10 +244,29 @@ export const CameraPage = () => {
     if (!videoRef.current || !canvasRef.current) return;
     const canvas = canvasRef.current;
     const video = videoRef.current;
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    canvas.getContext('2d')!.drawImage(video, 0, 0);
-    setCaptured(canvas.toDataURL('image/png'));
+    
+    // 限制最大尺寸，避免移动端上传 Base64 过大导致后端 413 错误
+    const MAX_DIM = 1024;
+    let width = video.videoWidth;
+    let height = video.videoHeight;
+    
+    if (width > height) {
+      if (width > MAX_DIM) {
+        height *= MAX_DIM / width;
+        width = MAX_DIM;
+      }
+    } else {
+      if (height > MAX_DIM) {
+        width *= MAX_DIM / height;
+        height = MAX_DIM;
+      }
+    }
+    
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d')!;
+    ctx.drawImage(video, 0, 0, width, height);
+    setCaptured(canvas.toDataURL('image/jpeg', 0.8)); // 使用 jpeg 且 0.8 质量进一步减小体积
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -255,7 +274,29 @@ export const CameraPage = () => {
     if (!file) return;
     const reader = new FileReader();
     reader.onload = (event) => {
-      setCaptured(event.target?.result as string);
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX_DIM = 1024;
+        let width = img.width;
+        let height = img.height;
+        if (width > height) {
+          if (width > MAX_DIM) {
+            height *= MAX_DIM / width;
+            width = MAX_DIM;
+          }
+        } else {
+          if (height > MAX_DIM) {
+            width *= MAX_DIM / height;
+            height = MAX_DIM;
+          }
+        }
+        canvas.width = width;
+        canvas.height = height;
+        canvas.getContext('2d')?.drawImage(img, 0, 0, width, height);
+        setCaptured(canvas.toDataURL('image/jpeg', 0.8));
+      };
+      img.src = event.target?.result as string;
     };
     reader.readAsDataURL(file);
   };
@@ -264,6 +305,12 @@ export const CameraPage = () => {
     if (!captured) return;
     setIsProcessing(true);
     setProcessingTip('');
+
+    // 检查后端配置
+    if (BACKEND_URL.includes('localhost') && window.location.hostname !== 'localhost') {
+      console.warn('检测到在非本地环境下尝试调用 localhost 后端，请检查 VITE_BACKEND_URL 环境变量设置。');
+    }
+
     // 模拟 AI 处理延迟
     await new Promise(r => setTimeout(r, 1500));
     try {

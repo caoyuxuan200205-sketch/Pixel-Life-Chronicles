@@ -53,7 +53,7 @@ export interface AIReadingResult {
 // ==========================================
 // 在 Vercel 部署时，请在环境变量中设置 VITE_BACKEND_URL 为您的后端地址
 // 如果不设置，默认回退到本地开发地址
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001';
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || '';
 
 const DOUBAO_CONFIG = {
   endpoint: 'https://ark.cn-beijing.volces.com/api/v3/chat/completions',
