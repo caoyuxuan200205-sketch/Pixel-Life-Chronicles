@@ -9,6 +9,9 @@
     "lint": "eslint .",
     "preview": "vite preview"
   },
+  "optionalDependencies": {
+    "@rolldown/binding-linux-x64-gnu": "1.0.0-rc.18"
+  },
   "dependencies": {
     "@amap/amap-jsapi-loader": "^1.0.1",
     "framer-motion": "^12.38.0",
