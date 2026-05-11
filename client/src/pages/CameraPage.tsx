@@ -13,13 +13,80 @@ const BEAD_COLORS = [
   '#A52A2A', '#808080', '#FFC0CB', '#FFE4B5', '#40E0D0'
 ];
 
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001';
+
 /**
  * 将图片转换为拼豆图纸数据
  */
-async function generateBeadData(dataUrl: string, gridSize = 32): Promise<{ pixelUrl: string, pattern: BeadPattern }> {
-  return new Promise((resolve) => {
+type BeadGenerateResult = { pixelUrl: string, pattern: BeadPattern, source: 'backend' | 'local', colorCount?: number };
+type ColorSummaryItem = { index: number; hex: string; count: number };
+type BeadMode = 'fixed_grid' | 'pixel_size';
+
+type BeadGenerateResultEx = BeadGenerateResult & {
+  sessionId?: string;
+  colorSummary?: ColorSummaryItem[];
+  totalBeads?: number;
+};
+
+async function fetchWithTimeout(input: RequestInfo | URL, init: RequestInit, timeoutMs = 15000): Promise<Response> {
+  const controller = new AbortController();
+  const timer = window.setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(input, { ...init, signal: controller.signal });
+  } finally {
+    window.clearTimeout(timer);
+  }
+}
+
+async function generateBeadData(
+  dataUrl: string,
+  options: {
+    mode: BeadMode;
+    gridSize: number;
+    pixelSize: number;
+    palettePreset: '96' | '120' | '144' | '168' | '221';
+    maxColors: number;
+    mergeThreshold: number;
+    useDithering: boolean;
+    removeBg: boolean;
+    contrast: number;
+    saturation: number;
+    sharpness: number;
+  }
+): Promise<BeadGenerateResultEx> {
+  try {
+    const resp = await fetchWithTimeout(`${BACKEND_URL}/api/bead/generate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        dataUrl,
+        mode: options.mode,
+        gridSize: options.gridSize,
+        pixelSize: options.pixelSize,
+        palettePreset: options.palettePreset,
+        useDithering: options.useDithering,
+        maxColors: options.maxColors,
+        mergeThreshold: options.mergeThreshold,
+        removeBg: options.removeBg,
+        contrast: options.contrast,
+        saturation: options.saturation,
+        sharpness: options.sharpness,
+      }),
+    });
+    if (resp.ok) {
+      const data = await resp.json();
+      if (data?.pixelUrl && data?.pattern?.grid && data?.pattern?.palette) {
+        return { ...data, source: 'backend' };
+      }
+    }
+  } catch {
+    // 后端不可用时自动回退到本地算法，保证功能可用
+  }
+
+  return new Promise((resolve, reject) => {
     const img = new Image();
     img.src = dataUrl;
+    img.onerror = () => reject(new Error('图片解析失败'));
     img.onload = () => {
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d')!;
@@ -79,7 +146,8 @@ async function generateBeadData(dataUrl: string, gridSize = 32): Promise<{ pixel
 
       resolve({
         pixelUrl: previewCanvas.toDataURL(),
-        pattern: { grid, palette }
+        pattern: { grid, palette },
+        source: 'local',
       });
     };
   });
@@ -88,10 +156,25 @@ async function generateBeadData(dataUrl: string, gridSize = 32): Promise<{ pixel
 export const CameraPage = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [captured, setCaptured] = useState<string | null>(null);
-  const [beadResult, setBeadResult] = useState<{ pixelUrl: string, pattern: BeadPattern } | null>(null);
+  const [beadResult, setBeadResult] = useState<BeadGenerateResultEx | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [processingTip, setProcessingTip] = useState<string>('');
   const [showPatternView, setShowPatternView] = useState(false);
+  const [editMode, setEditMode] = useState(false);
+  const [selectedColorIndex, setSelectedColorIndex] = useState<number>(0);
+  const [engineMode, setEngineMode] = useState<BeadMode>('fixed_grid');
+  const [gridSize, setGridSize] = useState(32);
+  const [pixelSize, setPixelSize] = useState(8);
+  const [palettePreset, setPalettePreset] = useState<'96' | '120' | '144' | '168' | '221'>('221');
+  const [maxColors, setMaxColors] = useState(24);
+  const [mergeThreshold, setMergeThreshold] = useState(18);
+  const [useDithering, setUseDithering] = useState(false);
+  const [removeBg, setRemoveBg] = useState(false);
+  const [contrast, setContrast] = useState(12);
+  const [saturation, setSaturation] = useState(10);
+  const [sharpness, setSharpness] = useState(15);
   
   // AI 探测状态
   const [searching, setSearching] = useState(false);
@@ -167,14 +250,105 @@ export const CameraPage = () => {
     setCaptured(canvas.toDataURL('image/png'));
   };
 
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      setCaptured(event.target?.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleProcess = async () => {
     if (!captured) return;
     setIsProcessing(true);
+    setProcessingTip('');
     // 模拟 AI 处理延迟
     await new Promise(r => setTimeout(r, 1500));
-    const result = await generateBeadData(captured, 32);
-    setBeadResult(result);
-    setIsProcessing(false);
+    try {
+      const result = await generateBeadData(captured, {
+        mode: engineMode,
+        gridSize,
+        pixelSize,
+        palettePreset,
+        maxColors,
+        mergeThreshold,
+        useDithering,
+        removeBg,
+        contrast,
+        saturation,
+        sharpness,
+      });
+      setBeadResult(result);
+      setSelectedColorIndex(0);
+      if (result.source === 'local') {
+        setProcessingTip('后端超时或不可用，已自动回退本地生成。');
+      }
+    } catch {
+      setProcessingTip('生成失败，请重试或重拍。');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleCellClick = async (flatIndex: number) => {
+    if (!beadResult || !editMode) return;
+    const width = beadResult.pattern.grid[0].length;
+    const row = Math.floor(flatIndex / width);
+    const col = flatIndex % width;
+    const next = beadResult.pattern.grid.map((r) => [...r]);
+    next[row][col] = selectedColorIndex;
+    setBeadResult({
+      ...beadResult,
+      pattern: { ...beadResult.pattern, grid: next },
+    });
+    if (beadResult.sessionId) {
+      try {
+        const resp = await fetch(`${BACKEND_URL}/api/bead/update-cell`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sessionId: beadResult.sessionId,
+            row,
+            col,
+            colorIndex: selectedColorIndex,
+          }),
+        });
+        if (resp.ok) {
+          const data = await resp.json();
+          setBeadResult((prev) => prev ? { ...prev, colorSummary: data.colorSummary, colorCount: data.colorCount, totalBeads: data.totalBeads } : prev);
+        }
+      } catch {
+        // silent
+      }
+    }
+  };
+
+  const downloadByDataUrl = (dataUrl: string, filename: string) => {
+    const a = document.createElement('a');
+    a.href = dataUrl;
+    a.download = filename;
+    a.click();
+  };
+
+  const handleExport = async (type: 'png' | 'pdf') => {
+    if (!beadResult) return;
+    const resp = await fetch(`${BACKEND_URL}/api/bead/export/${type}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        grid: beadResult.pattern.grid,
+        palette: beadResult.pattern.palette,
+        cellSize: 14,
+        showGrid: true,
+      }),
+    });
+    if (!resp.ok) return;
+    const data = await resp.json();
+    if (data?.dataUrl) {
+      downloadByDataUrl(data.dataUrl, `bead-pattern-${Date.now()}.${type}`);
+    }
   };
 
   const searchNearbyShops = async () => {
@@ -241,173 +415,345 @@ export const CameraPage = () => {
   };
 
   return (
-    <div className="page page--fullscreen" style={{ position: 'relative', overflowY: 'auto', paddingBottom: '100px' }}>
-      {/* 扫码框/取景框 */}
-      <div style={{ width: '100%', height: '60vh', background: '#000', position: 'relative', overflow: 'hidden' }}>
-        <video ref={videoRef} autoPlay playsInline muted style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-        <div style={{ position: 'absolute', inset: '40px', border: '2px solid var(--primary)', boxShadow: '0 0 0 1000px rgba(0,0,0,0.5)' }} />
-        <div className="font-mystic" style={{ position: 'absolute', bottom: '20px', left: 0, right: 0, textAlign: 'center', color: 'var(--primary)', textShadow: '2px 2px 0 #000' }}>
-          [ 正在对准：{reading.poi.name} ]
-        </div>
+    <div className="page page--fullscreen" style={{ position: 'relative', overflow: 'hidden', background: '#000' }}>
+      {/* 扫码框/取景框 - 占据全屏背景 */}
+      <div style={{ position: 'absolute', inset: 0, zIndex: 0, background: '#000' }}>
+        <video 
+          ref={videoRef} 
+          autoPlay 
+          playsInline 
+          muted 
+          style={{ 
+            width: '100%', 
+            height: '100%', 
+            objectFit: 'cover', 
+            display: captured ? 'none' : 'block' 
+          }} 
+        />
+        {captured && (
+          <img 
+            src={captured} 
+            alt="Captured" 
+            style={{ 
+              width: '100%', 
+              height: '100%', 
+              objectFit: 'cover', 
+              filter: 'blur(10px) brightness(0.5)',
+              transition: 'all 0.5s ease'
+            }} 
+          />
+        )}
+        {!captured && (
+          <div style={{ position: 'absolute', inset: '40px', border: '2px solid rgba(226, 181, 83, 0.3)', boxShadow: '0 0 0 2000px rgba(0,0,0,0.4)', pointerEvents: 'none' }}>
+            <div className="camera-corner camera-corner--tl" />
+            <div className="camera-corner camera-corner--tr" />
+            <div className="camera-corner camera-corner--bl" />
+            <div className="camera-corner camera-corner--br" />
+          </div>
+        )}
       </div>
 
       <canvas ref={canvasRef} style={{ display: 'none' }} />
 
-      {/* 操作区 */}
-      <div style={{ padding: '20px' }}>
-        {!beadResult ? (
+      {/* 顶部导航状态 */}
+      <motion.div 
+        initial={{ y: -50, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        style={{ position: 'absolute', top: 0, left: 0, right: 0, padding: '20px', zIndex: 10, background: 'linear-gradient(to bottom, rgba(0,0,0,0.8), transparent)' }}
+      >
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <button className="btn btn-ghost" onClick={() => navigate(-1)} style={{ padding: '8px', minWidth: '40px', border: 'none', background: 'rgba(255,255,255,0.1)', backdropFilter: 'blur(10px)' }}>
+            <X size={20} />
+          </button>
           <div style={{ textAlign: 'center' }}>
-            <button 
-              className="btn btn-primary" 
-              style={{ width: '100%', padding: '20px', fontSize: '1.2rem', marginBottom: '16px' }}
-              onClick={captured ? handleProcess : handleCapture}
-              disabled={isProcessing}
-            >
-              {isProcessing ? '⚡ AI 像素化处理中...' : (captured ? '✨ 生成拼豆图纸' : '📷 捕捉命运瞬间')}
-            </button>
-            {captured && (
-              <button className="btn btn-ghost" onClick={() => setCaptured(null)}>重拍</button>
-            )}
+            <div className="font-mystic" style={{ color: 'var(--primary)', fontSize: '0.9rem', textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>
+              {reading.poi.name}
+            </div>
+            <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.6)' }}>正在锚定时空坐标...</div>
           </div>
+          <div style={{ width: '40px' }} />
+        </div>
+      </motion.div>
+
+      {/* 底部操作面板 */}
+      <AnimatePresence mode="wait">
+        {!beadResult ? (
+          <motion.div 
+            key="controls"
+            initial={{ y: '100%' }}
+            animate={{ y: 0 }}
+            exit={{ y: '100%' }}
+            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+            style={{ 
+              position: 'absolute', 
+              bottom: 'var(--nav-height)', 
+              left: 0, 
+              right: 0, 
+              padding: '24px', 
+              zIndex: 20,
+              background: 'rgba(22, 20, 18, 0.85)',
+              backdropFilter: 'blur(20px)',
+              borderTop: '1px solid rgba(255, 195, 0, 0.2)',
+              borderTopLeftRadius: '24px',
+              borderTopRightRadius: '24px',
+              boxShadow: '0 -10px 40px rgba(0,0,0,0.5)'
+            }}
+          >
+            {captured ? (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                  <h3 className="font-mystic" style={{ color: 'var(--primary)', fontSize: '1.1rem' }}>图纸引擎配置</h3>
+                  <button className="btn btn-ghost" onClick={() => setCaptured(null)} style={{ padding: '4px 12px', fontSize: '0.7rem', border: 'none', background: 'rgba(255,255,255,0.05)' }}>
+                    重拍
+                  </button>
+                </div>
+
+                <div className="no-scrollbar" style={{ maxHeight: '45vh', overflowY: 'auto', paddingRight: '4px' }}>
+                  {/* 网格设置 */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
+                     <div className="pixel-panel" style={{ padding: '12px', background: 'rgba(255,255,255,0.02)' }}>
+                        <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginBottom: '8px' }}>色板预设</div>
+                        <select 
+                          value={palettePreset} 
+                          onChange={(e) => setPalettePreset(e.target.value as any)}
+                          style={{ width: '100%', background: 'transparent', border: 'none', color: 'var(--primary)', fontSize: '0.8rem', fontWeight: 'bold', outline: 'none' }}
+                        >
+                          {['96', '120', '144', '168', '221'].map(p => <option key={p} value={p}>{p} 色系</option>)}
+                        </select>
+                     </div>
+                     <div className="pixel-panel" style={{ padding: '12px', background: 'rgba(255,255,255,0.02)' }}>
+                        <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginBottom: '8px' }}>{engineMode === 'fixed_grid' ? '网格密度' : '像素精度'}</div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <input 
+                            type="number" 
+                            value={engineMode === 'fixed_grid' ? gridSize : pixelSize}
+                            onChange={(e) => engineMode === 'fixed_grid' ? setGridSize(Number(e.target.value)) : setPixelSize(Number(e.target.value))}
+                            style={{ width: '40px', background: 'transparent', border: 'none', color: 'var(--primary)', fontSize: '0.8rem', fontWeight: 'bold', outline: 'none' }}
+                          />
+                          <span style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }}>{engineMode === 'fixed_grid' ? 'GRID' : 'PX'}</span>
+                        </div>
+                     </div>
+                  </div>
+
+                  {/* 核心开关 */}
+                  <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
+                    <button 
+                      onClick={() => setUseDithering(!useDithering)}
+                      style={{ flex: 1, padding: '10px', background: useDithering ? 'var(--primary-dim)' : 'rgba(255,255,255,0.05)', border: useDithering ? '1px solid var(--primary)' : '1px solid rgba(255,255,255,0.1)', color: useDithering ? 'var(--primary)' : 'var(--text-muted)', fontSize: '0.7rem', transition: 'all 0.3s' }}
+                    >
+                      Floyd 抖动 {useDithering ? 'ON' : 'OFF'}
+                    </button>
+                    <button 
+                      onClick={() => setRemoveBg(!removeBg)}
+                      style={{ flex: 1, padding: '10px', background: removeBg ? 'var(--primary-dim)' : 'rgba(255,255,255,0.05)', border: removeBg ? '1px solid var(--primary)' : '1px solid rgba(255,255,255,0.1)', color: removeBg ? 'var(--primary)' : 'var(--text-muted)', fontSize: '0.7rem', transition: 'all 0.3s' }}
+                    >
+                      背景剥离 {removeBg ? 'ON' : 'OFF'}
+                    </button>
+                  </div>
+
+                  {/* 图像微调 */}
+                  <div className="pixel-panel" style={{ padding: '16px', background: 'rgba(0,0,0,0.2)', marginBottom: '20px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                      {[
+                        { label: '对比度', value: contrast, setter: setContrast, icon: '◑' },
+                        { label: '饱和度', value: saturation, setter: setSaturation, icon: '❂' },
+                        { label: '清晰度', value: sharpness, setter: setSharpness, icon: '▲' }
+                      ].map(adj => (
+                        <div key={adj.label}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                            <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                              <span style={{ color: 'var(--primary)' }}>{adj.icon}</span> {adj.label}
+                            </span>
+                            <span style={{ fontSize: '0.7rem', color: 'var(--primary)', fontWeight: 'bold' }}>{adj.value > 0 ? `+${adj.value}` : adj.value}</span>
+                          </div>
+                          <input 
+                            type="range" min="-50" max="50" value={adj.value} 
+                            onChange={(e) => adj.setter(Number(e.target.value))} 
+                            style={{ 
+                              width: '100%', 
+                              height: '4px', 
+                              appearance: 'none', 
+                              background: 'rgba(255,255,255,0.1)', 
+                              outline: 'none',
+                              borderRadius: '2px'
+                            }} 
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <button 
+                  className="btn btn-primary" 
+                  style={{ width: '100%', padding: '20px', fontSize: '1.1rem', background: 'var(--primary)', border: 'none', boxShadow: '0 10px 30px rgba(226, 181, 83, 0.3)' }}
+                  onClick={handleProcess}
+                  disabled={isProcessing}
+                >
+                  {isProcessing ? (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <Loader2 size={20} className="anim-spin" />
+                      <span>{processingTip || '量子纠缠渲染中...'}</span>
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <Sparkles size={20} />
+                      <span>觉醒像素契约</span>
+                    </div>
+                  )}
+                </button>
+              </motion.div>
+            ) : (
+              <div style={{ textAlign: 'center', padding: '20px 0' }}>
+                <div style={{ marginBottom: '24px' }}>
+                   <motion.div 
+                     animate={{ scale: [1, 1.1, 1] }}
+                     transition={{ duration: 2, repeat: Infinity }}
+                     style={{ width: '72px', height: '72px', borderRadius: '50%', background: 'var(--primary)', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 30px var(--primary-glow)', cursor: 'pointer' }}
+                     onClick={handleCapture}
+                   >
+                     <Save size={32} color="#000" />
+                   </motion.div>
+                   <p style={{ marginTop: '16px', color: 'var(--primary)', fontSize: '0.8rem', fontWeight: 'bold' }}>[ 捕捉今日命定瞬间 ]</p>
+                </div>
+                
+                <div 
+                  style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <span>或从星盘相册选择</span>
+                  <ChevronRight size={14} />
+                </div>
+                <input type="file" ref={fileInputRef} style={{ display: 'none' }} accept="image/*" onChange={handleFileUpload} />
+              </div>
+            )}
+          </motion.div>
         ) : (
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-            {/* 结果显示 */}
-            <div className="pixel-panel" style={{ padding: '16px', background: '#fff', marginBottom: '24px', textAlign: 'center' }}>
-              <div style={{ fontSize: '0.7rem', color: '#666', marginBottom: '12px' }}>AI 已完成实景重绘</div>
-              <img 
-                src={beadResult.pixelUrl} 
-                alt="pixel" 
-                style={{ width: '200px', height: '200px', imageRendering: 'pixelated', border: '4px solid #000' }} 
-              />
-              <div style={{ marginTop: '16px', display: 'flex', gap: '10px' }}>
-                <button className="btn btn-ghost" style={{ flex: 1, fontSize: '0.8rem' }} onClick={() => setShowPatternView(true)}>
-                  <Info size={14} /> 查看图纸
-                </button>
-                <button className="btn btn-primary" style={{ flex: 1, fontSize: '0.8rem' }} onClick={handleSave}>
-                  <Save size={14} /> 存入图鉴
-                </button>
+          <motion.div 
+            key="results"
+            initial={{ y: '100%' }}
+            animate={{ y: 0 }}
+            style={{ 
+              position: 'absolute', 
+              inset: 0, 
+              bottom: 'var(--nav-height)',
+              zIndex: 30,
+              background: 'var(--bg-dark)',
+              padding: '24px',
+              display: 'flex',
+              flexDirection: 'column',
+              overflowY: 'auto'
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+              <h2 className="font-mystic text-gradient-mystic" style={{ fontSize: '1.4rem' }}>像素图灵重绘完成</h2>
+              <button className="btn btn-ghost" onClick={() => setBeadResult(null)} style={{ border: 'none', background: 'rgba(255,255,255,0.05)' }}>
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="pixel-panel" style={{ padding: '24px', background: '#fff', marginBottom: '24px', textAlign: 'center' }}>
+              <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ delay: 0.3 }}>
+                <img 
+                  src={beadResult.pixelUrl} 
+                  alt="pixel" 
+                  style={{ width: '100%', maxWidth: '280px', aspectRatio: '1', imageRendering: 'pixelated', border: '6px solid #000', boxShadow: '0 20px 50px rgba(0,0,0,0.5)' }} 
+                />
+              </motion.div>
+              <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'center', gap: '20px' }}>
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: '0.6rem', color: '#999' }}>色数</div>
+                  <div style={{ fontSize: '1rem', fontWeight: 'bold', color: '#333' }}>{beadResult.colorCount}</div>
+                </div>
+                <div style={{ width: '1px', height: '24px', background: '#eee' }} />
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: '0.6rem', color: '#999' }}>总颗数</div>
+                  <div style={{ fontSize: '1rem', fontWeight: 'bold', color: '#333' }}>{beadResult.totalBeads}</div>
+                </div>
               </div>
             </div>
 
-            {/* 商业化模块 PRD 4.4 */}
-            <div className="pixel-panel" style={{ padding: '20px', background: 'var(--bg-surface)' }}>
-              <h4 className="font-mystic" style={{ color: 'var(--primary)', marginBottom: '16px', fontSize: '1rem' }}>🛒 实体化你的命运印章</h4>
-              
+            <div style={{ display: 'flex', gap: '12px', marginBottom: '32px' }}>
+              <button className="btn btn-ghost" style={{ flex: 1, padding: '16px' }} onClick={() => setShowPatternView(true)}>
+                <Info size={18} /> 查看图纸
+              </button>
+              <button className="btn btn-primary" style={{ flex: 1, padding: '16px' }} onClick={handleSave}>
+                <Save size={18} /> 存入图鉴
+              </button>
+            </div>
+
+            {/* 商业化模块 */}
+            <div className="pixel-panel" style={{ padding: '20px', background: 'rgba(226, 181, 83, 0.05)', borderStyle: 'dashed' }}>
+              <h4 className="font-mystic" style={{ color: 'var(--primary)', marginBottom: '16px', fontSize: '0.9rem' }}>🛒 实体化你的命定印章</h4>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <button 
-                  className="btn btn-primary" 
-                  onClick={() => setShowMeituanModal(true)}
-                  style={{ justifyContent: 'flex-start', padding: '16px', background: 'linear-gradient(45deg, #FFD000, #FFA500)', color: '#000' }}
-                >
-                  <ShoppingCart size={18} />
+                <button className="btn btn-primary" onClick={() => setShowMeituanModal(true)} style={{ justifyContent: 'flex-start', padding: '16px', background: 'linear-gradient(45deg, #FFD000, #FFA500)', border: 'none', color: '#000' }}>
+                  <ShoppingCart size={20} />
                   <div style={{ marginLeft: '12px', textAlign: 'left' }}>
-                    <div style={{ fontSize: '0.9rem', fontWeight: 900 }}>美团闪购：拼豆材料包</div>
-                    <div style={{ fontSize: '0.6rem', opacity: 0.8 }}>匹配周边商家，30分钟送达</div>
+                    <div style={{ fontSize: '0.85rem', fontWeight: 900 }}>美团闪购：30min 送达材料包</div>
+                    <div style={{ fontSize: '0.6rem', opacity: 0.8 }}>匹配周边商家</div>
                   </div>
                 </button>
-
-                <button 
-                  className="btn btn-ghost" 
-                  disabled={searching}
-                  onClick={searchNearbyShops}
-                  style={{ justifyContent: 'flex-start', padding: '16px', border: '1px solid var(--pixel-border-color)', position: 'relative', overflow: 'hidden' }}
-                >
-                  {searching ? (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <Loader2 size={16} className="anim-spin" />
-                      <span style={{ fontSize: '0.8rem' }}>{SEARCH_STATUSES[statusIndex]}</span>
-                    </div>
-                  ) : (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <MapPin size={18} color="var(--primary)" />
-                      <div style={{ textAlign: 'left' }}>
-                        <div style={{ fontSize: '0.9rem' }}>前往周边拼豆店</div>
-                        <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }}>已为你预订最近的“手作工坊”</div>
-                      </div>
-                    </div>
-                  )}
-                  {searching && (
-                    <motion.div 
-                      style={{ position: 'absolute', bottom: 0, left: 0, height: '2px', background: 'var(--primary)' }}
-                      animate={{ width: ['0%', '100%'] }}
-                      transition={{ duration: 4, ease: 'linear' }}
-                    />
-                  )}
-                </button>
-
-                <AnimatePresence>
-                  {nearbyShops.length > 0 && (
-                    <motion.div 
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
-                      style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '4px' }}
-                    >
-                      {nearbyShops.map(shop => (
-                        <div 
-                          key={shop.id} 
-                          onClick={() => setSelectedShop(shop)}
-                          style={{ 
-                            display: 'flex', 
-                            justifyContent: 'space-between', 
-                            alignItems: 'center', 
-                            padding: '12px', 
-                            background: 'rgba(255,195,0,0.05)',
-                            border: '1px solid var(--primary-dim)',
-                            cursor: 'pointer'
-                          }}
-                        >
-                          <div>
-                            <div style={{ color: '#fff', fontWeight: 'bold', fontSize: '0.75rem' }}>{shop.name}</div>
-                            <div style={{ color: 'var(--text-muted)', fontSize: '0.6rem' }}>{(shop.distance/1000).toFixed(1)}km · ★{shop.rating}</div>
-                          </div>
-                          <ChevronRight size={16} color="var(--primary)" />
-                        </div>
-                      ))}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-
-                <button 
-                  className="btn btn-ghost" 
-                  onClick={() => setShowProxyModal(true)}
-                  style={{ justifyContent: 'flex-start', padding: '16px', border: '1px solid var(--pixel-border-color)' }}
-                >
-                  <Scissors size={18} color="var(--primary)" />
+                <button className="btn btn-ghost" onClick={() => setShowProxyModal(true)} style={{ justifyContent: 'flex-start', padding: '16px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                  <Scissors size={20} color="var(--primary)" />
                   <div style={{ marginLeft: '12px', textAlign: 'left' }}>
-                    <div style={{ fontSize: '0.9rem' }}>手作工坊代制作</div>
-                    <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }}>凭图纸线下核销，快递发货</div>
+                    <div style={{ fontSize: '0.85rem' }}>代制作：由职人为你手工制作</div>
+                    <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }}>快递到家</div>
                   </div>
                 </button>
               </div>
             </div>
           </motion.div>
         )}
-      </div>
+      </AnimatePresence>
 
-      {/* 图纸弹窗 */}
+      {/* 图纸弹窗 - 全屏沉浸式 */}
       <AnimatePresence>
         {showPatternView && beadResult && (
           <motion.div 
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.95)', zIndex: 2000, padding: '20px', overflowY: 'auto' }}
+            initial={{ opacity: 0, scale: 1.1 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 1.1 }}
+            style={{ position: 'fixed', inset: 0, background: 'var(--bg-dark)', zIndex: 2000, padding: '24px', overflowY: 'auto' }}
           >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-              <h3 className="font-mystic" style={{ color: 'var(--primary)' }}>拼豆操作图纸 (32x32)</h3>
-              <button className="btn btn-ghost" onClick={() => setShowPatternView(false)}>关闭</button>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+              <div>
+                <h3 className="font-mystic" style={{ color: 'var(--primary)', fontSize: '1.2rem' }}>拼豆操作图纸</h3>
+                <p style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>规格：{beadResult.pattern.grid[0].length} x {beadResult.pattern.grid.length}</p>
+              </div>
+              <button className="btn btn-ghost" onClick={() => setShowPatternView(false)} style={{ border: 'none', background: 'rgba(255,255,255,0.05)' }}>
+                <X size={20} />
+              </button>
             </div>
-            <div style={{ background: '#fff', padding: '4px', display: 'inline-block', margin: '0 auto' }}>
-              <div style={{ 
+
+            <div style={{ background: '#fff', padding: '8px', display: 'flex', justifyContent: 'center', marginBottom: '24px', boxShadow: '0 0 50px rgba(0,0,0,0.5)' }}>
+               <div style={{ 
                 display: 'grid', 
                 gridTemplateColumns: `repeat(${beadResult.pattern.grid[0].length}, 1fr)`,
                 width: '100%',
                 maxWidth: '600px'
               }}>
                 {beadResult.pattern.grid.flat().map((cIdx, i) => (
-                  <div key={i} style={{ 
-                    aspectRatio: '1', 
-                    background: beadResult.pattern.palette[cIdx],
-                    border: '0.1px solid rgba(0,0,0,0.05)',
-                  }} />
+                  <div key={i} style={{ aspectRatio: '1', background: beadResult.pattern.palette[cIdx], border: '0.1px solid rgba(0,0,0,0.1)' }} />
+                ))}
+              </div>
+            </div>
+
+            {/* 导出按钮 */}
+            <div style={{ display: 'flex', gap: '10px', marginBottom: '32px' }}>
+              <button className="btn btn-ghost" style={{ flex: 1, fontSize: '0.8rem' }} onClick={() => handleExport('png')}>导出图片</button>
+              <button className="btn btn-ghost" style={{ flex: 1, fontSize: '0.8rem' }} onClick={() => handleExport('pdf')}>导出 PDF</button>
+            </div>
+
+            {/* 颜色详情 */}
+            <div className="pixel-panel" style={{ padding: '20px', background: 'rgba(255,255,255,0.02)' }}>
+              <div style={{ fontSize: '0.8rem', color: 'var(--primary)', marginBottom: '16px', fontWeight: 'bold' }}>使用的豆子详情</div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                {beadResult.colorSummary?.slice(0, 12).map((c) => (
+                  <div key={c.index} style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'rgba(0,0,0,0.3)', padding: '10px' }}>
+                    <div style={{ width: '16px', height: '16px', background: c.hex, border: '1px solid rgba(255,255,255,0.2)' }} />
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: '0.7rem', color: '#fff' }}>#{c.index}</div>
+                      <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }}>{c.count} 颗</div>
+                    </div>
+                  </div>
                 ))}
               </div>
             </div>

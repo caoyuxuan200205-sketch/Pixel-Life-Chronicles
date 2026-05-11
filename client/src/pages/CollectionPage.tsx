@@ -107,7 +107,7 @@ export const CollectionPage = () => {
   };
 
   return (
-    <div className="page" style={{ padding: '20px', position: 'relative' }}>
+    <div className="page" style={{ padding: '20px 20px var(--nav-height) 20px', position: 'relative' }}>
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}

@@ -209,7 +209,7 @@ export const HomePage = () => {
   const isDone = phase === 'done';
 
   return (
-    <div className="page" style={{ alignItems: 'center', paddingTop: '40px', position: 'relative', overflow: 'hidden' }}>
+    <div className="page" style={{ alignItems: 'center', padding: '40px 0 var(--nav-height) 0', position: 'relative', overflow: 'hidden' }}>
       {/* 游戏风格背景装饰 */}
       <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(circle at 50% 30%, rgba(255, 208, 0, 0.05) 0%, transparent 70%)', zIndex: 0 }} />
       <div className="crt-overlay" style={{ pointerEvents: 'none', zIndex: 100 }} />
