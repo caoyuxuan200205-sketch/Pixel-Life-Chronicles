@@ -181,28 +181,49 @@ export const ProfilePage = () => {
             )}
           </div>
         </div>
-        <div className="pixel-panel" style={{ padding: stamps.length === 0 ? '40px 20px' : '16px' }}>
+        <div className="pixel-panel" style={{ padding: stamps.length === 0 ? '40px 20px' : '12px', overflow: 'hidden' }}>
           {stamps.length === 0 ? (
             <div style={{ textAlign: 'center' }}>
               <div style={{ fontSize: '48px', marginBottom: '12px' }}>📷</div>
               <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>还没有收集到印章，快去占卜寻宝吧</p>
             </div>
           ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+            <div 
+              className="no-scrollbar"
+              style={{ 
+                display: 'flex', 
+                gap: '12px', 
+                overflowX: 'auto', 
+                scrollSnapType: 'x mandatory',
+                paddingBottom: '4px' // 为投影留出一点空间
+              }}
+            >
               {stamps.map((stamp: StampRecord) => (
                 <motion.div 
                   key={stamp.id} 
-                  whileTap={{ scale: 0.95 }} 
+                  whileTap={{ scale: 0.96 }} 
                   onClick={() => setSelectedStamp(stamp)}
-                  style={{ background: 'var(--bg-surface)', padding: '10px', border: '1px solid var(--pixel-border-color)', position: 'relative', cursor: 'pointer' }}
+                  style={{ 
+                    flex: '0 0 160px', // 固定宽度，确保左右滑动感
+                    scrollSnapAlign: 'start',
+                    background: 'rgba(255,255,255,0.03)', 
+                    padding: '8px', 
+                    border: '1px solid var(--pixel-border-color)', 
+                    position: 'relative', 
+                    cursor: 'pointer' 
+                  }}
                 >
-                  <img src={stamp.pixelImageData} alt={stamp.poiName} style={{ width: '100%', height: 'auto', imageRendering: 'pixelated' }} />
-                  <div style={{ marginTop: '8px' }}>
-                    <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{stamp.poiName}</div>
-                    <div style={{ fontSize: '0.6rem', color: 'var(--primary)' }}>{stamp.cardName}</div>
+                  <div style={{ background: '#000', padding: '4px', marginBottom: '8px' }}>
+                    <img src={stamp.pixelImageData} alt={stamp.poiName} style={{ width: '100%', aspectRatio: '1', objectFit: 'cover', imageRendering: 'pixelated' }} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '0.7rem', fontWeight: 600, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{stamp.poiName}</div>
+                    <div style={{ fontSize: '0.6rem', color: 'var(--primary)', marginTop: '2px' }}>{stamp.cardName}</div>
                   </div>
                 </motion.div>
               ))}
+              {/* 占位符，确保最后一张也能对齐 */}
+              <div style={{ flex: '0 0 1px' }} />
             </div>
           )}
         </div>

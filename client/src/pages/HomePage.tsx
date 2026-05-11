@@ -330,29 +330,46 @@ export const HomePage = () => {
             <div className="pixel-panel" style={{ padding: '24px', background: 'var(--bg-surface)' }}>
               <h3 className="font-mystic" style={{ color: 'var(--primary)', marginBottom: '24px', textAlign: 'center' }}>☯️ 填写生辰信息 ☯️</h3>
               <form onSubmit={handleBaziSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                <div>
-                  <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}><UserIcon size={14} /> 姓名/代号</label>
-                  <input type="text" required placeholder="输入你的名号" value={baziInfo.name} onChange={e => setBaziInfo({ ...baziInfo, name: e.target.value })} style={{ width: '100%', background: 'rgba(0,0,0,0.3)', border: '1px solid var(--pixel-border-color)', padding: '10px', color: '#fff', fontSize: '0.9rem' }} />
-                </div>
-                <div style={{ display: 'flex', gap: '12px' }}>
-                  <div style={{ flex: 1 }}>
-                    <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: '8px' }}>性别</label>
-                    <select value={baziInfo.gender} onChange={e => setBaziInfo({ ...baziInfo, gender: e.target.value as any })} style={{ width: '100%', background: 'rgba(0,0,0,0.3)', border: '1px solid var(--pixel-border-color)', padding: '10px', color: '#fff' }}>
-                      <option value="male">乾 (男)</option>
-                      <option value="female">坤 (女)</option>
-                    </select>
-                  </div>
-                </div>
-                <div>
-                  <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}><Calendar size={14} /> 出生日期 (公历)</label>
-                  <input type="date" required value={baziInfo.birthDate} onChange={e => setBaziInfo({ ...baziInfo, birthDate: e.target.value })} style={{ width: '100%', background: 'rgba(0,0,0,0.3)', border: '1px solid var(--pixel-border-color)', padding: '10px', color: '#fff' }} />
-                </div>
-                <div>
-                  <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}><Clock4 size={14} /> 出生时辰</label>
-                  <input type="time" required value={baziInfo.birthTime} onChange={e => setBaziInfo({ ...baziInfo, birthTime: e.target.value })} style={{ width: '100%', background: 'rgba(0,0,0,0.3)', border: '1px solid var(--pixel-border-color)', padding: '10px', color: '#fff' }} />
-                </div>
-                <button type="submit" className="btn btn-primary" style={{ marginTop: '12px', padding: '12px' }}>定格时空</button>
-                <button type="button" onClick={() => setPhase('method')} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', fontSize: '0.7rem' }}>返回选择其他形式</button>
+                {(() => {
+                  const commonInputStyle: React.CSSProperties = {
+                    width: '100%',
+                    background: 'rgba(0,0,0,0.3)',
+                    border: '1px solid var(--pixel-border-color)',
+                    padding: '12px',
+                    color: '#fff',
+                    fontSize: '0.9rem',
+                    borderRadius: 0,
+                    outline: 'none',
+                    fontFamily: 'inherit',
+                    appearance: 'none',
+                    WebkitAppearance: 'none'
+                  };
+                  return (
+                    <>
+                      <div>
+                        <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}><UserIcon size={14} /> 姓名/代号</label>
+                        <input type="text" required placeholder="输入你的名号" value={baziInfo.name} onChange={e => setBaziInfo({ ...baziInfo, name: e.target.value })} style={commonInputStyle} />
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: '8px' }}>性别</label>
+                        <select value={baziInfo.gender} onChange={e => setBaziInfo({ ...baziInfo, gender: e.target.value as any })} style={commonInputStyle}>
+                          <option value="male">乾 (男)</option>
+                          <option value="female">坤 (女)</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}><Calendar size={14} /> 出生日期 (公历)</label>
+                        <input type="date" required value={baziInfo.birthDate} onChange={e => setBaziInfo({ ...baziInfo, birthDate: e.target.value })} style={commonInputStyle} />
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}><Clock4 size={14} /> 出生时辰</label>
+                        <input type="time" required value={baziInfo.birthTime} onChange={e => setBaziInfo({ ...baziInfo, birthTime: e.target.value })} style={commonInputStyle} />
+                      </div>
+                      <button type="submit" className="btn btn-primary" style={{ marginTop: '12px', padding: '12px' }}>定格时空</button>
+                      <button type="button" onClick={() => setPhase('method')} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', fontSize: '0.7rem', marginTop: '4px', cursor: 'pointer' }}>返回选择其他形式</button>
+                    </>
+                  );
+                })()}
               </form>
             </div>
           </motion.div>
