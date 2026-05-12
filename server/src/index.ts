@@ -570,8 +570,8 @@ const buildSystemPrompt = (method: string) => {
 app.post('/api/ai/reading', async (req, res) => {
   try {
     const { mood, pois, method, baziInfo, timeContext, stream = false, card } = req.body;
-    const apiKey = process.env.DOUBAO_API_KEY;
-    const modelId = process.env.DOUBAO_MODEL_ID;
+    const apiKey = process.env.DOUBAO_API_KEY || process.env.VITE_DOUBAO_API_KEY;
+    const modelId = process.env.DOUBAO_MODEL_ID || process.env.VITE_DOUBAO_MODEL_ID;
 
     if (!apiKey || !modelId) {
       return res.status(500).json({ error: 'Backend AI not configured' });
