@@ -133,10 +133,12 @@ function buildSystemPrompt(method: string = 'tarot'): string {
   }
 
   basePrompt += `
+【注意】：
+- 如果输入的塔罗牌名是英文，请在 JSON 的 cardName 中返回其对应的中文译名。
 
 你必须严格按照以下 JSON 格式返回，不要输出任何其他内容：
 {
-  "cardName": "${isBazi ? '八字格局名称' : '塔罗牌名称'}",
+  "cardName": "${isBazi ? '八字格局名称' : '塔罗牌中文名称'}",
   "emoji": "对应emoji",
   "meaning": "4-8字的寓意短语",
   "poiId": "商户的id字段",
@@ -149,7 +151,7 @@ function buildSystemPrompt(method: string = 'tarot'): string {
 // ==========================================
 // 构建 User Prompt
 // ==========================================
-function buildUserPrompt(mood: MoodTag | null, pois: POIData[], method: string, baziInfo?: BaziInfo): string {
+function buildUserPrompt(mood: MoodTag | null, pois: POIData[], method: string, baziInfo?: BaziInfo, card?: TarotCard): string {
   const timeContext = getTimeContext();
   const moodDesc = mood ? `${mood.emoji} ${mood.label} — ${mood.description}` : '用户未选择明确情绪，听凭天命。';
 
@@ -157,6 +159,10 @@ function buildUserPrompt(mood: MoodTag | null, pois: POIData[], method: string, 
 【用户倾向】${moodDesc}
 【占卜方式】${method === 'bazi' ? '东方八字' : '西方塔罗'}
 `;
+
+  if (card && method !== 'bazi') {
+    userContent += `【抽中塔罗牌】${card.name} (${card.emoji}) - 含义: ${card.meaning}\n`;
+  }
 
   if (method === 'bazi' && baziInfo) {
     userContent += `【用户出生信息】姓名：${baziInfo.name}，性别：${baziInfo.gender === 'male' ? '男' : '女'}，出生：${baziInfo.birthDate} ${baziInfo.birthTime}\n`;
@@ -183,52 +189,86 @@ ${poisJson}
 }
 
 // ==========================================
-// 调用豆包 API
+// 调用豆包 API (支持流式)
 // ==========================================
-async function callDoubaoAPI(mood: MoodTag | null, pois: POIData[], method: string, baziInfo?: BaziInfo): Promise<AIReadingResult> {
-  // 优先调用后端代理
+async function callDoubaoAPI(
+  mood: MoodTag | null, 
+  pois: POIData[], 
+  method: string, 
+  baziInfo?: BaziInfo,
+  onStream?: (partialText: string) => void,
+  card?: TarotCard
+): Promise<AIReadingResult> {
+  const payload = {
+    mood,
+    pois,
+    method,
+    baziInfo,
+    card,
+    timeContext: getTimeContext(),
+    stream: !!onStream
+  };
+
   try {
     const response = await fetch(`${BACKEND_URL}/api/ai/reading`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        mood,
-        pois,
-        method,
-        baziInfo,
-        timeContext: getTimeContext()
-      })
+      body: JSON.stringify(payload)
     });
 
-    if (response.ok) {
+    if (!response.ok) throw new Error('API request failed');
+
+    if (onStream && response.body) {
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let fullContent = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value);
+        const lines = chunk.split('\n');
+        
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const data = line.slice(6);
+            if (data === '[DONE]') break;
+            try {
+              const parsed = JSON.parse(data);
+              const delta = parsed.choices?.[0]?.delta?.content || '';
+              fullContent += delta;
+              
+              // 实时解析核心字段
+              const readingMatch = fullContent.match(/"reading":\s*"([^"]*)/);
+              const cardMatch = fullContent.match(/"cardName":\s*"([^"]*)"/);
+              const emojiMatch = fullContent.match(/"emoji":\s*"([^"]*)"/);
+              const poiMatch = fullContent.match(/"poiId":\s*"([^"]*)"/);
+
+              // 构造一个临时的 JSON 状态传回给 UI
+              if (readingMatch || cardMatch) {
+                // 我们通过 onStream 传回一个带状态的对象字符串或直接传回内容
+                // 这里为了简单，我们只传回 reading 内容，但可以增加其他字段的探测
+                onStream(readingMatch ? readingMatch[1] : '');
+              }
+            } catch (e) { }
+          }
+        }
+      }
+
+      // 最后尝试完整解析 JSON
+      const jsonMatch = fullContent.match(/({[\s\S]*})/);
+      if (jsonMatch) {
+        return JSON.parse(jsonMatch[1]);
+      }
+      throw new Error('Failed to parse final JSON from stream');
+    } else {
       return await response.json();
     }
   } catch (e) {
-    console.warn('后端代理失效，尝试前端直连...', e);
+    console.warn('AI 接口调用失败:', e);
+    throw e;
   }
-
-  // 这里的逻辑作为兜底（如果用户配置了前端环境变量）
-  if (!DOUBAO_CONFIG.apiKey) throw new Error('No AI configuration available');
-
-  const response = await fetch(DOUBAO_CONFIG.endpoint, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${DOUBAO_CONFIG.apiKey}`,
-    },
-    body: JSON.stringify({
-      model: DOUBAO_CONFIG.modelId,
-      messages: [
-        { role: 'system', content: buildSystemPrompt(method) },
-        { role: 'user', content: buildUserPrompt(mood, pois, method, baziInfo) },
-      ],
-      temperature: 0.8,
-    })
-  });
-
-  if (!response.ok) throw new Error('Frontend direct AI call failed');
-  const data = await response.json();
-  return JSON.parse(data.choices?.[0]?.message?.content || '{}');
 }
 
 // ==========================================
@@ -268,14 +308,16 @@ function generateLocalFallback(mood: MoodTag | null, pois: POIData[]): AIReading
 }
 
 // ==========================================
-// 主入口：AI 抽卡 (更新支持方法与八字)
+// 主入口：AI 抽卡 (支持流式)
 // ==========================================
 export async function performAIReading(
   mood: MoodTag | null,
   pois: POIData[],
   onStatusChange?: (status: string) => void,
   method: string = 'tarot',
-  baziInfo?: BaziInfo
+  baziInfo?: BaziInfo,
+  onStream?: (text: string) => void,
+  forcedCard?: TarotCard
 ): Promise<{
   aiResult: AIReadingResult;
   card: TarotCard;
@@ -285,14 +327,16 @@ export async function performAIReading(
   let aiResult: AIReadingResult;
   let isAI = false;
   const validPois = (pois && pois.length > 0) ? pois : POI_DATABASE;
+  
+  // 如果提供了预选卡片，则使用它；否则在内部随机一张
+  const cardToUse = forcedCard || (method === 'bazi' ? TAROT_CARDS[0] : TAROT_CARDS[Math.floor(Math.random() * TAROT_CARDS.length)]);
 
   if (isAIConfigured()) {
     try {
       onStatusChange?.('正在感应命运轨迹…');
-      await delay(1200);
       onStatusChange?.(method === 'bazi' ? '正在排布乾坤八字…' : '星空之门正在开启…');
       
-      aiResult = await callDoubaoAPI(mood, validPois, method, baziInfo);
+      aiResult = await callDoubaoAPI(mood, validPois, method, baziInfo, onStream, cardToUse);
       isAI = true;
       onStatusChange?.('命运已揭晓');
     } catch (err) {
@@ -307,9 +351,10 @@ export async function performAIReading(
     aiResult = generateLocalFallback(mood, validPois);
   }
 
-  const card = TAROT_CARDS.find((c) => c.name === aiResult.cardName)
-    || TAROT_CARDS.find((c) => c.emoji === aiResult.emoji)
-    || TAROT_CARDS[0];
+  // 最终确定的卡片（优先尊重 AI 返回的结果，如果没有则使用我们抽中的那张）
+  const card = aiResult.cardName ? (
+    TAROT_CARDS.find((c) => c.name === aiResult.cardName) || cardToUse
+  ) : cardToUse;
 
   const poi = validPois.find((p) => p.id === aiResult.poiId)
     || validPois[Math.floor(Math.random() * validPois.length)];
@@ -322,6 +367,8 @@ export async function performAIReading(
   };
 }
 
+
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
+

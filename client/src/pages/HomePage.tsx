@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Clock, MapPin, ChevronRight, Wand2, Compass, User as UserIcon, Calendar, Clock4 } from 'lucide-react';
+import { Clock, MapPin, ChevronRight, Wand2, Compass, User as UserIcon, Calendar, Clock4, Sparkles } from 'lucide-react';
 import AMapLoader from '@amap/amap-jsapi-loader';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -82,7 +82,8 @@ export const HomePage = () => {
   const navigate = useNavigate();
 
   // Phases: intro -> method -> bazi_input -> mood -> idle -> selecting -> revealing -> done
-  const [phase, setPhase] = useState<'intro' | 'method' | 'bazi_input' | 'mood' | 'idle' | 'selecting' | 'revealing' | 'done'>('intro');
+  // Phases: intro -> method -> bazi_input -> mood -> idle -> selecting -> flipping -> revealed -> analyzing -> done
+  const [phase, setPhase] = useState<'intro' | 'method' | 'bazi_input' | 'mood' | 'idle' | 'selecting' | 'flipping' | 'revealed' | 'analyzing' | 'done'>('intro');
   const [divinationMethod, setDivinationMethod] = useState<string | null>(null);
   const [baziInfo, setBaziInfo] = useState<BaziInfo>({ name: '', gender: 'female', birthDate: '2000-01-01', birthTime: '12:00' });
   const [selectedMood, setSelectedMood] = useState<MoodTag | null>(null);
@@ -91,6 +92,21 @@ export const HomePage = () => {
   const [canDrawCard, setCanDrawCard] = useState(true);
   const [textRevealed, setTextRevealed] = useState(false);
   const [loadingMsg, setLoadingMsg] = useState<string>('');
+  const [elapsedTime, setElapsedTime] = useState(0);
+
+  useEffect(() => {
+    let timer: any;
+    if (phase === 'analyzing' || phase === 'selecting') {
+      const start = Date.now();
+      timer = setInterval(() => {
+        setElapsedTime(Math.floor((Date.now() - start) / 1000));
+      }, 1000);
+    } else if (phase === 'idle' || phase === 'revealed') {
+      setElapsedTime(0);
+      clearInterval(timer);
+    }
+    return () => clearInterval(timer);
+  }, [phase]);
 
   useEffect(() => {
     const existing = getCurrentReading();
@@ -137,63 +153,94 @@ export const HomePage = () => {
     setSelectedIndex(index);
     setPhase('selecting');
 
-    setTimeout(async () => {
-      setPhase('revealing');
+    // 1. 立即确定抽中的牌
+    const drawnCard = divinationMethod === 'bazi' ? { id: -1, name: '八字格局', emoji: '☯️', meaning: '' } : TAROT_CARDS[Math.floor(Math.random() * TAROT_CARDS.length)];
+    
+    // 立即更新结果状态以展示牌面
+    setResult({
+      card: drawnCard,
+      poi: POI_DATABASE[0],
+      reading: '',
+      drawnAt: new Date().toISOString()
+    });
+
+    // 翻牌动画
+    setTimeout(() => {
+      setPhase('revealed');
+    }, 1000);
+  }, [phase, divinationMethod, navigate]);
+
+  const handleStartAI = useCallback(async () => {
+    if (phase !== 'revealed' || !result) return;
+    
+    setPhase('analyzing');
+    try {
+      setLoadingMsg('定位当前坐标...');
+      (window as any)._AMapSecurityConfig = { 
+        securityJsCode: import.meta.env.VITE_AMAP_SECURITY_JS_CODE 
+      };
+      const AMap = await AMapLoader.load({ 
+        key: import.meta.env.VITE_AMAP_KEY, 
+        version: '2.0', 
+        plugins: ['AMap.Geolocation', 'AMap.PlaceSearch'] 
+      });
+
+      const geolocation = new AMap.Geolocation({ enableHighAccuracy: true, timeout: 5000 });
+      let center: [number, number] = [116.397, 39.900];
       try {
-        setLoadingMsg('定位当前坐标...');
-        (window as any)._AMapSecurityConfig = { 
-          securityJsCode: import.meta.env.VITE_AMAP_SECURITY_JS_CODE 
-        };
-        const AMap = await AMapLoader.load({ 
-          key: import.meta.env.VITE_AMAP_KEY, 
-          version: '2.0', 
-          plugins: ['AMap.Geolocation', 'AMap.PlaceSearch'] 
+        const pos = await new Promise<any>((resolve, reject) => {
+          geolocation.getCurrentPosition((status: string, res: any) => {
+            if (status === 'complete') resolve(res); else reject(res);
+          });
         });
+        center = [pos.position.lng, pos.position.lat];
+      } catch (e) { console.warn(e); }
 
-        const geolocation = new AMap.Geolocation({ enableHighAccuracy: true, timeout: 5000 });
-        let center: [number, number] = [116.397, 39.900];
-        try {
-          const pos = await new Promise<any>((resolve, reject) => {
-            geolocation.getCurrentPosition((status: string, result: any) => {
-              if (status === 'complete') resolve(result); else reject(result);
-            });
+      setLoadingMsg('寻找命定锚点...');
+      const placeSearch = new AMap.PlaceSearch({ type: '咖啡馆|公园|美术馆|书店|唱片店|手作|风景名胜', pageSize: 20 });
+      let realPois: POIData[] = [];
+      try {
+        const searchRes = await new Promise<any>((resolve, reject) => {
+          placeSearch.searchNearBy('', center, 5000, (status: string, res: any) => {
+            if (status === 'complete') resolve(res); else reject(res);
           });
-          center = [pos.position.lng, pos.position.lat];
-        } catch (e) { console.warn(e); }
+        });
+        if (searchRes.poiList?.pois) {
+          realPois = searchRes.poiList.pois.map((p: any) => ({ id: p.id, name: p.name, type: p.type || '未知场所', rating: 4.5 + Math.random() * 0.5, tags: [p.type], distance: p.distance || 1000, direction: '附近', location: [p.location.lng, p.location.lat], address: p.address }));
+        }
+      } catch (e) { console.warn(e); }
 
-        setLoadingMsg('寻找命定锚点...');
-        const placeSearch = new AMap.PlaceSearch({ type: '咖啡馆|公园|美术馆|书店|唱片店|手作|风景名胜', pageSize: 20 });
-        let realPois: POIData[] = [];
-        try {
-          const searchRes = await new Promise<any>((resolve, reject) => {
-            placeSearch.searchNearBy('', center, 5000, (status: string, result: any) => {
-              if (status === 'complete') resolve(result); else reject(result);
-            });
-          });
-          if (searchRes.poiList?.pois) {
-            realPois = searchRes.poiList.pois.map((p: any) => ({ id: p.id, name: p.name, type: p.type || '未知场所', rating: 4.5 + Math.random() * 0.5, tags: [p.type], distance: p.distance || 1000, direction: '附近', location: [p.location.lng, p.location.lat], address: p.address }));
-          }
-        } catch (e) { console.warn(e); }
+      const { aiResult, card, poi } = await performAIReading(
+        selectedMood, 
+        realPois, 
+        setLoadingMsg, 
+        divinationMethod || 'tarot', 
+        baziInfo,
+        (partialText) => {
+          setResult(prev => prev ? { ...prev, reading: partialText } : null);
+          setTextRevealed(true);
+        },
+        result.card
+      );
+      
+      const newReading: ReadingResult = { card, poi, reading: aiResult.reading, drawnAt: new Date().toISOString() };
+      saveReading(newReading);
+      setResult(newReading);
+      setPhase('done');
+      setTextRevealed(true);
+      setCanDrawCard(canDraw());
+    } catch (e) {
+      console.error(e);
+      const randomPOI = POI_DATABASE[Math.floor(Math.random() * POI_DATABASE.length)];
+      const res: ReadingResult = { card: result.card, poi: randomPOI, reading: generateReading(randomPOI, result.card), drawnAt: new Date().toISOString() };
+      saveReading(res);
+      setResult(res);
+      setPhase('done');
+      setTextRevealed(true);
+    }
+  }, [phase, result, selectedMood, divinationMethod, baziInfo]);
 
-        const { aiResult, card, poi } = await performAIReading(selectedMood, realPois, setLoadingMsg, divinationMethod || 'tarot', baziInfo);
-        const newReading: ReadingResult = { card, poi, reading: aiResult.reading, drawnAt: new Date().toISOString() };
-        saveReading(newReading);
-        setResult(newReading);
-      } catch (e) {
-        console.error(e);
-        const randomPOI = POI_DATABASE[Math.floor(Math.random() * POI_DATABASE.length)];
-        const randomCard = TAROT_CARDS[index % TAROT_CARDS.length];
-        const res: ReadingResult = { card: randomCard, poi: randomPOI, reading: generateReading(randomPOI, randomCard), drawnAt: new Date().toISOString() };
-        saveReading(res);
-        setResult(res);
-      }
-      setTimeout(() => {
-        setPhase('done');
-        setTextRevealed(true);
-        setCanDrawCard(canDraw());
-      }, 800);
-    }, 800);
-  }, [phase, canDrawCard, selectedMood, divinationMethod, baziInfo, navigate]);
+
 
   const handleReset = () => {
     resetForDemo();
@@ -215,9 +262,9 @@ export const HomePage = () => {
       <div className="crt-overlay" style={{ pointerEvents: 'none', zIndex: 100 }} />
       <FloatingParticles />
 
-      <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} style={{ textAlign: 'center', zIndex: 2, marginBottom: '24px' }}>
-        <h1 className="font-mystic text-gradient-full" style={{ fontSize: '3rem', fontWeight: 900, textShadow: '0 0 20px rgba(255, 208, 0, 0.3)' }}>像素生活志</h1>
-        <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', letterSpacing: '6px', marginTop: '8px', opacity: 0.8 }}>别做攻略了，命运自有安排</p>
+      <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} style={{ textAlign: 'center', zIndex: 2, marginBottom: '20px' }}>
+        <h1 className="font-mystic text-gradient-full" style={{ fontSize: '1.8rem', fontWeight: 900, textShadow: '0 0 15px rgba(255, 208, 0, 0.3)' }}>像素生活志</h1>
+        <p style={{ color: 'var(--text-secondary)', fontSize: '0.55rem', letterSpacing: '4px', marginTop: '4px', opacity: 0.8 }}>别做攻略了，命运自有安排</p>
       </motion.div>
 
       <AnimatePresence mode="wait">
@@ -389,11 +436,16 @@ export const HomePage = () => {
         )}
 
         {/* Drawing & Result */}
-        {(phase === 'idle' || phase === 'selecting' || phase === 'revealing' || phase === 'done') && (
+        {(phase === 'idle' || phase === 'selecting' || phase === 'flipping' || phase === 'revealed' || phase === 'analyzing' || phase === 'done') && (
           <motion.div key="tarot-stage" initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <motion.div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 16px', borderRadius: '100px', fontSize: '0.78rem', marginBottom: '32px', zIndex: 10, background: 'var(--primary-dim)', border: '1px solid rgba(255, 195, 0, 0.3)', color: 'var(--primary)' }}>
-              <Clock size={13} />
-              <span>{isDone ? '命运已揭晓 · 随时可重新观测' : `正在通过${DIVINATION_METHODS.find(m => m.id === divinationMethod)?.label || '占卜'}指引方向`}</span>
+            <motion.div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '4px 10px', borderRadius: '100px', fontSize: '0.5rem', marginBottom: '20px', zIndex: 10, background: 'var(--primary-dim)', border: '1px solid rgba(255, 195, 0, 0.3)', color: 'var(--primary)', letterSpacing: '1px' }}>
+              <Clock size={10} />
+              <span>
+                {phase === 'done' ? '命运已揭晓 · 随时可重新观测' : 
+                 phase === 'revealed' ? '牌面已现，请开启契约解析' :
+                 phase === 'analyzing' ? '正在连接高维能量场...' :
+                 `正在通过${DIVINATION_METHODS.find(m => m.id === divinationMethod)?.label || '占卜'}指引方向`}
+              </span>
             </motion.div>
 
             <div style={{ position: 'relative', width: '100%', height: '360px', zIndex: 2 }}>
@@ -409,27 +461,180 @@ export const HomePage = () => {
                   const yOffset = Math.abs(offset) * 18;
                   if (isDone && !isSelected) return null;
                   return (
-                    <motion.div key={i} className="tarot-card" style={{ position: 'absolute', width: '160px', height: '240px', transformStyle: 'preserve-3d', cursor: hasSelection ? 'default' : 'pointer' }} animate={{ x: isSelected ? 0 : isHidden ? (offset < 0 ? -350 : 350) : xOffset, y: isSelected ? -20 : isHidden ? 300 : yOffset, rotateZ: isSelected ? 0 : isHidden ? rotation * 3 : rotation, rotateY: isSelected && phase !== 'idle' ? 180 : 0, scale: isSelected ? 1.7 : isHidden ? 0.4 : 1, opacity: isHidden ? 0 : 1, zIndex: isSelected ? 50 : 10 - Math.abs(offset) }} transition={{ type: 'spring', stiffness: 65, damping: 14 }} onClick={() => handleSelectCard(i)}>
+                    <motion.div key={i} className="tarot-card" style={{ position: 'absolute', width: '160px', height: '240px', transformStyle: 'preserve-3d', cursor: (hasSelection || phase === 'done') ? 'default' : 'pointer' }} animate={{ x: isSelected ? 0 : isHidden ? (offset < 0 ? -350 : 350) : xOffset, y: isSelected ? -20 : isHidden ? 300 : yOffset, rotateZ: isSelected ? 0 : isHidden ? rotation * 3 : rotation, rotateY: isSelected && (phase !== 'idle' && phase !== 'selecting') ? 180 : 0, scale: isSelected ? 1.7 : isHidden ? 0.4 : 1, opacity: isHidden ? 0 : 1, zIndex: isSelected ? 50 : 10 - Math.abs(offset) }} transition={{ type: 'spring', stiffness: 65, damping: 14 }} onClick={() => handleSelectCard(i)}>
                       <div className="tarot-face tarot-back" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', border: isSelected ? '1px solid var(--primary)' : '1px solid var(--glass-border)' }}>
                         {divinationMethod === 'bazi' ? <Compass size={28} color="var(--primary)" style={{ opacity: 0.6 }} /> : <Wand2 size={28} color="var(--primary)" style={{ opacity: 0.6 }} />}
                       </div>
-                      <div className="tarot-face tarot-front" style={{ display: 'flex', flexDirection: 'column', padding: '16px', border: '2px solid var(--primary)' }}>
-                        {result ? (
+                      <div className="tarot-face tarot-front" style={{ 
+                        display: 'flex', 
+                        flexDirection: 'column', 
+                        padding: '16px', 
+                        border: '3px solid var(--primary)', 
+                        overflow: 'hidden',
+                        background: 'linear-gradient(180deg, rgba(20,20,20,1) 0%, rgba(35,30,10,1) 100%)',
+                        boxShadow: 'inset 0 0 40px rgba(255, 195, 0, 0.1)'
+                      }}>
+                        {result && (
                           <>
-                            <div style={{ fontSize: '1.5rem', marginBottom: '4px' }}>{result.card.emoji}</div>
-                            <h3 className="font-mystic text-gradient-gold" style={{ fontSize: '0.9rem' }}>{result.card.name}</h3>
-                            <AnimatePresence>{textRevealed && <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ flex: 1, marginTop: '8px', overflowY: 'auto', fontSize: '0.45rem', lineHeight: 1.6, color: '#d4d4d8', textAlign: 'justify' }}>{result.reading}</motion.div>}</AnimatePresence>
-                            {textRevealed && <button className="btn btn-primary btn-full" style={{ marginTop: '8px', padding: '6px', fontSize: '0.65rem' }} onClick={(e) => { e.stopPropagation(); navigate('/map'); }}><MapPin size={14} /> 开启寻宝之旅 <ChevronRight size={14} /></button>}
+                            {/* Card Header (Centered for Premium Feel) */}
+                            <div style={{ textAlign: 'center', marginBottom: '8px' }}>
+                              <motion.div 
+                                initial={{ scale: 0.8, opacity: 0 }}
+                                animate={{ scale: 1, opacity: 1 }}
+                                style={{ fontSize: '1.8rem', marginBottom: '4px', filter: 'drop-shadow(0 0 10px rgba(255,195,0,0.3))' }}
+                              >
+                                {result.card.emoji}
+                              </motion.div>
+                              <h3 className="font-mystic text-gradient-gold" style={{ fontSize: '0.85rem', letterSpacing: '1px' }}>
+                                {result.card.name}
+                              </h3>
+                              <div style={{ width: '30px', height: '1px', background: 'var(--primary)', margin: '6px auto', opacity: 0.5 }} />
+                              
+                              {phase === 'analyzing' && (
+                                <div style={{ position: 'absolute', top: '10px', right: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                  <div className="spinner-sm" />
+                                  <span style={{ fontSize: '0.55rem', color: 'var(--primary)', fontWeight: 'bold' }}>{elapsedTime}s</span>
+                                </div>
+                              )}
+                            </div>
+
+                            <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                              {phase === 'revealed' && (
+                                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 0 }}>
+                                  <div style={{ 
+                                    flex: 1, 
+                                    overflowY: 'auto', 
+                                    marginBottom: '12px',
+                                    width: '100%',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    padding: '0 4px'
+                                  }}>
+                                    <p style={{ 
+                                      fontSize: '0.48rem', 
+                                      color: '#e2e2e2', 
+                                      textAlign: 'center', 
+                                      lineHeight: 1.6,
+                                      fontStyle: 'italic',
+                                      opacity: 0.9
+                                    }}>
+                                      「 {result.card.meaning} 」
+                                    </p>
+                                  </div>
+                                  <motion.button 
+                                    whileHover={{ scale: 1.02, backgroundColor: 'rgba(255, 195, 0, 0.15)' }}
+                                    whileTap={{ scale: 0.98 }}
+                                    className="pixel-panel"
+                                    style={{ 
+                                      position: 'relative',
+                                      padding: '8px 20px', 
+                                      background: 'rgba(0, 0, 0, 0.6)',
+                                      border: '1px solid rgba(255, 255, 255, 0.1)',
+                                      borderRadius: '8px',
+                                      cursor: 'pointer',
+                                      display: 'flex',
+                                      flexDirection: 'column',
+                                      alignItems: 'center',
+                                      gap: '4px',
+                                      flexShrink: 0,
+                                      boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+                                      overflow: 'hidden'
+                                    }} 
+                                    onClick={(e) => { e.stopPropagation(); handleStartAI(); }}
+                                  >
+                                    {/* Glowing Border Animation */}
+                                    <motion.div 
+                                      style={{
+                                        position: 'absolute',
+                                        inset: 0,
+                                        border: '1px solid var(--primary)',
+                                        borderRadius: '8px',
+                                        zIndex: 0,
+                                      }}
+                                      animate={{ 
+                                        opacity: [0.3, 0.8, 0.3],
+                                        boxShadow: [
+                                          'inset 0 0 5px var(--primary)',
+                                          'inset 0 0 15px var(--primary)',
+                                          'inset 0 0 5px var(--primary)'
+                                        ]
+                                      }}
+                                      transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+                                    />
+
+                                    {/* Shimmer Effect */}
+                                    <motion.div 
+                                      style={{
+                                        position: 'absolute',
+                                        top: 0, left: '-100%', width: '50%', height: '100%',
+                                        background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent)',
+                                        skewX: -20,
+                                        zIndex: 1
+                                      }}
+                                      animate={{ left: '200%' }}
+                                      transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut', repeatDelay: 1 }}
+                                    />
+
+                                    <div style={{ position: 'relative', zIndex: 2, whiteSpace: 'nowrap' }}>
+                                      <span style={{ 
+                                        fontSize: '0.65rem', 
+                                        fontWeight: 600, 
+                                        color: '#fff', 
+                                        letterSpacing: '2px',
+                                        textShadow: '0 2px 4px rgba(0,0,0,0.5)'
+                                      }}>
+                                        解开契约
+                                      </span>
+                                    </div>
+                                  </motion.button>
+
+
+                                </div>
+                              )}
+
+
+                              {(phase === 'analyzing' || phase === 'done') && (
+                                <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+                                  <div style={{ 
+                                    flex: 1, 
+                                    overflowY: 'auto', 
+                                    fontSize: '0.45rem', 
+                                    lineHeight: 1.8, 
+                                    color: '#f4f4f5', 
+                                    textAlign: 'justify', 
+                                    padding: '10px',
+                                    background: 'rgba(0,0,0,0.2)',
+                                    border: '1px solid rgba(255,195,0,0.1)',
+                                    borderRadius: '4px'
+                                  }}>
+                                    {result.reading || (phase === 'analyzing' && '命运之轮正在咬合...')}
+                                  </div>
+                                  
+                                  {phase === 'done' && (
+                                    <motion.button 
+                                      initial={{ opacity: 0, y: 10 }}
+                                      animate={{ opacity: 1, y: 0 }}
+                                      className="btn btn-primary btn-full" 
+                                      style={{ marginTop: '10px', padding: '8px', fontSize: '0.65rem' }} 
+                                      onClick={(e) => { e.stopPropagation(); navigate('/map'); }}
+                                    >
+                                      <MapPin size={14} style={{ marginRight: '6px' }} /> 开启寻宝之旅
+                                    </motion.button>
+                                  )}
+                                </div>
+                              )}
+                            </div>
                           </>
-                        ) : (
-                          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}><div className="spinner" /><p style={{ fontSize: '0.6rem', marginTop: '12px', color: 'var(--text-muted)' }}>{loadingMsg || '星象解析中...'}</p></div>
                         )}
                       </div>
+
                     </motion.div>
                   );
                 })}
               </div>
             </div>
+
 
             {isDone && (
               <motion.button 

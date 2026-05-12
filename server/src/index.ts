@@ -569,7 +569,7 @@ const buildSystemPrompt = (method: string) => {
 
 app.post('/api/ai/reading', async (req, res) => {
   try {
-    const { mood, pois, method, baziInfo, timeContext } = req.body;
+    const { mood, pois, method, baziInfo, timeContext, stream = false, card } = req.body;
     const apiKey = process.env.DOUBAO_API_KEY;
     const modelId = process.env.DOUBAO_MODEL_ID;
 
@@ -577,46 +577,78 @@ app.post('/api/ai/reading', async (req, res) => {
       return res.status(500).json({ error: 'Backend AI not configured' });
     }
 
-    const response = await axios.post(
-      DOUBAO_ENDPOINT,
-      {
-        model: modelId,
-        messages: [
-          { role: 'system', content: buildSystemPrompt(method) },
-          { 
-            role: 'user', 
-            content: `【当前环境】${timeContext}
+    const payload = {
+      model: modelId,
+      messages: [
+        { role: 'system', content: buildSystemPrompt(method) },
+        { 
+          role: 'user', 
+          content: `【当前环境】${timeContext}
 【用户倾向】${JSON.stringify(mood)}
 【占卜方式】${method}
+${card ? `【抽中塔罗牌】${card.name} (${card.emoji}) - 含义: ${card.meaning}` : ''}
 ${baziInfo ? `【八字信息】${JSON.stringify(baziInfo)}` : ''}
 【候选商户】：${JSON.stringify(pois.slice(0, 10))}
 请返回 JSON 占卜结果。` 
-          },
-        ],
-        temperature: 0.8,
-      },
-      {
+        },
+      ],
+
+      temperature: 0.8,
+      stream, // 支持流式开关
+    };
+
+    if (stream) {
+      // 流式响应处理
+      const response = await axios.post(DOUBAO_ENDPOINT, payload, {
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${apiKey}`,
         },
-      }
-    );
+        responseType: 'stream',
+      });
 
-    let content = response.data.choices?.[0]?.message?.content;
-    if (content) {
-      // 提取 JSON
-      const jsonMatch = content.match(/({[\s\S]*})/);
-      if (jsonMatch) content = jsonMatch[1];
-      res.json(JSON.parse(content));
+      res.setHeader('Content-Type', 'text/event-stream');
+      res.setHeader('Cache-Control', 'no-cache');
+      res.setHeader('Connection', 'keep-alive');
+
+      response.data.on('data', (chunk: Buffer) => {
+        res.write(chunk);
+      });
+
+      response.data.on('end', () => {
+        res.end();
+      });
+
+      response.data.on('error', (err: any) => {
+        console.error('Stream error:', err);
+        res.end();
+      });
     } else {
-      throw new Error('Empty AI response');
+      // 普通 JSON 响应
+      const response = await axios.post(DOUBAO_ENDPOINT, payload, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`,
+        },
+      });
+
+      let content = response.data.choices?.[0]?.message?.content;
+      if (content) {
+        const jsonMatch = content.match(/({[\s\S]*})/);
+        if (jsonMatch) content = jsonMatch[1];
+        res.json(JSON.parse(content));
+      } else {
+        throw new Error('Empty AI response');
+      }
     }
   } catch (error: any) {
     console.error('AI Proxy Error:', error.message);
-    res.status(500).json({ error: 'AI processing failed' });
+    if (!res.headersSent) {
+      res.status(500).json({ error: 'AI processing failed' });
+    }
   }
 });
+
 
 // 基础路由
 app.get('/api/health', (req, res) => {

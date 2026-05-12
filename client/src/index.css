@@ -1,5 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=DotGothic16&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=Noto+Serif+SC:wght@400;700&display=swap');
 
 :root {
   /* Retro Pixel Theme (Warm Dark) */
@@ -35,13 +34,14 @@
   --glass-glow: none;
   --pixel-border: 2px solid var(--pixel-border-color);
 
-  /* Typography */
-  --font-main: 'DotGothic16', 'SimSun', 'Press Start 2P', monospace;
-  --font-mystic: 'DotGothic16', 'SimSun', 'Press Start 2P', monospace;
-  --font-mono: 'Press Start 2P', 'DotGothic16', monospace;
+  /* Typography - Switching to Elegant Serif */
+  --font-main: 'Noto Serif SC', serif;
+  --font-mystic: 'Cormorant Garamond', 'Noto Serif SC', serif;
+  --font-mono: 'Cormorant Garamond', serif;
 
-  /* Border Radius - NO RADIUS IN PIXEL ART */
+  /* Border Radius - Keep some pixel feel but slightly smoother if needed */
   --radius-sm: 0px;
+
   --radius-md: 0px;
   --radius-lg: 0px;
   --radius-xl: 0px;
@@ -64,10 +64,9 @@ body {
   background-color: var(--bg-dark);
   color: var(--text-primary);
   font-family: var(--font-main);
-  -webkit-font-smoothing: none;
+  -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  font-smooth: never;
-  image-rendering: pixelated;
+  image-rendering: auto; /* 文字渲染不使用像素化 */
   min-height: 100dvh;
   overflow-x: hidden;
   /* 增加 App 原生手感 */
@@ -76,6 +75,7 @@ body {
   -webkit-touch-callout: none;
   touch-action: pan-y; /* 禁止缩放手势，只允许垂直滚动 */
 }
+
 
 /* CRT Scanline Overlay */
 .crt-overlay {
@@ -126,6 +126,24 @@ body {
 
 .anim-spin {
   animation: spin 1s linear infinite;
+}
+
+.spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid rgba(255, 195, 0, 0.2);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.spinner-sm {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 195, 0, 0.1);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
 }
 
 #root {
