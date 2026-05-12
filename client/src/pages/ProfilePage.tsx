@@ -6,8 +6,8 @@ import { getStamps, clearStamps, getCurrentUser, logout, type StampRecord } from
 
 export const ProfilePage = () => {
   const navigate = useNavigate();
-  const stamps = getStamps();
-  const user = getCurrentUser();
+  const [stamps, setStamps] = useState(getStamps());
+  const [user, setUser] = useState(getCurrentUser());
 
   const [showSettings, setShowSettings] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
@@ -123,8 +123,8 @@ export const ProfilePage = () => {
 
   const confirmClear = () => {
     clearStamps();
+    setStamps([]);
     setShowClearConfirm(false);
-    window.location.reload();
   };
 
   const searchNearbyShops = async () => {
@@ -178,7 +178,9 @@ export const ProfilePage = () => {
 
   const confirmLogout = () => {
     logout();
-    window.location.reload();
+    setUser(null);
+    setShowLogoutConfirm(false);
+    navigate('/profile');
   };
 
   const handleSettings = () => setShowSettings(true);
@@ -358,8 +360,8 @@ export const ProfilePage = () => {
 
         {/* 印章详情 PRD 4.3/4.4 */}
         {selectedStamp && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="modal-overlay" style={{ overflowY: 'auto' }} onClick={() => { setSelectedStamp(null); setShowPatternInDetail(false); }}>
-            <motion.div initial={{ y: 50 }} animate={{ y: 0 }} className="pixel-panel" style={{ width: '100%', maxWidth: '360px', padding: '24px', background: 'var(--bg-surface)', margin: '40px 20px' }} onClick={e => e.stopPropagation()}>
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="modal-overlay" onClick={() => { setSelectedStamp(null); setShowPatternInDetail(false); }}>
+            <motion.div initial={{ y: 50 }} animate={{ y: 0 }} className="pixel-panel modal-content" style={{ padding: '24px' }} onClick={e => e.stopPropagation()}>
               <div style={{ textAlign: 'center', marginBottom: '20px' }}>
                 <img 
                   src={selectedStamp.pixelImageData} 
@@ -724,25 +726,6 @@ export const ProfilePage = () => {
         )}
       </AnimatePresence>
 
-      <style>{`
-        .modal-overlay {
-          position: fixed;
-          inset: 0;
-          background: rgba(0,0,0,0.85);
-          z-index: 1000;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          padding: 20px;
-        }
-        .modal-content {
-          width: 100%;
-          maxWidth: 320px;
-          padding: 24px;
-          background: var(--bg-surface);
-          text-align: center;
-        }
-      `}</style>
     </div>
   );
 };

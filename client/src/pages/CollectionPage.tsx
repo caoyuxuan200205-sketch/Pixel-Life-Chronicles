@@ -193,28 +193,14 @@ export const CollectionPage = () => {
       <AnimatePresence>
         {/* 详情弹窗 */}
         {selectedStamp && (
-          <div style={{ position: 'fixed', inset: 0, zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setSelectedStamp(null)}
-              style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(4px)' }}
-            />
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="modal-overlay" onClick={() => setSelectedStamp(null)}>
             <motion.div
               initial={{ scale: 0.9, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              className="pixel-panel"
-              style={{ 
-                width: '100%', 
-                maxWidth: '400px', 
-                maxHeight: '90vh', 
-                overflowY: 'auto', 
-                background: 'var(--bg-dark)',
-                zIndex: 1001,
-                padding: '24px'
-              }}
+              className="pixel-panel modal-content"
+              style={{ padding: '24px' }}
+              onClick={e => e.stopPropagation()}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
                 <div>
@@ -366,7 +352,7 @@ export const CollectionPage = () => {
                   </div>
               </div>
             </motion.div>
-          </div>
+          </motion.div>
         )}
 
         {/* 清空确认弹窗 */}

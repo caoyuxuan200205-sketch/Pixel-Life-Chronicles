@@ -420,6 +420,30 @@ body {
   box-shadow: 0 12px 40px rgba(255, 195, 0, 0.15);
 }
 
+/* ===== MODALS & OVERLAYS ===== */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 1000;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start; /* Start from top to allow scrolling within overlay */
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 40px 20px;
+}
+
+.modal-content {
+  width: 100%;
+  max-width: 400px;
+  background: var(--bg-surface);
+  position: relative;
+  z-index: 1001;
+}
+
 /* Subtle pattern for card backs */
 .tarot-back::before {
   content: '';

@@ -498,18 +498,16 @@ export const HomePage = () => {
                               )}
                             </div>
 
-                            <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
                               {phase === 'revealed' && (
-                                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 0 }}>
+                                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between', minHeight: 0 }}>
                                   <div style={{ 
                                     flex: 1, 
                                     overflowY: 'auto', 
-                                    marginBottom: '12px',
+                                    marginBottom: '10px',
                                     width: '100%',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    padding: '0 4px'
+                                    padding: '0 8px',
+                                    // Remove centered alignment to prevent scroll issues with long text
                                   }}>
                                     <p style={{ 
                                       fontSize: '0.48rem', 
@@ -595,7 +593,7 @@ export const HomePage = () => {
 
 
                               {(phase === 'analyzing' || phase === 'done') && (
-                                <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+                                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
                                   <div style={{ 
                                     flex: 1, 
                                     overflowY: 'auto', 
