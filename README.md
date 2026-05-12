@@ -95,18 +95,34 @@ npm run dev
 
 ---
 
-## 📝 开发者备注 (Security)
+## 📝 开发与部署 (Development & Deployment)
 
-本项目目前处于测试阶段：
-- **API Keys**: 部分 Key 目前硬编码在前端代码中。在生产环境下，请务必迁移至 `server/.env` 文件。
-- **数据存储**: 当前数据暂存在 `LocalStorage` 中。
+### 1. 环境变量配置
+在部署或本地运行时，请配置以下环境变量：
+
+**后端 (server/.env 或 Vercel Dashboard):**
+- `DOUBAO_API_KEY`: 豆包 AI API 密钥。
+- `DOUBAO_MODEL_ID`: 豆包模型接入点 ID。
+
+**前端 (client/.env 或 Vercel Dashboard):**
+- `VITE_AMAP_KEY`: 高德地图 JS API Key。
+- `VITE_AMAP_SECURITY_JS_CODE`: 高德地图安全密钥。
+- `VITE_BACKEND_URL`: 后端服务地址（同域部署可留空）。
+
+### 2. 安全性 (Security)
+- **AI 代理**: 已实现后端代理逻辑，API Key 存储在服务器端，有效防止密钥泄露。
+*   **认证系统**: 基于 `LocalStorage` 的轻量级认证系统，支持大小写不敏感登录与异常处理。
+
+### 3. Vercel 部署
+项目已适配 Vercel 部署。`/api/*` 路径将自动路由至 `api/index.ts` 服务器函数。
 
 ---
 
 ## 🎨 设计美学
-*   **配色**: 采用美团黄 (#e2b553) 作为主色，配合深色背景与高对比度边框。
-*   **字体**: 使用像素风格字体（如需正式部署请确保字体授权）。
+*   **配色**: 采用美团黄 (`#FFD000`) 作为主色，配合深色背景与高对比度边框。
+*   **交互**: 深度使用 Framer Motion 实现 8-bit 复古交互感。
 
 ---
 
 © 2026 Pixel Life Chronicles Team. Built for Hackathon.
+

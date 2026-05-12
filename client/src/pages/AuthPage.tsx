@@ -14,24 +14,25 @@ export const AuthPage = () => {
     e.preventDefault();
     setError('');
 
-    if (!username.trim()) {
+    const trimmedUsername = username.trim();
+    if (!trimmedUsername) {
       setError('请输入旅人代号');
       return;
     }
 
     if (isLogin) {
-      const user = login(username.trim());
+      const user = login(trimmedUsername);
       if (user) {
         navigate(-1);
       } else {
-        setError('未找到该用户，请先注册');
+        setError('未找到该用户，请检查代号拼写或前往注册');
       }
     } else {
-      const user = register(username.trim());
+      const user = register(trimmedUsername);
       if (user) {
         navigate(-1);
       } else {
-        setError('该用户名已被占用');
+        setError('该代号已被占用，如果您已注册请直接登录');
       }
     }
   };

@@ -273,38 +273,64 @@ export function getCurrentUser(): User | null {
 }
 
 export function login(username: string): User | null {
-  const rawDb = localStorage.getItem(STORAGE_KEYS.USERS_DB);
-  const users: User[] = rawDb ? JSON.parse(rawDb) : [];
-  
-  const user = users.find(u => u.username === username);
-  if (user) {
-    localStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(user));
-    return user;
+  try {
+    const trimmedUsername = username.trim();
+    if (!trimmedUsername) return null;
+
+    const rawDb = localStorage.getItem(STORAGE_KEYS.USERS_DB);
+    const users: User[] = rawDb ? JSON.parse(rawDb) : [];
+    
+    if (!Array.isArray(users)) return null;
+
+    // 不区分大小写匹配
+    const user = users.find(u => u.username.toLowerCase() === trimmedUsername.toLowerCase());
+    if (user) {
+      localStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(user));
+      return user;
+    }
+  } catch (e) {
+    console.error('Login error:', e);
   }
   return null;
 }
 
 export function register(username: string): User | null {
-  const rawDb = localStorage.getItem(STORAGE_KEYS.USERS_DB);
-  const users: User[] = rawDb ? JSON.parse(rawDb) : [];
-  
-  if (users.find(u => u.username === username)) {
-    return null; // Username exists
-  }
+  try {
+    const trimmedUsername = username.trim();
+    if (!trimmedUsername) return null;
 
-  const newUser: User = {
-    id: `user_${Date.now()}`,
-    username,
-    level: 1,
-    exp: 0,
-  };
-  
-  users.push(newUser);
-  localStorage.setItem(STORAGE_KEYS.USERS_DB, JSON.stringify(users));
-  localStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(newUser));
-  return newUser;
+    const rawDb = localStorage.getItem(STORAGE_KEYS.USERS_DB);
+    const users: User[] = rawDb ? JSON.parse(rawDb) : [];
+    
+    if (!Array.isArray(users)) return null;
+
+    // 不区分大小写检查是否存在
+    if (users.find(u => u.username.toLowerCase() === trimmedUsername.toLowerCase())) {
+      return null; // Username exists
+    }
+
+    const newUser: User = {
+      id: `user_${Date.now()}`,
+      username: trimmedUsername, // 存储时保持原始输入但已修剪
+      level: 1,
+      exp: 0,
+    };
+    
+    users.push(newUser);
+    localStorage.setItem(STORAGE_KEYS.USERS_DB, JSON.stringify(users));
+    localStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(newUser));
+    return newUser;
+  } catch (e) {
+    console.error('Register error:', e);
+    // 如果是 QuotaExceededError，通常意味着 LocalStorage 已满
+    if (e instanceof Error && e.name === 'QuotaExceededError') {
+      alert('存储空间已满，请清理图鉴后再试');
+    }
+  }
+  return null;
 }
 
 export function logout(): void {
   localStorage.removeItem(STORAGE_KEYS.CURRENT_USER);
 }
+
