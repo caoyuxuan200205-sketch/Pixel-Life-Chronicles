@@ -17,6 +17,13 @@ const PORT = process.env.PORT || 3001;
 // 初始化 Supabase 客户端 (后端使用)
 const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '';
 const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || '';
+
+console.log('Supabase Backend Init:', { 
+  url: supabaseUrl ? 'Set' : 'MISSING', 
+  urlValue: supabaseUrl,
+  key: supabaseAnonKey ? 'Set' : 'MISSING' 
+});
+
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 // 加载 Artkal 标准色板
