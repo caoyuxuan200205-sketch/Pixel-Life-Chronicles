@@ -477,7 +477,7 @@ export const CameraPage = () => {
 
     // 2. 云端同步 (BFF 中转)
     try {
-      const { data: { session } } = await (await import('../services/supabase')).supabase.auth.getSession();
+      const { data: { session } } = await (await import('../lib/supabase')).supabase.auth.getSession();
       if (session?.access_token) {
         await fetch(`${BACKEND_URL}/api/stamps`, {
           method: 'POST',

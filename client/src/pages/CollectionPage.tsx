@@ -48,14 +48,15 @@ export const CollectionPage = () => {
     const fetchCloudStamps = async () => {
       setIsSyncing(true);
       try {
-        const { data: { session } } = await (await import('../services/supabase')).supabase.auth.getSession();
+        const supabaseModule = await import('../lib/supabase');
+        const { data: { session } } = await supabaseModule.supabase.auth.getSession();
+        
         if (session?.access_token) {
           const resp = await fetch(`${BACKEND_URL}/api/stamps`, {
             headers: { 'Authorization': `Bearer ${session.access_token}` }
           });
           if (resp.ok) {
             const cloudStamps = await resp.json();
-            // 将云端数据映射回本地格式
             const mappedCloud: StampRecord[] = cloudStamps.map((s: any) => ({
               id: s.id,
               poiName: s.poi_name,
@@ -64,10 +65,9 @@ export const CollectionPage = () => {
               reading: s.reading,
               cardName: s.card_name,
               createdAt: s.created_at,
-              beadPattern: { grid: Array(32).fill(0).map(() => Array(32).fill(0)), palette: ['#000000', '#ffffff'] } // 简化的占位符，实际生产中需存储 Pattern
+              beadPattern: { grid: Array(32).fill(0).map(() => Array(32).fill(0)), palette: ['#000000', '#ffffff'] }
             }));
 
-            // 合并并去重
             setStamps(prev => {
               const combined = [...prev, ...mappedCloud];
               const unique = Array.from(new Map(combined.map(s => [s.poiName + s.createdAt, s])).values());
@@ -83,7 +83,9 @@ export const CollectionPage = () => {
     };
 
     fetchCloudStamps();
-  }, []);
+  }, [BACKEND_URL]);
+
+  useEffect(() => {
     let interval: any;
     if (searching) {
       interval = setInterval(() => {
