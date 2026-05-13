@@ -730,7 +730,7 @@ app.post('/api/stamps', async (req, res) => {
       global: { headers: { Authorization: authHeader } }
     });
 
-    const { poi_name, poi_type, pixel_image_data, reading, card_name } = req.body;
+    const { poi_name, poi_type, pixel_image_data, reading, card_name, bead_pattern } = req.body;
     
     // 获取当前用户 ID
     const { data: { user } } = await userClient.auth.getUser();
@@ -745,7 +745,8 @@ app.post('/api/stamps', async (req, res) => {
           poi_type, 
           pixel_image_data, 
           reading, 
-          card_name 
+          card_name,
+          bead_pattern 
         }
       ])
       .select();

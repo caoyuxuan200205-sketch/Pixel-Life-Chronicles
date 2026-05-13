@@ -490,7 +490,8 @@ export const CameraPage = () => {
             poi_type: stamp.poiType,
             pixel_image_data: stamp.pixelImageData,
             reading: stamp.reading,
-            card_name: stamp.cardName
+            card_name: stamp.cardName,
+            bead_pattern: stamp.beadPattern
           })
         });
       }

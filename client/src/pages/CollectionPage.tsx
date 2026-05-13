@@ -65,7 +65,7 @@ export const CollectionPage = () => {
               reading: s.reading,
               cardName: s.card_name,
               createdAt: s.created_at,
-              beadPattern: { grid: Array(32).fill(0).map(() => Array(32).fill(0)), palette: ['#000000', '#ffffff'] }
+              beadPattern: s.bead_pattern || { grid: Array(32).fill(0).map(() => Array(32).fill(0)), palette: ['#000000', '#ffffff'] }
             }));
 
             setStamps(prev => {
