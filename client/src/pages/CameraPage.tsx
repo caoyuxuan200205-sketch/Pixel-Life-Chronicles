@@ -458,8 +458,9 @@ export const CameraPage = () => {
     setSearching(false);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!beadResult || !reading) return;
+    
     const stamp: StampRecord = {
       id: `stamp_${Date.now()}`,
       poiName: reading.poi.name,
@@ -470,7 +471,33 @@ export const CameraPage = () => {
       cardName: reading.card.name,
       reading: reading.reading,
     };
+
+    // 1. 本地保存 (保证离线可用)
     saveStamp(stamp);
+
+    // 2. 云端同步 (BFF 中转)
+    try {
+      const { data: { session } } = await (await import('../services/supabase')).supabase.auth.getSession();
+      if (session?.access_token) {
+        await fetch(`${BACKEND_URL}/api/stamps`, {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`
+          },
+          body: JSON.stringify({
+            poi_name: stamp.poiName,
+            poi_type: stamp.poiType,
+            pixel_image_data: stamp.pixelImageData,
+            reading: stamp.reading,
+            card_name: stamp.cardName
+          })
+        });
+      }
+    } catch (e) {
+      console.error('Cloud sync failed:', e);
+    }
+
     navigate('/collection');
   };
 

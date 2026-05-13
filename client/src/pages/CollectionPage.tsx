@@ -29,6 +29,7 @@ export const CollectionPage = () => {
   const [stamps, setStamps] = useState<StampRecord[]>(getStamps());
   const [selectedStamp, setSelectedStamp] = useState<StampRecord | null>(null);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
   
   // 附近商家搜索状态
   const [nearbyShops, setNearbyShops] = useState<NearbyShop[]>([]);
@@ -41,7 +42,48 @@ export const CollectionPage = () => {
   const [showProxyModal, setShowProxyModal] = useState(false);
   const [bookingSuccess, setBookingSuccess] = useState(false);
 
+  const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || '';
+
   useEffect(() => {
+    const fetchCloudStamps = async () => {
+      setIsSyncing(true);
+      try {
+        const { data: { session } } = await (await import('../services/supabase')).supabase.auth.getSession();
+        if (session?.access_token) {
+          const resp = await fetch(`${BACKEND_URL}/api/stamps`, {
+            headers: { 'Authorization': `Bearer ${session.access_token}` }
+          });
+          if (resp.ok) {
+            const cloudStamps = await resp.json();
+            // 将云端数据映射回本地格式
+            const mappedCloud: StampRecord[] = cloudStamps.map((s: any) => ({
+              id: s.id,
+              poiName: s.poi_name,
+              poiType: s.poi_type,
+              pixelImageData: s.pixel_image_data,
+              reading: s.reading,
+              cardName: s.card_name,
+              createdAt: s.created_at,
+              beadPattern: { grid: Array(32).fill(0).map(() => Array(32).fill(0)), palette: ['#000000', '#ffffff'] } // 简化的占位符，实际生产中需存储 Pattern
+            }));
+
+            // 合并并去重
+            setStamps(prev => {
+              const combined = [...prev, ...mappedCloud];
+              const unique = Array.from(new Map(combined.map(s => [s.poiName + s.createdAt, s])).values());
+              return unique.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+            });
+          }
+        }
+      } catch (e) {
+        console.error('Failed to sync stamps:', e);
+      } finally {
+        setIsSyncing(false);
+      }
+    };
+
+    fetchCloudStamps();
+  }, []);
     let interval: any;
     if (searching) {
       interval = setInterval(() => {
@@ -120,6 +162,16 @@ export const CollectionPage = () => {
         <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
           你的每一次冒险都留下了一枚像素印章，点亮城市的星光。
         </p>
+        {isSyncing && (
+          <motion.div 
+            initial={{ opacity: 0 }} 
+            animate={{ opacity: 1 }} 
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', marginTop: '12px', color: 'var(--primary)', fontSize: '0.7rem' }}
+          >
+            <Loader2 size={12} className="anim-spin" />
+            <span>正在同步云端记录...</span>
+          </motion.div>
+        )}
       </motion.div>
 
       {stamps.length === 0 ? (

@@ -693,6 +693,70 @@ app.post('/api/auth/signin', async (req, res) => {
   }
 });
 
+// ==========================================
+// 业务数据中转 API (印章记录)
+// ==========================================
+
+// 获取用户的全部印章
+app.get('/api/stamps', async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) return res.status(401).json({ error: 'Missing authorization' });
+
+    // 用用户的 Token 初始化一个临时客户端，以遵循 RLS
+    const userClient = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } }
+    });
+
+    const { data, error } = await userClient
+      .from('stamps')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) return res.status(400).json(error);
+    res.json(data);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 保存新印章
+app.post('/api/stamps', async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) return res.status(401).json({ error: 'Missing authorization' });
+
+    const userClient = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } }
+    });
+
+    const { poi_name, poi_type, pixel_image_data, reading, card_name } = req.body;
+    
+    // 获取当前用户 ID
+    const { data: { user } } = await userClient.auth.getUser();
+    if (!user) return res.status(401).json({ error: 'Invalid session' });
+
+    const { data, error } = await userClient
+      .from('stamps')
+      .insert([
+        { 
+          user_id: user.id,
+          poi_name, 
+          poi_type, 
+          pixel_image_data, 
+          reading, 
+          card_name 
+        }
+      ])
+      .select();
+
+    if (error) return res.status(400).json(error);
+    res.json(data[0]);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 app.post('/api/auth/session', async (req, res) => {
   try {
     const { access_token, refresh_token } = req.body;
