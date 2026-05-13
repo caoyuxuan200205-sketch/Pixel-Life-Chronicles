@@ -55,7 +55,7 @@ export const AuthPage = () => {
         login(trimmedEmail.split('@')[0], password); 
         
         if (!isLogin) {
-          alert('契约已发出！请检查邮箱完成验证。');
+          alert('契约达成！欢迎来到像素生活志。');
         }
         navigate(-1);
       }
