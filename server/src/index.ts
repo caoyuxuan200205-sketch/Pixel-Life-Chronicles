@@ -7,11 +7,17 @@ import { PDFDocument } from 'pdf-lib';
 
 import fs from 'fs';
 import path from 'path';
+import { createClient } from '@supabase/supabase-js';
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+
+// 初始化 Supabase 客户端 (后端使用)
+const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '';
+const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || '';
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 // 加载 Artkal 标准色板
 interface ArtkalBead {
@@ -646,6 +652,48 @@ ${baziInfo ? `【八字信息】${JSON.stringify(baziInfo)}` : ''}
     if (!res.headersSent) {
       res.status(500).json({ error: 'AI processing failed' });
     }
+  }
+});
+
+// ==========================================
+// 身份验证中转 API (解决国内直连 Supabase 困难)
+// ==========================================
+app.post('/api/auth/signup', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) return res.status(400).json({ error: 'Email and password required' });
+
+    const { data, error } = await supabase.auth.signUp({ email, password });
+    if (error) return res.status(error.status || 400).json(error);
+    
+    res.json(data);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/auth/signin', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) return res.status(400).json({ error: 'Email and password required' });
+
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) return res.status(error.status || 400).json(error);
+    
+    res.json(data);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/auth/session', async (req, res) => {
+  try {
+    const { access_token, refresh_token } = req.body;
+    const { data, error } = await supabase.auth.setSession({ access_token, refresh_token });
+    if (error) return res.status(error.status || 400).json(error);
+    res.json(data);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
   }
 });
 

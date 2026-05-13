@@ -27,40 +27,33 @@ export const AuthPage = () => {
     }
 
     try {
-      if (isLogin) {
-        const { data, error: authError } = await supabase.auth.signInWithPassword({
-          email: trimmedEmail,
-          password: password,
+      const endpoint = isLogin ? '/api/auth/signin' : '/api/auth/signup';
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || ''}${endpoint}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: trimmedEmail, password }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.message || result.error || '认证失败');
+      }
+
+      if (result.session) {
+        // 同步 Session 到本地 Supabase 客户端，以便后续调用
+        await supabase.auth.setSession({
+          access_token: result.session.access_token,
+          refresh_token: result.session.refresh_token,
         });
 
-        if (authError) throw authError;
-
-        if (data.user) {
-          track('user_login_success', { email: trimmedEmail });
-          // 同步本地存储用户信息（兼容现有逻辑）
-          login(trimmedEmail.split('@')[0], password); 
-          navigate(-1);
-        }
-      } else {
-        if (password.length < 6) {
-          setError('秘钥长度至少需要6位');
-          setLoading(false);
-          return;
-        }
-
-        const { data, error: authError } = await supabase.auth.signUp({
-          email: trimmedEmail,
-          password: password,
-        });
-
-        if (authError) throw authError;
-
-        if (data.user) {
-          track('user_register_success', { email: trimmedEmail });
-          register(trimmedEmail.split('@')[0], password);
+        track(isLogin ? 'user_login_success' : 'user_register_success', { email: trimmedEmail });
+        login(trimmedEmail.split('@')[0], password); 
+        
+        if (!isLogin) {
           alert('契约已发出！请检查邮箱完成验证（如果开启了邮箱验证）。');
-          navigate(-1);
         }
+        navigate(-1);
       }
     } catch (err: any) {
       console.error('Auth error:', err);
