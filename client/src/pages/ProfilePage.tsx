@@ -9,6 +9,13 @@ export const ProfilePage = () => {
   const [stamps, setStamps] = useState(getStamps());
   const [user, setUser] = useState(getCurrentUser());
 
+  useEffect(() => {
+    // 每次进入页面都强制刷新一次状态，解决导航回退不刷新的问题
+    const currentUser = getCurrentUser();
+    setUser(currentUser);
+    setStamps(getStamps());
+  }, [navigate]); // 监听导航变化
+
   const [showSettings, setShowSettings] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [showClearConfirm, setShowClearConfirm] = useState(false);

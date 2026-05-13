@@ -5,7 +5,7 @@
 export interface User {
   id: string;
   username: string;
-  password?: string; // 密码，实际生产中应进行哈希处理
+  email?: string;
   level: number;
   exp: number;
 }
@@ -342,67 +342,45 @@ export function getCurrentUser(): User | null {
   return raw ? JSON.parse(raw) : null;
 }
 
-export function login(username: string, password?: string): User | null {
+export function login(username: string, userId?: string, email?: string): User | null {
   try {
     const trimmedUsername = username.trim();
     if (!trimmedUsername) return null;
 
-    const rawDb = localStorage.getItem(STORAGE_KEYS.USERS_DB);
-    const users: User[] = rawDb ? JSON.parse(rawDb) : [];
+    // 只要 Supabase 认证过了，我们就直接创建/更新本地 User 状态
+    const user: User = {
+      id: userId || `user_${Date.now()}`,
+      username: trimmedUsername,
+      email: email,
+      level: 1, // 这里以后可以从 Supabase 的 profiles 表读取
+      exp: 0,
+    };
     
-    if (!Array.isArray(users)) return null;
-
-    // 不区分大小写匹配
-    const user = users.find(u => u.username.toLowerCase() === trimmedUsername.toLowerCase());
-    
-    // 如果设置了密码，则验证
-    if (user && user.password && user.password !== password) {
-      return null; // 密码不匹配
-    }
-
-    if (user) {
-      localStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(user));
-      return user;
-    }
+    localStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(user));
+    return user;
   } catch (e) {
     console.error('Login error:', e);
   }
   return null;
 }
 
-export function register(username: string, password?: string): User | null {
+export function register(username: string, userId?: string, email?: string): User | null {
   try {
     const trimmedUsername = username.trim();
     if (!trimmedUsername) return null;
 
-    const rawDb = localStorage.getItem(STORAGE_KEYS.USERS_DB);
-    const users: User[] = rawDb ? JSON.parse(rawDb) : [];
-    
-    if (!Array.isArray(users)) return null;
-
-    // 不区分大小写检查是否存在
-    if (users.find(u => u.username.toLowerCase() === trimmedUsername.toLowerCase())) {
-      return null; // Username exists
-    }
-
     const newUser: User = {
-      id: `user_${Date.now()}`,
-      username: trimmedUsername, // 存储时保持原始输入但已修剪
-      password: password,
+      id: userId || `user_${Date.now()}`,
+      username: trimmedUsername,
+      email: email,
       level: 1,
       exp: 0,
     };
     
-    users.push(newUser);
-    localStorage.setItem(STORAGE_KEYS.USERS_DB, JSON.stringify(users));
     localStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(newUser));
     return newUser;
   } catch (e) {
     console.error('Register error:', e);
-    // 如果是 QuotaExceededError，通常意味着 LocalStorage 已满
-    if (e instanceof Error && e.name === 'QuotaExceededError') {
-      alert('存储空间已满，请清理图鉴后再试');
-    }
   }
   return null;
 }

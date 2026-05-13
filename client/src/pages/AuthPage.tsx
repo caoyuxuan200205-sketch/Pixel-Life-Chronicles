@@ -51,8 +51,14 @@ export const AuthPage = () => {
           refresh_token: result.session.refresh_token,
         });
 
-        track(isLogin ? 'user_login_success' : 'user_register_success', { email: trimmedEmail });
-        login(trimmedEmail.split('@')[0], password); 
+        const userEmail = result.session.user.email || trimmedEmail;
+        const username = userEmail.split('@')[0];
+        const userId = result.session.user.id;
+
+        track(isLogin ? 'user_login_success' : 'user_register_success', { email: userEmail });
+        
+        // 更新全局 Store 状态
+        login(username, userId, userEmail); 
         
         if (!isLogin) {
           alert('契约达成！欢迎来到像素生活志。');
