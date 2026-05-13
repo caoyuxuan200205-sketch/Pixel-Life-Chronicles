@@ -27,8 +27,13 @@ export const AuthPage = () => {
     }
 
     try {
+      const baseUrl = import.meta.env.VITE_BACKEND_URL || window.location.origin;
       const endpoint = isLogin ? '/api/auth/signin' : '/api/auth/signup';
-      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || ''}${endpoint}`, {
+      const fullUrl = `${baseUrl.replace(/\/$/, '')}${endpoint}`;
+      
+      console.log('Attempting auth request to:', fullUrl);
+
+      const response = await fetch(fullUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: trimmedEmail, password }),
@@ -37,11 +42,10 @@ export const AuthPage = () => {
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.message || result.error || '认证失败');
+        throw new Error(result.message || result.error || `服务器返回错误: ${response.status}`);
       }
 
       if (result.session) {
-        // 同步 Session 到本地 Supabase 客户端，以便后续调用
         await supabase.auth.setSession({
           access_token: result.session.access_token,
           refresh_token: result.session.refresh_token,
@@ -51,12 +55,14 @@ export const AuthPage = () => {
         login(trimmedEmail.split('@')[0], password); 
         
         if (!isLogin) {
-          alert('契约已发出！请检查邮箱完成验证（如果开启了邮箱验证）。');
+          alert('契约已发出！请检查邮箱完成验证。');
         }
         navigate(-1);
       }
     } catch (err: any) {
-      console.error('Auth error:', err);
+      console.error('Auth full error:', err);
+      // 弹出详细错误，帮助排查
+      alert(`认证异常: ${err.message}`);
       setError(err.message || '操作失败，请重试');
       track(isLogin ? 'user_login_failure' : 'user_register_failure', { reason: err.message });
     } finally {
