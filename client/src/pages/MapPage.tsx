@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Camera, Navigation, ChevronRight, ChevronLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import AMapLoader from '@amap/amap-jsapi-loader';
+import { track } from "@vercel/analytics";
 import { getCurrentReading, getCurrentUser, getRouteCache, saveRouteCache, type ReadingResult } from '../store';
 
 export const MapPage = () => {
@@ -21,7 +22,10 @@ export const MapPage = () => {
       return;
     }
     const r = getCurrentReading();
-    if (r) setReading(r);
+    if (r) {
+      setReading(r);
+      track('map_view_poi', { poi_type: r.poi.type, poi_name: r.poi.name });
+    }
   }, [navigate]);
 
   const drawRoute = (path: any[]) => {
@@ -241,7 +245,10 @@ export const MapPage = () => {
           <button
             className="btn btn-primary"
             style={{ flex: 1.5, fontSize: '0.8rem' }}
-            onClick={() => navigate('/camera')}
+            onClick={() => {
+              track('map_click_create_stamp', { poi_type: reading.poi.type });
+              navigate('/camera');
+            }}
           >
             <Camera size={14} /> 创作印章 <ChevronRight size={14} />
           </button>

@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Clock, MapPin, ChevronRight, Wand2, Compass, User as UserIcon, Calendar, Clock4, Sparkles } from 'lucide-react';
 import AMapLoader from '@amap/amap-jsapi-loader';
 import { useNavigate } from 'react-router-dom';
+import { track } from "@vercel/analytics";
 import {
   TAROT_CARDS,
   POI_DATABASE,
@@ -124,6 +125,7 @@ export const HomePage = () => {
 
   const handleSelectMethod = (methodId: string) => {
     setDivinationMethod(methodId);
+    track('select_divination_method', { method: methodId });
     if (methodId === 'bazi') {
       setPhase('bazi_input');
     } else {
@@ -210,6 +212,7 @@ export const HomePage = () => {
         }
       } catch (e) { console.warn(e); }
 
+      const startTime = Date.now();
       const { aiResult, card, poi } = await performAIReading(
         selectedMood, 
         realPois, 
@@ -223,14 +226,28 @@ export const HomePage = () => {
         result.card
       );
       
+      const duration = (Date.now() - startTime) / 1000;
+      track('ai_reading_success', { 
+        duration, 
+        method: divinationMethod || 'tarot', 
+        poi_type: poi.type, 
+        card_name: card.name,
+        user_lng: center[0],
+        user_lat: center[1]
+      });
+
       const newReading: ReadingResult = { card, poi, reading: aiResult.reading, drawnAt: new Date().toISOString() };
       saveReading(newReading);
       setResult(newReading);
       setPhase('done');
       setTextRevealed(true);
       setCanDrawCard(canDraw());
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
+      track('ai_reading_error', { 
+        error: e.message || 'unknown', 
+        method: divinationMethod || 'tarot' 
+      });
       const randomPOI = POI_DATABASE[Math.floor(Math.random() * POI_DATABASE.length)];
       const res: ReadingResult = { card: result.card, poi: randomPOI, reading: generateReading(randomPOI, result.card), drawnAt: new Date().toISOString() };
       saveReading(res);

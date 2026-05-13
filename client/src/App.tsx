@@ -1,5 +1,7 @@
 import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
+import { Analytics } from "@vercel/analytics/react";
+import { SpeedInsights } from "@vercel/speed-insights/react";
 import './App.css';
 import { HomePage } from './pages/HomePage';
 import { MapPage } from './pages/MapPage';
@@ -93,6 +95,8 @@ function App() {
   return (
     <BrowserRouter>
       <AppContent />
+      <Analytics />
+      <SpeedInsights />
     </BrowserRouter>
   );
 }

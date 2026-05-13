@@ -1,39 +1,73 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft } from 'lucide-react';
+import { ChevronLeft, Mail, Lock } from 'lucide-react';
+import { track } from "@vercel/analytics";
+import { supabase } from '../lib/supabase';
 import { login, register } from '../store';
 
 export const AuthPage = () => {
   const navigate = useNavigate();
   const [isLogin, setIsLogin] = useState(true);
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setLoading(true);
 
-    const trimmedUsername = username.trim();
-    if (!trimmedUsername) {
-      setError('请输入旅人代号');
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail || !password) {
+      setError('请输入邮箱和秘钥');
+      setLoading(false);
       return;
     }
 
-    if (isLogin) {
-      const user = login(trimmedUsername);
-      if (user) {
-        navigate(-1);
+    try {
+      if (isLogin) {
+        const { data, error: authError } = await supabase.auth.signInWithPassword({
+          email: trimmedEmail,
+          password: password,
+        });
+
+        if (authError) throw authError;
+
+        if (data.user) {
+          track('user_login_success', { email: trimmedEmail });
+          // 同步本地存储用户信息（兼容现有逻辑）
+          login(trimmedEmail.split('@')[0], password); 
+          navigate(-1);
+        }
       } else {
-        setError('未找到该用户，请检查代号拼写或前往注册');
+        if (password.length < 6) {
+          setError('秘钥长度至少需要6位');
+          setLoading(false);
+          return;
+        }
+
+        const { data, error: authError } = await supabase.auth.signUp({
+          email: trimmedEmail,
+          password: password,
+        });
+
+        if (authError) throw authError;
+
+        if (data.user) {
+          track('user_register_success', { email: trimmedEmail });
+          register(trimmedEmail.split('@')[0], password);
+          alert('契约已发出！请检查邮箱完成验证（如果开启了邮箱验证）。');
+          navigate(-1);
+        }
       }
-    } else {
-      const user = register(trimmedUsername);
-      if (user) {
-        navigate(-1);
-      } else {
-        setError('该代号已被占用，如果您已注册请直接登录');
-      }
+    } catch (err: any) {
+      console.error('Auth error:', err);
+      setError(err.message || '操作失败，请重试');
+      track(isLogin ? 'user_login_failure' : 'user_register_failure', { reason: err.message });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -82,48 +116,54 @@ export const AuthPage = () => {
           
           <div style={{ position: 'relative' }}>
             <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '8px' }}>
-              旅人代号 (USERNAME)
+              旅人邮箱 (EMAIL)
             </label>
-            <input
-              type="text"
-              placeholder="输入你的代号..."
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              style={{
-                width: '100%',
-                background: '#1a1714',
-                border: '2px solid var(--pixel-border-color)',
-                padding: '14px 16px',
-                color: '#fff',
-                fontFamily: 'var(--font-main)',
-                fontSize: '1rem',
-                outline: 'none',
-                boxShadow: 'inset 4px 4px 0px rgba(0,0,0,0.5)'
-              }}
-            />
+            <div style={{ position: 'relative' }}>
+              <Mail size={16} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--primary)', opacity: 0.6 }} />
+              <input
+                type="email"
+                placeholder="yourname@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                style={{
+                  width: '100%',
+                  background: '#1a1714',
+                  border: '2px solid var(--pixel-border-color)',
+                  padding: '14px 16px 14px 44px',
+                  color: '#fff',
+                  fontFamily: 'var(--font-main)',
+                  fontSize: '1rem',
+                  outline: 'none',
+                  boxShadow: 'inset 4px 4px 0px rgba(0,0,0,0.5)'
+                }}
+              />
+            </div>
           </div>
 
           <div style={{ position: 'relative' }}>
-            <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '8px', opacity: 0.5 }}>
-              心流秘钥 (PASSWORD - 暂不需要)
+            <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '8px' }}>
+              心流秘钥 (PASSWORD)
             </label>
-            <input
-              type="password"
-              placeholder="********"
-              disabled
-              style={{
-                width: '100%',
-                background: '#1a1714',
-                border: '2px solid var(--pixel-border-color)',
-                padding: '14px 16px',
-                color: 'var(--text-muted)',
-                fontFamily: 'var(--font-main)',
-                fontSize: '1rem',
-                outline: 'none',
-                opacity: 0.3,
-                cursor: 'not-allowed'
-              }}
-            />
+            <div style={{ position: 'relative' }}>
+              <Lock size={16} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--primary)', opacity: 0.6 }} />
+              <input
+                type="password"
+                placeholder="请输入 6 位以上秘钥"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                style={{
+                  width: '100%',
+                  background: '#1a1714',
+                  border: '2px solid var(--pixel-border-color)',
+                  padding: '14px 16px 14px 44px',
+                  color: '#fff',
+                  fontFamily: 'var(--font-main)',
+                  fontSize: '1rem',
+                  outline: 'none',
+                  boxShadow: 'inset 4px 4px 0px rgba(0,0,0,0.5)'
+                }}
+              />
+            </div>
           </div>
 
           <AnimatePresence>
@@ -142,9 +182,10 @@ export const AuthPage = () => {
           <button 
             type="submit" 
             className="btn btn-primary" 
-            style={{ width: '100%', fontSize: '1.1rem' }}
+            disabled={loading}
+            style={{ width: '100%', fontSize: '1.1rem', opacity: loading ? 0.7 : 1 }}
           >
-            {isLogin ? '进入世界' : '完成缔结'}
+            {loading ? '仪式进行中...' : (isLogin ? '进入世界' : '完成缔结')}
           </button>
         </form>
 

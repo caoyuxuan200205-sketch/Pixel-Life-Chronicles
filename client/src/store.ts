@@ -5,6 +5,7 @@
 export interface User {
   id: string;
   username: string;
+  password?: string; // 密码，实际生产中应进行哈希处理
   level: number;
   exp: number;
 }
@@ -341,7 +342,7 @@ export function getCurrentUser(): User | null {
   return raw ? JSON.parse(raw) : null;
 }
 
-export function login(username: string): User | null {
+export function login(username: string, password?: string): User | null {
   try {
     const trimmedUsername = username.trim();
     if (!trimmedUsername) return null;
@@ -353,6 +354,12 @@ export function login(username: string): User | null {
 
     // 不区分大小写匹配
     const user = users.find(u => u.username.toLowerCase() === trimmedUsername.toLowerCase());
+    
+    // 如果设置了密码，则验证
+    if (user && user.password && user.password !== password) {
+      return null; // 密码不匹配
+    }
+
     if (user) {
       localStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(user));
       return user;
@@ -363,7 +370,7 @@ export function login(username: string): User | null {
   return null;
 }
 
-export function register(username: string): User | null {
+export function register(username: string, password?: string): User | null {
   try {
     const trimmedUsername = username.trim();
     if (!trimmedUsername) return null;
@@ -381,6 +388,7 @@ export function register(username: string): User | null {
     const newUser: User = {
       id: `user_${Date.now()}`,
       username: trimmedUsername, // 存储时保持原始输入但已修剪
+      password: password,
       level: 1,
       exp: 0,
     };

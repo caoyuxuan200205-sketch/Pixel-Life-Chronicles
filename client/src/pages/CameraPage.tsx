@@ -2,6 +2,7 @@ import { useRef, useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Save, ShoppingCart, MapPin, Scissors, Info, Loader2, Sparkles, X, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { track } from "@vercel/analytics";
 import { saveStamp, type StampRecord, getCurrentReading, getCurrentUser, type BeadPattern } from '../store';
 
 /**
@@ -313,6 +314,7 @@ export const CameraPage = () => {
 
     // 模拟 AI 处理延迟
     await new Promise(r => setTimeout(r, 1500));
+    const startTime = Date.now();
     try {
       const result = await generateBeadData(captured, {
         mode: engineMode,
@@ -327,6 +329,14 @@ export const CameraPage = () => {
         saturation,
         sharpness,
       });
+      const duration = (Date.now() - startTime) / 1000;
+      track('bead_conversion_success', {
+        duration,
+        palette: palettePreset,
+        grid_size: engineMode === 'fixed_grid' ? gridSize : pixelSize,
+        engine_mode: engineMode,
+        source: result.source,
+      });
       setBeadResult(result);
       setSelectedColorIndex(0);
       if (result.source === 'local') {
@@ -334,6 +344,7 @@ export const CameraPage = () => {
       }
     } catch (err: any) {
       console.error('Processing failed:', err);
+      track('bead_conversion_error', { error: err.message || 'unknown' });
       setProcessingTip(`生成失败: ${err.message || '未知错误'}。请检查 Vercel Logs。`);
     } finally {
       setIsProcessing(false);
@@ -395,6 +406,7 @@ export const CameraPage = () => {
     if (!resp.ok) return;
     const data = await resp.json();
     if (data?.dataUrl) {
+      track('bead_export', { format: type });
       downloadByDataUrl(data.dataUrl, `bead-pattern-${Date.now()}.${type}`);
     }
   };
