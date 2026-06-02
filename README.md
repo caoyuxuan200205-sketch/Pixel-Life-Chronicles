@@ -45,11 +45,13 @@ FreeWeek/
 ## 核心功能
 
 - AI 占卜：支持塔罗牌与八字命理结合情绪标签生成命运判词
-- 城市探索：展示 POI 推荐、情绪驱动的探索体验和可解锁地图功能
+- 真实车票/机票查询：**星耀AI** 直连 **美团酒旅 CLI (`mttravel`)**。支持输入如“帮我订明天南京到上海的火车票/机票”，后端自动提取意图，执行 CLI 实时查询并流式返回真实班次（带直达美团抢票 dpurl），提供极具仪式感的像素风“时空出行列车/飞行契约”票卡。
+- 城市探索：展示 POI 推荐、情绪驱动的探索体验 and 可解锁地图功能
 - 像素视觉：复古 8-bit 风格 UI 与动画效果
 - 相机印章：记录地点、生成像素化图像与拼豆图纸数据
 - 后端图像处理：加载 Artkal 拼豆色板、渲染拼豆网格、生成图像
 - Vercel 集成：Serverless API 与静态前端路由共存
+
 
 ---
 
@@ -127,6 +129,7 @@ npm run dev
 ### 后端 (`server/.env` 或 Vercel 环境变量)
 - `SUPABASE_URL` 或 `VITE_SUPABASE_URL`
 - `SUPABASE_ANON_KEY` 或 `VITE_SUPABASE_ANON_KEY`
+- `MEITUAN_TRAVEL_TOKEN`（美团酒旅 CLI 抢票直连 Token，用于直连真实供给查询车票/机票）
 
 > `client/src/services/ai.ts` 会优先使用后端地址；如果未配置后端，支持直接在客户端保存豆包 API Key 与模型 ID。
 
