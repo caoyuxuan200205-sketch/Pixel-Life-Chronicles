@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronRight, ShoppingCart, MapPin, Scissors, Info, Loader2, Sparkles, X } from 'lucide-react';
-import { getStamps, clearStamps, getCurrentUser, logout, type StampRecord } from '../store';
+import { getStamps, clearStamps, getCurrentUser, logout, saveCurrentUser, getBoundMembers, saveBoundMembers, type StampRecord, type BoundMember, type User } from '../store';
 
 export const ProfilePage = () => {
   const navigate = useNavigate();
@@ -14,6 +14,15 @@ export const ProfilePage = () => {
     const currentUser = getCurrentUser();
     setUser(currentUser);
     setStamps(getStamps());
+    setBoundMembers(getBoundMembers());
+    
+    // Sync Bazi states when user changes
+    if (currentUser) {
+      setMyPref(currentUser.divinationPreference || 'bazi');
+      setMyBirthDate(currentUser.baziInfo?.birthDate || '1998-06-15');
+      setMyBirthTime(currentUser.baziInfo?.birthTime || '12:00');
+      setMyBirthPlace(currentUser.baziInfo?.birthPlace || '杭州');
+    }
   }, [navigate]); // 监听导航变化
 
   const [showSettings, setShowSettings] = useState(false);
@@ -22,6 +31,80 @@ export const ProfilePage = () => {
   const [selectedStamp, setSelectedStamp] = useState<StampRecord | null>(null);
   const [showPatternInDetail, setShowPatternInDetail] = useState(false);
   const [showPatternView, setShowPatternView] = useState(false);
+
+  // States for customizable Bazi/Tarot settings
+  const [boundMembers, setBoundMembers] = useState<BoundMember[]>(getBoundMembers());
+  const [showEditBaziModal, setShowEditBaziModal] = useState(false);
+  const [showAddPartnerModal, setShowAddPartnerModal] = useState(false);
+
+  // States for editing Bazi settings
+  const [myPref, setMyPref] = useState<'tarot' | 'bazi'>(user?.divinationPreference || 'bazi');
+  const [myBirthDate, setMyBirthDate] = useState(user?.baziInfo?.birthDate || '1998-06-15');
+  const [myBirthTime, setMyBirthTime] = useState(user?.baziInfo?.birthTime || '12:00');
+  const [myBirthPlace, setMyBirthPlace] = useState(user?.baziInfo?.birthPlace || '杭州');
+
+  // States for adding a new bound member
+  const [newPartnerName, setNewPartnerName] = useState('');
+  const [newPartnerRelation, setNewPartnerRelation] = useState<'family' | 'friend' | 'partner' | 'other'>('friend');
+  const [newPartnerMethod, setNewPartnerMethod] = useState<'tarot' | 'bazi'>('bazi');
+  const [newPartnerDate, setNewPartnerDate] = useState('1998-06-15');
+  const [newPartnerTime, setNewPartnerTime] = useState('12:00');
+  const [newPartnerPlace, setNewPartnerPlace] = useState('杭州');
+
+  const handleSaveMyBazi = () => {
+    if (!user) return;
+    const updatedUser: User = {
+      ...user,
+      divinationPreference: myPref,
+      baziInfo: myPref === 'bazi' ? {
+        birthDate: myBirthDate,
+        birthTime: myBirthTime,
+        birthPlace: myBirthPlace
+      } : undefined
+    };
+    saveCurrentUser(updatedUser);
+    setUser(updatedUser);
+    setShowEditBaziModal(false);
+    triggerToast('☯️ 个人天命档案已更新！');
+  };
+
+  const handleAddPartner = () => {
+    if (!newPartnerName.trim()) {
+      alert('请输入伙伴名字');
+      return;
+    }
+    const newMember: BoundMember = {
+      id: `bound_${Date.now()}`,
+      name: newPartnerName.trim(),
+      divinationMethod: newPartnerMethod,
+      relationTag: newPartnerRelation,
+      mood: 'tired',
+      baziInfo: newPartnerMethod === 'bazi' ? {
+        birthDate: newPartnerDate,
+        birthTime: newPartnerTime,
+        birthPlace: newPartnerPlace,
+        queryType: 'travel'
+      } : undefined
+    };
+    const updated = [...boundMembers, newMember];
+    saveBoundMembers(updated);
+    setBoundMembers(updated);
+    setShowAddPartnerModal(false);
+    
+    // Clear inputs
+    setNewPartnerName('');
+    setNewPartnerRelation('friend');
+    setNewPartnerMethod('bazi');
+    
+    triggerToast('👪 成功缔结旅伴契约！');
+  };
+
+  const handleDeletePartner = (id: string) => {
+    const updated = boundMembers.filter(m => m.id !== id);
+    saveBoundMembers(updated);
+    setBoundMembers(updated);
+    triggerToast('🗑️ 已解除旅伴契约。');
+  };
 
   // 导出逻辑
   const downloadByDataUrl = (dataUrl: string, filename: string) => {
@@ -239,6 +322,121 @@ export const ProfilePage = () => {
             <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>连续签到</div>
           </div>
         </div>
+      </div>
+
+      {/* ===== 个人天命档案 & 契约旅伴绑定 ===== */}
+      <div style={{ padding: '0 20px', marginBottom: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        
+        {/* 个人天命档案卡片 */}
+        {user && (
+          <div className="pixel-panel" style={{ padding: '16px', background: 'rgba(226, 181, 83, 0.03)', border: '1px solid var(--primary-dim)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+              <h4 className="font-mystic" style={{ fontSize: '0.95rem', color: 'var(--primary)', fontWeight: 'bold' }}>
+                ☯️ 我的个人天命档案
+              </h4>
+              <button 
+                onClick={() => {
+                  setMyPref(user.divinationPreference || 'bazi');
+                  setMyBirthDate(user.baziInfo?.birthDate || '1998-06-15');
+                  setMyBirthTime(user.baziInfo?.birthTime || '12:00');
+                  setMyBirthPlace(user.baziInfo?.birthPlace || '杭州');
+                  setShowEditBaziModal(true);
+                }} 
+                className="btn btn-ghost" 
+                style={{ fontSize: '0.65rem', padding: '4px 10px', boxShadow: 'none' }}
+              >
+                [ 编辑 ]
+              </button>
+            </div>
+            
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <div>
+                占卜偏好: <span style={{ color: '#fff', fontWeight: 'bold' }}>{user.divinationPreference === 'bazi' ? '☯️ 东方八字' : '🃏 西方塔罗'}</span>
+              </div>
+              {user.divinationPreference === 'bazi' && user.baziInfo && (
+                <>
+                  <div>公历生日: <span style={{ color: '#fff' }}>{user.baziInfo.birthDate}</span></div>
+                  <div>出生时辰: <span style={{ color: '#fff' }}>{user.baziInfo.birthTime}</span></div>
+                  <div>出生地点: <span style={{ color: '#fff' }}>{user.baziInfo.birthPlace}</span></div>
+                </>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* 结界契约伙伴绑定卡片 */}
+        <div className="pixel-panel" style={{ padding: '16px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+            <h4 className="font-mystic" style={{ fontSize: '0.95rem', color: 'var(--primary)', fontWeight: 'bold' }}>
+              👪 结界契约伙伴
+            </h4>
+            <button 
+              onClick={() => setShowAddPartnerModal(true)} 
+              className="btn btn-ghost" 
+              style={{ fontSize: '0.65rem', padding: '4px 10px', color: 'var(--primary)', border: '1px solid var(--primary)', boxShadow: 'none' }}
+            >
+              [ + 缔结新伙伴 ]
+            </button>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {boundMembers.length === 0 ? (
+              <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textAlign: 'center', padding: '12px 0' }}>
+                暂无快捷契约旅伴，点击右上方绑定。
+              </p>
+            ) : (
+              boundMembers.map(member => {
+                const tagEmojis = {
+                  family: '👪 家人',
+                  friend: '🤝 朋友',
+                  partner: '❤️ 伴侣',
+                  other: '✨ 旅人'
+                };
+                
+                return (
+                  <div 
+                    key={member.id} 
+                    style={{ 
+                      display: 'flex', 
+                      justifyContent: 'space-between', 
+                      alignItems: 'center', 
+                      padding: '10px 12px', 
+                      background: 'rgba(255,255,255,0.02)',
+                      border: '1px solid var(--pixel-border-color)' 
+                    }}
+                  >
+                    <div style={{ textAlign: 'left' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ fontSize: '0.8rem', fontWeight: 'bold', color: '#fff' }}>{member.name}</span>
+                        <span style={{ 
+                          fontSize: '0.6rem', 
+                          background: 'rgba(255,255,255,0.06)', 
+                          color: 'var(--text-secondary)',
+                          padding: '1px 6px',
+                          border: '1px solid var(--pixel-border-color)'
+                        }}>
+                          {tagEmojis[member.relationTag]}
+                        </span>
+                      </div>
+                      <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: '4px' }}>
+                        偏好: {member.divinationMethod === 'bazi' ? `☯️ 八字 (${member.baziInfo?.birthDate})` : '🃏 塔罗'}
+                      </div>
+                    </div>
+
+                    <button 
+                      onClick={() => handleDeletePartner(member.id)} 
+                      style={{ background: 'transparent', border: 'none', color: '#cc5555', cursor: 'pointer', padding: '4px', fontSize: '0.8rem' }}
+                      title="解除契约"
+                    >
+                      🗑️
+                    </button>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+
       </div>
 
       {/* ===== 图鉴区域 ===== */}
@@ -515,6 +713,261 @@ export const ProfilePage = () => {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}><span>震动反馈</span><button className="btn btn-primary btn-sm">ON</button></div>
               </div>
               <button onClick={() => setShowSettings(false)} className="btn btn-primary" style={{ width: '100%', marginTop: '24px' }}>返回</button>
+            </motion.div>
+          </motion.div>
+        )}
+
+        {/* 编辑个人天命档案弹窗 */}
+        {showEditBaziModal && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="modal-overlay" onClick={() => setShowEditBaziModal(false)}>
+            <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} className="pixel-panel modal-content" style={{ padding: '24px' }} onClick={e => e.stopPropagation()}>
+              <h3 className="font-mystic" style={{ marginBottom: '20px', textAlign: 'center', color: 'var(--primary)' }}>编辑天命档案</h3>
+              
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '6px' }}>占卜偏好</label>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <button
+                      type="button"
+                      className="btn"
+                      onClick={() => setMyPref('bazi')}
+                      style={{
+                        flex: 1,
+                        padding: '8px',
+                        fontSize: '0.75rem',
+                        background: myPref === 'bazi' ? 'var(--primary-dim)' : 'transparent',
+                        color: myPref === 'bazi' ? 'var(--primary)' : 'var(--text-muted)',
+                        border: `1px solid ${myPref === 'bazi' ? 'var(--primary)' : 'var(--pixel-border-color)'}`,
+                        boxShadow: 'none',
+                        height: 'auto'
+                      }}
+                    >
+                      ☯️ 东方八字
+                    </button>
+                    <button
+                      type="button"
+                      className="btn"
+                      onClick={() => setMyPref('tarot')}
+                      style={{
+                        flex: 1,
+                        padding: '8px',
+                        fontSize: '0.75rem',
+                        background: myPref === 'tarot' ? 'var(--primary-dim)' : 'transparent',
+                        color: myPref === 'tarot' ? 'var(--primary)' : 'var(--text-muted)',
+                        border: `1px solid ${myPref === 'tarot' ? 'var(--primary)' : 'var(--pixel-border-color)'}`,
+                        boxShadow: 'none',
+                        height: 'auto'
+                      }}
+                    >
+                      🃏 西方塔罗
+                    </button>
+                  </div>
+                </div>
+
+                {myPref === 'bazi' && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '4px' }}>出生公历日期</label>
+                      <input
+                        type="date"
+                        value={myBirthDate}
+                        onChange={(e) => setMyBirthDate(e.target.value)}
+                        style={{
+                          width: '100%',
+                          background: '#1a1714',
+                          border: '1px solid var(--pixel-border-color)',
+                          color: '#fff',
+                          padding: '8px',
+                          fontSize: '0.8rem',
+                          outline: 'none'
+                        }}
+                      />
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '10px' }}>
+                      <div style={{ flex: 1.2 }}>
+                        <label style={{ display: 'block', fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '4px' }}>出生时辰</label>
+                        <input
+                          type="time"
+                          value={myBirthTime}
+                          onChange={(e) => setMyBirthTime(e.target.value)}
+                          style={{
+                            width: '100%',
+                            background: '#1a1714',
+                            border: '1px solid var(--pixel-border-color)',
+                            color: '#fff',
+                            padding: '8px',
+                            fontSize: '0.8rem',
+                            outline: 'none'
+                          }}
+                        />
+                      </div>
+                      <div style={{ flex: 1.8 }}>
+                        <label style={{ display: 'block', fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '4px' }}>出生地点</label>
+                        <input
+                          type="text"
+                          placeholder="省/市"
+                          value={myBirthPlace}
+                          onChange={(e) => setMyBirthPlace(e.target.value)}
+                          style={{
+                            width: '100%',
+                            background: '#1a1714',
+                            border: '1px solid var(--pixel-border-color)',
+                            color: '#fff',
+                            padding: '8px',
+                            fontSize: '0.8rem',
+                            outline: 'none'
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div style={{ display: 'flex', gap: '12px', marginTop: '24px' }}>
+                <button onClick={() => setShowEditBaziModal(false)} className="btn btn-ghost" style={{ flex: 1 }}>取消</button>
+                <button onClick={handleSaveMyBazi} className="btn btn-primary" style={{ flex: 1 }}>保存</button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+
+        {/* 添加新旅伴弹窗 */}
+        {showAddPartnerModal && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="modal-overlay" onClick={() => setShowAddPartnerModal(false)}>
+            <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} className="pixel-panel modal-content" style={{ padding: '24px' }} onClick={e => e.stopPropagation()}>
+              <h3 className="font-mystic" style={{ marginBottom: '20px', textAlign: 'center', color: 'var(--primary)' }}>缔结新旅伴契约</h3>
+              
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '4px' }}>旅伴大名</label>
+                  <input
+                    type="text"
+                    placeholder="请输入旅伴称呼"
+                    value={newPartnerName}
+                    onChange={(e) => setNewPartnerName(e.target.value)}
+                    style={{
+                      width: '100%',
+                      background: '#1a1714',
+                      border: '1px solid var(--pixel-border-color)',
+                      color: '#fff',
+                      padding: '8px',
+                      fontSize: '0.8rem',
+                      outline: 'none'
+                    }}
+                  />
+                </div>
+
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <div style={{ flex: 1 }}>
+                    <label style={{ display: 'block', fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '4px' }}>关系标签</label>
+                    <select
+                      value={newPartnerRelation}
+                      onChange={(e) => setNewPartnerRelation(e.target.value as any)}
+                      style={{
+                        width: '100%',
+                        background: '#1a1714',
+                        border: '1px solid var(--pixel-border-color)',
+                        color: '#fff',
+                        padding: '8px',
+                        fontSize: '0.8rem',
+                        outline: 'none'
+                      }}
+                    >
+                      <option value="family">👪 家人</option>
+                      <option value="friend">🤝 朋友</option>
+                      <option value="partner">❤️ 伴侣</option>
+                      <option value="other">✨ 其他</option>
+                    </select>
+                  </div>
+
+                  <div style={{ flex: 1 }}>
+                    <label style={{ display: 'block', fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '4px' }}>占卜偏好</label>
+                    <select
+                      value={newPartnerMethod}
+                      onChange={(e) => setNewPartnerMethod(e.target.value as any)}
+                      style={{
+                        width: '100%',
+                        background: '#1a1714',
+                        border: '1px solid var(--pixel-border-color)',
+                        color: '#fff',
+                        padding: '8px',
+                        fontSize: '0.8rem',
+                        outline: 'none'
+                      }}
+                    >
+                      <option value="bazi">☯️ 东方八字</option>
+                      <option value="tarot">🃏 西方塔罗</option>
+                    </select>
+                  </div>
+                </div>
+
+                {newPartnerMethod === 'bazi' && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '4px' }}>出生公历日期</label>
+                      <input
+                        type="date"
+                        value={newPartnerDate}
+                        onChange={(e) => setNewPartnerDate(e.target.value)}
+                        style={{
+                          width: '100%',
+                          background: '#1a1714',
+                          border: '1px solid var(--pixel-border-color)',
+                          color: '#fff',
+                          padding: '8px',
+                          fontSize: '0.8rem',
+                          outline: 'none'
+                        }}
+                      />
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '10px' }}>
+                      <div style={{ flex: 1.2 }}>
+                        <label style={{ display: 'block', fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '4px' }}>出生时辰</label>
+                        <input
+                          type="time"
+                          value={newPartnerTime}
+                          onChange={(e) => setNewPartnerTime(e.target.value)}
+                          style={{
+                            width: '100%',
+                            background: '#1a1714',
+                            border: '1px solid var(--pixel-border-color)',
+                            color: '#fff',
+                            padding: '8px',
+                            fontSize: '0.8rem',
+                            outline: 'none'
+                          }}
+                        />
+                      </div>
+                      <div style={{ flex: 1.8 }}>
+                        <label style={{ display: 'block', fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '4px' }}>出生地点</label>
+                        <input
+                          type="text"
+                          placeholder="省/市"
+                          value={newPartnerPlace}
+                          onChange={(e) => setNewPartnerPlace(e.target.value)}
+                          style={{
+                            width: '100%',
+                            background: '#1a1714',
+                            border: '1px solid var(--pixel-border-color)',
+                            color: '#fff',
+                            padding: '8px',
+                            fontSize: '0.8rem',
+                            outline: 'none'
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div style={{ display: 'flex', gap: '12px', marginTop: '24px' }}>
+                <button onClick={() => setShowAddPartnerModal(false)} className="btn btn-ghost" style={{ flex: 1 }}>取消</button>
+                <button onClick={handleAddPartner} className="btn btn-primary" style={{ flex: 1 }}>缔结契约</button>
+              </div>
             </motion.div>
           </motion.div>
         )}

@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Save, ShoppingCart, MapPin, Scissors, Info, Loader2, Sparkles, X, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { track } from "@vercel/analytics";
-import { saveStamp, type StampRecord, getCurrentReading, getCurrentUser, type BeadPattern } from '../store';
+import { saveStamp, type StampRecord, getLatestJointPlan, getCurrentUser, type BeadPattern } from '../store';
 
 /**
  * 拼豆色板（常见拼豆基础色）
@@ -190,7 +190,14 @@ export const CameraPage = () => {
 
   const navigate = useNavigate();
   
-  const reading = getCurrentReading();
+  const plan = getLatestJointPlan();
+  const activeEvent = plan ? plan.itinerary[0] : null;
+  const reading = activeEvent ? {
+    poi: activeEvent.poi,
+    card: plan.individualReadings[0]?.tarotCard || { name: '命运契约', emoji: '☯️', meaning: '命运契约的神秘交融。' },
+    reading: plan.divinationSynthesis,
+    drawnAt: plan.createdAt
+  } : null;
   const user = getCurrentUser();
 
   const SEARCH_STATUSES = [

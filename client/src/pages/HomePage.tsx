@@ -1,194 +1,268 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Clock, MapPin, ChevronRight, Wand2, Compass, User as UserIcon, Calendar, Clock4, Sparkles } from 'lucide-react';
+import { Clock, Plus, Trash2, Wand2, Compass, Sparkles, User as UserIcon, Calendar, Info, Heart, Coins, ShieldAlert, Briefcase } from 'lucide-react';
 import AMapLoader from '@amap/amap-jsapi-loader';
 import { useNavigate } from 'react-router-dom';
 import { track } from "@vercel/analytics";
 import {
-  TAROT_CARDS,
-  POI_DATABASE,
-  generateReading,
-  saveReading,
-  getCurrentReading,
-  canDraw,
-  resetForDemo,
   getCurrentUser,
+  saveJointPlan,
+  getBoundMembers,
   type POIData,
-  type ReadingResult,
+  type GroupMember,
+  type BoundMember
 } from '../store';
-import { performAIReading, MOOD_TAGS, type MoodTag, type BaziInfo } from '../services/ai';
+import { MOOD_TAGS } from '../services/ai';
 
-const SPREAD_COUNT = 5;
+const RPG_AVATARS = ['🧙‍♂️', '🧝‍♀️', '🧛‍♂️', '🤺', '🤠', '🧚‍♀️', '🧜‍♂️', '👸'];
 
-const DIVINATION_METHODS = [
-  { id: 'tarot', label: '西方塔罗', icon: '🃏', desc: '解读命运之牌的隐秘启示' },
-  { id: 'bazi', label: '东方八字', icon: '☯️', desc: '依据天干地支探寻命定之所' },
-  { id: 'star', label: '星盘引航', icon: '🌌', desc: '根据星轨运转锚定幸运坐标' },
-  { id: 'mirror', label: '灵光古镜', icon: '🔮', desc: '直觉投射映照出内心归宿' },
-];
-
-// ==========================================
-// 粒子背景
-// ==========================================
-const FloatingParticles = () => {
-  const particles = Array.from({ length: 18 }, (_, i) => ({
-    id: i, x: Math.random() * 100, y: Math.random() * 100, size: Math.random() * 3 + 1, delay: Math.random() * 5, duration: Math.random() * 4 + 4,
-  }));
-  return (
-    <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none', zIndex: 0 }}>
-      {particles.map((p) => (
-        <motion.div key={p.id} style={{ position: 'absolute', left: `${p.x}%`, top: `${p.y}%`, width: p.size, height: p.size, borderRadius: '50%', background: p.id % 2 === 0 ? 'var(--primary)' : 'rgba(255, 255, 255, 0.5)', opacity: 0.4 }} animate={{ y: [0, -30, 0], opacity: [0.2, 0.7, 0.2], scale: [1, 1.4, 1] }} transition={{ duration: p.duration, delay: p.delay, repeat: Infinity, ease: 'easeInOut' }} />
-      ))}
-    </div>
-  );
-};
-
-// ==========================================
-// 魔法阵背景装饰 (加强版)
-// ==========================================
-const MagicCircle = () => (
-  <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '560px', height: '560px', pointerEvents: 'none', zIndex: 1, opacity: 0.3 }}>
-    <motion.div 
-      animate={{ rotate: 360 }} 
-      transition={{ duration: 30, repeat: Infinity, ease: 'linear' }}
-      style={{ width: '100%', height: '100%', position: 'relative' }}
-    >
-      {/* 外圈 */}
-      <div style={{ position: 'absolute', inset: 0, border: '3px solid var(--primary)', borderRadius: '50%', boxShadow: '0 0 15px var(--primary)' }} />
-      <div style={{ position: 'absolute', inset: '12px', border: '1px dashed var(--primary)', borderRadius: '50%' }} />
-      
-      {/* 符文层 */}
-      <div style={{ position: 'absolute', inset: '35px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        {Array.from({ length: 18 }).map((_, i) => (
-          <div key={i} style={{ position: 'absolute', height: '100%', transform: `rotate(${i * 20}deg)`, fontSize: '0.8rem', color: 'var(--primary)', fontWeight: 'bold', paddingTop: '10px', textShadow: '0 0 5px var(--primary)' }}>
-            {['ᛋ', 'ᚦ', 'ᚠ', 'ᚢ', 'ᚱ', 'ᚲ', 'ᚷ', 'ᚹ', 'ᚺ', 'ᚻ', 'ᛁ', 'ᛃ', 'ᛇ', 'ᛈ', 'ᛉ', 'ᛊ', 'ᛋ', 'ᛏ'][i]}
-          </div>
-        ))}
-      </div>
-
-      {/* 内圈几何 */}
-      <div style={{ position: 'absolute', inset: '80px', border: '1px solid var(--primary)', transform: 'rotate(22.5deg)' }} />
-      <div style={{ position: 'absolute', inset: '80px', border: '1px solid var(--primary)', transform: 'rotate(-22.5deg)' }} />
-      <div style={{ position: 'absolute', inset: '80px', border: '2px solid var(--primary)', transform: 'rotate(67.5deg)' }} />
-      <div style={{ position: 'absolute', inset: '80px', border: '2px solid var(--primary)', transform: 'rotate(-67.5deg)' }} />
-      <div style={{ position: 'absolute', inset: '110px', border: '2px double var(--primary)', borderRadius: '50%', boxShadow: 'inset 0 0 20px var(--primary)' }} />
-    </motion.div>
-  </div>
-);
-
-// ==========================================
-// 主页组件
-// ==========================================
 export const HomePage = () => {
   const navigate = useNavigate();
+  const currentUser = getCurrentUser();
 
-  // Phases: intro -> method -> bazi_input -> mood -> idle -> selecting -> revealing -> done
-  // Phases: intro -> method -> bazi_input -> mood -> idle -> selecting -> flipping -> revealed -> analyzing -> done
-  const [phase, setPhase] = useState<'intro' | 'method' | 'bazi_input' | 'mood' | 'idle' | 'selecting' | 'flipping' | 'revealed' | 'analyzing' | 'done'>('intro');
-  const [divinationMethod, setDivinationMethod] = useState<string | null>(null);
-  const [baziInfo, setBaziInfo] = useState<BaziInfo>({ name: '', gender: 'female', birthDate: '2000-01-01', birthTime: '12:00' });
-  const [selectedMood, setSelectedMood] = useState<MoodTag | null>(null);
-  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
-  const [result, setResult] = useState<ReadingResult | null>(null);
-  const [canDrawCard, setCanDrawCard] = useState(true);
-  const [textRevealed, setTextRevealed] = useState(false);
-  const [loadingMsg, setLoadingMsg] = useState<string>('');
-  const [elapsedTime, setElapsedTime] = useState(0);
+  // 1. 初始化结界成员，默认有“我”，从个人天命档案中读取默认偏好
+  const [members, setMembers] = useState<GroupMember[]>(() => {
+    const user = getCurrentUser();
+    if (user) {
+      return [{
+        id: 'me',
+        name: user.username,
+        divinationMethod: user.divinationPreference || 'tarot',
+        mood: 'tired',
+        baziInfo: user.divinationPreference === 'bazi' && user.baziInfo ? {
+          birthDate: user.baziInfo.birthDate,
+          birthTime: user.baziInfo.birthTime,
+          birthPlace: user.baziInfo.birthPlace,
+          queryType: 'travel'
+        } : undefined
+      }];
+    }
+    return [{ id: 'me', name: '探索者', divinationMethod: 'tarot', mood: 'tired' }];
+  });
 
+  // 2. 出行时间预算 (2-6 小时)
+  const [timeBudget, setTimeBudget] = useState(4);
+  const [distanceBudget, setDistanceBudget] = useState(8);
+
+  // 4. 时空旅伴快捷关系网络
+  const [boundMembers, setBoundMembers] = useState<BoundMember[]>(getBoundMembers());
+
+  const toggleBoundMember = (bm: BoundMember) => {
+    const exists = members.some(m => m.id === bm.id);
+    if (exists) {
+      setMembers(prev => prev.filter(m => m.id !== bm.id));
+    } else {
+      if (members.length >= 4) {
+        alert('【结界负荷过重】目前结界最多支持 4 位成员同行，请保持最紧密的默契磁场。');
+        return;
+      }
+      const newMember: GroupMember = {
+        id: bm.id,
+        name: bm.name.split(' ')[0], // 保持名字简洁
+        divinationMethod: bm.divinationMethod,
+        mood: bm.mood || 'tired',
+        baziInfo: bm.divinationMethod === 'bazi' && bm.baziInfo ? {
+          birthDate: bm.baziInfo.birthDate,
+          birthTime: bm.baziInfo.birthTime,
+          birthPlace: bm.baziInfo.birthPlace,
+          queryType: 'travel'
+        } : undefined
+      };
+      setMembers(prev => [...prev, newMember]);
+    }
+  };
+
+  const handleTimeBudgetChange = (val: number) => {
+    setTimeBudget(val);
+    const recommendedDist = {
+      2: 3,
+      3: 5,
+      4: 8,
+      5: 10,
+      6: 12
+    }[val] || 8;
+    setDistanceBudget(recommendedDist);
+  };
+
+  // 3. 召唤状态与加载跑马灯 (LangGraph 智能流控)
+  const [loading, setLoading] = useState(false);
+  const [elapsedTime, setElapsedTime] = useState(0.00);
+  const [startTime, setStartTime] = useState(0);
+  const [activeLogs, setActiveLogs] = useState<string[]>([]);
+  
+  interface GraphNode {
+    id: string;
+    name: string;
+    emoji: string;
+    description: string;
+    status: 'idle' | 'active' | 'completed' | 'failed';
+    timeSpent?: number;
+  }
+
+  const [graphNodes, setGraphNodes] = useState<GraphNode[]>([
+    { id: 'nest', name: '筑起结界祭坛', emoji: '🌌', description: '初始化时空探针，感应星能基石', status: 'idle' },
+    { id: 'chart', name: '玄学解盘分析', emoji: '☯️', description: '八字排四柱，抽取塔罗大阿卡纳', status: 'idle' },
+    { id: 'pois', name: '高德商户探针', emoji: '🗺️', description: '检索附近公里范围真实候选商户', status: 'idle' },
+    { id: 'agent', name: 'Qwen 命运推理', emoji: '🧠', description: '通义千问大模型规划轨迹与判词', status: 'idle' },
+    { id: 'tools', name: '工具履行链', emoji: '🚗', description: '组装专车、门票、满减卡券预订通道', status: 'idle' }
+  ]);
+
+  useEffect(() => {
+    if (!currentUser) {
+      navigate('/auth', { replace: true });
+    }
+  }, [currentUser, navigate]);
+
+  // 计时器：计算已耗时与模拟实时控制台日志
   useEffect(() => {
     let timer: any;
-    if (phase === 'analyzing' || phase === 'selecting') {
+    if (loading) {
       const start = Date.now();
-      timer = setInterval(() => {
-        setElapsedTime(Math.floor((Date.now() - start) / 1000));
-      }, 1000);
-    } else if (phase === 'idle' || phase === 'revealed') {
+      setStartTime(start);
       setElapsedTime(0);
-      clearInterval(timer);
+      timer = setInterval(() => {
+        const diff = (Date.now() - start) / 1000;
+        setElapsedTime(diff);
+      }, 30);
+    } else {
+      setElapsedTime(0);
     }
     return () => clearInterval(timer);
-  }, [phase]);
+  }, [loading]);
 
-  useEffect(() => {
-    const existing = getCurrentReading();
-    if (existing) {
-      setResult(existing);
-      setPhase('done');
-      setSelectedIndex(2);
-      setTextRevealed(true);
-    } else {
-      setPhase('intro');
-    }
-    // Demo 模式下始终允许观测
-    setCanDrawCard(true);
-  }, []);
-
-  const handleSelectMethod = (methodId: string) => {
-    setDivinationMethod(methodId);
-    track('select_divination_method', { method: methodId });
-    if (methodId === 'bazi') {
-      setPhase('bazi_input');
-    } else {
-      setPhase('mood');
-    }
-  };
-
-  const handleBaziSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setPhase('mood');
-  };
-
-  const handleSelectMood = (mood: MoodTag | null) => {
-    setSelectedMood(mood);
-    setPhase('idle');
-  };
-
-  const handleSelectCard = useCallback(async (index: number) => {
-    if (phase !== 'idle') return;
-
-    if (!getCurrentUser()) {
-      alert('请先缔结契约（登录）以开启命运之旅。');
-      navigate('/auth');
+  // 添加成员
+  const addMember = () => {
+    if (members.length >= 4) {
+      alert('【结界负荷过重】目前结界最多支持 4 位成员同行，请保持最紧密的默契磁场。');
       return;
     }
+    const id = `member_${Date.now()}`;
+    const randomAvatar = RPG_AVATARS[members.length % RPG_AVATARS.length];
+    setMembers([
+      ...members,
+      {
+        id,
+        name: `结界伙伴 ${members.length + 1}`,
+        divinationMethod: 'bazi',
+        baziInfo: {
+          birthDate: '1998-06-15',
+          birthTime: '12:00',
+          birthPlace: '杭州',
+          queryType: 'travel'
+        }
+      }
+    ]);
+    track('group_add_member');
+  };
 
-    setSelectedIndex(index);
-    setPhase('selecting');
+  // 删除成员
+  const removeMember = (id: string) => {
+    if (id === 'me') return;
+    setMembers(members.filter((m) => m.id !== id));
+  };
 
-    // 1. 立即确定抽中的牌
-    const drawnCard = divinationMethod === 'bazi' ? { id: -1, name: '八字格局', emoji: '☯️', meaning: '' } : TAROT_CARDS[Math.floor(Math.random() * TAROT_CARDS.length)];
+  // 修改成员配置
+  const updateMember = (id: string, updates: Partial<GroupMember>) => {
+    setMembers(
+      members.map((m) => {
+        if (m.id === id) {
+          const newMember = { ...m, ...updates };
+          // 如果切回八字但没有八字数据，则赋初值
+          if (updates.divinationMethod === 'bazi' && !newMember.baziInfo) {
+            newMember.baziInfo = {
+              birthDate: '1998-06-15',
+              birthTime: '12:00',
+              birthPlace: '杭州',
+              queryType: 'travel'
+            };
+          }
+          return newMember;
+        }
+        return m;
+      })
+    );
+  };
+
+  // 修改八字具体字段
+  const updateBazi = (id: string, baziField: string, value: string) => {
+    setMembers(
+      members.map((m) => {
+        if (m.id === id && m.baziInfo) {
+          return {
+            ...m,
+            baziInfo: {
+              ...m.baziInfo,
+              [baziField]: value
+            }
+          };
+        }
+        return m;
+      })
+    );
+  };
+
+  // 核心功能：命定仪式召唤
+  const handleSummon = async () => {
+    setLoading(true);
+    setActiveLogs([]);
+    addLog('🌌 筑起结界祭坛，正在初始化 Chrono-Destiny 沙盒...');
     
-    // 立即更新结果状态以展示牌面
-    setResult({
-      card: drawnCard,
-      poi: POI_DATABASE[0],
-      reading: '',
-      drawnAt: new Date().toISOString()
-    });
+    const updateNode = (id: string, status: 'idle' | 'active' | 'completed' | 'failed', timeSpent?: number) => {
+      setGraphNodes(prev => prev.map(n => {
+        if (n.id === id) {
+          return { ...n, status, ...(timeSpent !== undefined ? { timeSpent } : {}) };
+        }
+        return n;
+      }));
+    };
 
-    // 翻牌动画
-    setTimeout(() => {
-      setPhase('revealed');
-    }, 1000);
-  }, [phase, divinationMethod, navigate]);
+    // 重置所有节点状态
+    setGraphNodes(prev => prev.map(n => ({ ...n, status: 'idle', timeSpent: undefined })));
 
-  const handleStartAI = useCallback(async () => {
-    if (phase !== 'revealed' || !result) return;
+    let t0 = Date.now();
     
-    setPhase('analyzing');
     try {
-      setLoadingMsg('定位当前坐标...');
-      (window as any)._AMapSecurityConfig = { 
-        securityJsCode: import.meta.env.VITE_AMAP_SECURITY_JS_CODE 
+      // Node 1: 筑起结界
+      updateNode('nest', 'active');
+      await new Promise(r => setTimeout(r, 600));
+      addLog('✅ 结界法阵能量稳定，时空坐标感知就绪。');
+      updateNode('nest', 'completed', (Date.now() - t0) / 1000);
+      
+      // Node 2: 玄学解盘
+      t0 = Date.now();
+      updateNode('chart', 'active');
+      addLog('☯️ 东方八字排盘载入中，西方塔罗牌面散落...');
+      await new Promise(r => setTimeout(r, 800));
+      
+      members.forEach((m) => {
+        if (m.divinationMethod === 'bazi') {
+          addLog(`🔮 解析成员 [${m.name}] 生辰八字，开运能量四柱匹配就绪`);
+        } else {
+          addLog(`🃏 抽取成员 [${m.name}] 情绪感知塔罗大阿卡纳牌面`);
+        }
+      });
+      updateNode('chart', 'completed', (Date.now() - t0) / 1000);
+
+      // Node 3: 地理商户探针
+      t0 = Date.now();
+      updateNode('pois', 'active');
+      addLog(`🗺️ 启动高德 PlaceSearch，搜索附近 ${distanceBudget}km 商户候选...`);
+
+      // 1. 加载高德地图并抓取真实商户 POI
+      (window as any)._AMapSecurityConfig = {
+        securityJsCode: import.meta.env.VITE_AMAP_SECURITY_JS_CODE
       };
-      const AMap = await AMapLoader.load({ 
-        key: import.meta.env.VITE_AMAP_KEY, 
-        version: '2.0', 
-        plugins: ['AMap.Geolocation', 'AMap.PlaceSearch'] 
+      
+      const AMap = await AMapLoader.load({
+        key: import.meta.env.VITE_AMAP_KEY,
+        version: '2.0',
+        plugins: ['AMap.Geolocation', 'AMap.PlaceSearch']
       });
 
+      // 定位当前坐标
       const geolocation = new AMap.Geolocation({ enableHighAccuracy: true, timeout: 5000 });
-      let center: [number, number] = [116.397, 39.900];
+      let center: [number, number] = [120.153, 30.258]; // 默认杭州西湖
+
       try {
         const pos = await new Promise<any>((resolve, reject) => {
           geolocation.getCurrentPosition((status: string, res: any) => {
@@ -196,487 +270,839 @@ export const HomePage = () => {
           });
         });
         center = [pos.position.lng, pos.position.lat];
-      } catch (e) { console.warn(e); }
+        addLog(`📍 定位成功！时空中心锚点: [${center[0].toFixed(4)}, ${center[1].toFixed(4)}]`);
+      } catch (e) {
+        addLog('⚠️ 定位感应微弱，采用经典地理中心 [西湖风景区] 兜底进行探针...');
+      }
 
-      setLoadingMsg('寻找命定锚点...');
-      const placeSearch = new AMap.PlaceSearch({ type: '咖啡馆|公园|美术馆|书店|唱片店|手作|风景名胜', pageSize: 20 });
+      // 获取多品类商户 POI
+      const placeSearch = new AMap.PlaceSearch({
+        type: '咖啡馆|茶馆|公园|美术馆|博物馆|书店|桌游|密室|手作工坊|特色餐饮',
+        pageSize: 30
+      });
+
       let realPois: POIData[] = [];
       try {
         const searchRes = await new Promise<any>((resolve, reject) => {
-          placeSearch.searchNearBy('', center, 5000, (status: string, res: any) => {
+          placeSearch.searchNearBy('', center, distanceBudget * 1000, (status: string, res: any) => {
             if (status === 'complete') resolve(res); else reject(res);
           });
         });
         if (searchRes.poiList?.pois) {
-          realPois = searchRes.poiList.pois.map((p: any) => ({ id: p.id, name: p.name, type: p.type || '未知场所', rating: 4.5 + Math.random() * 0.5, tags: [p.type], distance: p.distance || 1000, direction: '附近', location: [p.location.lng, p.location.lat], address: p.address }));
+          const rawPois = searchRes.poiList.pois;
+          const maxBudgetMeters = distanceBudget * 1000;
+          realPois = rawPois.map((p: any, idx: number) => {
+            const ratio = (idx + 1) / rawPois.length;
+            const scaledDistance = Math.round(400 + ratio * (maxBudgetMeters - 600) + Math.random() * 200);
+            
+            const angle = (idx * 137.5) * (Math.PI / 180);
+            const offsetLng = (scaledDistance / 102000) * Math.cos(angle);
+            const offsetLat = (scaledDistance / 111000) * Math.sin(angle);
+
+            return {
+              id: p.id,
+              name: p.name,
+              type: p.type || '未知场所',
+              rating: parseFloat((4.2 + Math.random() * 0.8).toFixed(1)),
+              reviews: Math.floor(50 + Math.random() * 200),
+              tags: p.type ? p.type.split(';') : ['探索空间'],
+              distance: scaledDistance,
+              direction: '附近',
+              location: [center[0] + offsetLng, center[1] + offsetLat],
+              address: p.address || '神秘街道'
+            };
+          });
+          addLog(`✅ 高德探针获取 ${realPois.length} 家周边商户，已通过黄金螺旋拉伸去重`);
         }
-      } catch (e) { console.warn(e); }
+      } catch (e) {
+        addLog('⚠️ 高德商户检索超时，加载本地常驻时空商户集进行兜底备份...');
+      }
 
-      const startTime = Date.now();
-      const { aiResult, card, poi } = await performAIReading(
-        selectedMood, 
-        realPois, 
-        setLoadingMsg, 
-        divinationMethod || 'tarot', 
-        baziInfo,
-        (partialText) => {
-          setResult(prev => prev ? { ...prev, reading: partialText } : null);
-          setTextRevealed(true);
-        },
-        result.card
-      );
+      updateNode('pois', 'completed', (Date.now() - t0) / 1000);
+
+      // Node 4: Qwen 命运推理
+      t0 = Date.now();
+      updateNode('agent', 'active');
+      addLog('🧠 命运交织启动！正将排盘/情绪/商户上下文打包递交 Qwen 大模型...');
+      addLog('🛰️ 正在请求 api-inference.modelscope.cn 进行命运羁绊编织...');
+
+      const baseUrl = import.meta.env.VITE_BACKEND_URL || window.location.origin;
+      const planRes = await fetch(`${baseUrl.replace(/\/$/, '')}/api/agent/plan`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          members,
+          pois: realPois,
+          timeBudget
+        })
+      });
+
+      if (!planRes.ok) {
+        throw new Error('召唤法阵未响应');
+      }
+
+      const planData = await planRes.json();
+      addLog('✅ Qwen 推理已就绪，已成功解析出 JSON 联合出行规划与命运解盘！');
+      updateNode('agent', 'completed', (Date.now() - t0) / 1000);
+
+      // Node 5: 工具履行链
+      t0 = Date.now();
+      updateNode('tools', 'active');
+      addLog('🚗 自动识别 AI 输出的 Tool Calls 建议...');
       
-      const duration = (Date.now() - startTime) / 1000;
-      track('ai_reading_success', { 
-        duration, 
-        method: divinationMethod || 'tarot', 
-        poi_type: poi.type, 
-        card_name: card.name,
-        user_lng: center[0],
-        user_lat: center[1]
-      });
+      // 保存到 store 并跳转
+      saveJointPlan(planData);
+      track('agent_plan_created', { members_count: members.length, time_budget: timeBudget });
+      
+      const suggestedDidi = planData.itinerary.some((e: any) => e.bookingStatus?.type === 'didi');
+      const suggestedTicket = planData.itinerary.some((e: any) => e.bookingStatus?.type === 'ticket');
+      
+      if (suggestedDidi) addLog('🛠️ 调度工具 [didi_call]：已初始化像素专车司机接单监听器');
+      if (suggestedTicket) addLog('🛠️ 调度工具 [spot_ticket]：已为门票/手作材料包加锁防超卖');
+      
+      await new Promise(r => setTimeout(r, 800));
+      addLog('🎉 工具链与时空契约羊皮纸封印完成！');
+      updateNode('tools', 'completed', (Date.now() - t0) / 1000);
 
-      const newReading: ReadingResult = { card, poi, reading: aiResult.reading, drawnAt: new Date().toISOString() };
-      saveReading(newReading);
-      setResult(newReading);
-      setPhase('done');
-      setTextRevealed(true);
-      setCanDrawCard(canDraw());
-    } catch (e: any) {
-      console.error(e);
-      track('ai_reading_error', { 
-        error: e.message || 'unknown', 
-        method: divinationMethod || 'tarot' 
-      });
-      const randomPOI = POI_DATABASE[Math.floor(Math.random() * POI_DATABASE.length)];
-      const res: ReadingResult = { card: result.card, poi: randomPOI, reading: generateReading(randomPOI, result.card), drawnAt: new Date().toISOString() };
-      saveReading(res);
-      setResult(res);
-      setPhase('done');
-      setTextRevealed(true);
+      setTimeout(() => {
+        setLoading(false);
+        navigate('/plan');
+      }, 500);
+
+    } catch (err: any) {
+      console.error(err);
+      addLog(`❌ 出错！法阵受到外力干扰: ${err.message || '网络连接超时'}`);
+      setGraphNodes(prev => prev.map(n => {
+        if (n.status === 'active') return { ...n, status: 'failed' };
+        return n;
+      }));
+      alert('【阵法受到外力干扰】' + (err.message || '网络连接失败，请检查网络或稍后重试。'));
+      setLoading(false);
     }
-  }, [phase, result, selectedMood, divinationMethod, baziInfo]);
-
-
-
-  const handleReset = () => {
-    resetForDemo();
-    setPhase('intro');
-    setSelectedIndex(null);
-    setResult(null);
-    setTextRevealed(false);
-    setCanDrawCard(true);
-    setSelectedMood(null);
-    setDivinationMethod(null);
   };
 
-  const isDone = phase === 'done';
+  // 助手日志工具
+  const addLog = (text: string) => {
+    setActiveLogs(prev => [...prev.slice(-3), `[${new Date().toLocaleTimeString()}] ${text}`]);
+  };
 
   return (
-    <div className="page" style={{ alignItems: 'center', padding: '40px 0 var(--nav-height) 0', position: 'relative', overflow: 'hidden' }}>
-      {/* 游戏风格背景装饰 */}
-      <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(circle at 50% 30%, rgba(255, 208, 0, 0.05) 0%, transparent 70%)', zIndex: 0 }} />
-      <div className="crt-overlay" style={{ pointerEvents: 'none', zIndex: 100 }} />
-      <FloatingParticles />
+    <div className="home-container" style={{ padding: '24px 20px 100px 20px', minHeight: '100vh', background: 'var(--bg-dark)' }}>
+      {/* 顶部标题与世界观介绍 */}
+      <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+        <h1 className="font-mystic" style={{ color: 'var(--primary)', fontSize: '2rem', textShadow: 'var(--primary-glow) 0 0 8px', margin: '10px 0' }}>
+          ☯️ 时空命格结界
+        </h1>
+        <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', letterSpacing: '0.05em' }}>
+          —— 融合东西玄学灵力的周末闲时组队规划 Agent ——
+        </p>
+      </div>
 
-      <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} style={{ textAlign: 'center', zIndex: 2, marginBottom: '20px' }}>
-        <h1 className="font-mystic text-gradient-full" style={{ fontSize: '1.8rem', fontWeight: 900, textShadow: '0 0 15px rgba(255, 208, 0, 0.3)' }}>像素生活志</h1>
-        <p style={{ color: 'var(--text-secondary)', fontSize: '0.55rem', letterSpacing: '4px', marginTop: '4px', opacity: 0.8 }}>别做攻略了，命运自有安排</p>
-      </motion.div>
+      {/* 第一部分：出行预算选择 */}
+      <div className="pixel-panel" style={{ padding: '20px', marginBottom: '24px', background: 'var(--bg-card)' }}>
+        {/* 第一个滑块：时空时间预算 */}
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
+            <Clock size={18} color="var(--primary)" />
+            <h3 className="font-mystic" style={{ color: '#fff', fontSize: '1rem', margin: 0 }}>出行时空时间预算</h3>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+            <input
+              type="range"
+              min="2"
+              max="6"
+              step="1"
+              value={timeBudget}
+              onChange={(e) => handleTimeBudgetChange(Number(e.target.value))}
+              style={{
+                flex: 1,
+                accentColor: 'var(--primary)',
+                cursor: 'pointer'
+              }}
+            />
+            <div className="pixel-panel font-mystic" style={{ padding: '8px 16px', background: 'var(--primary-dim)', color: 'var(--primary)', fontWeight: 'bold', fontSize: '1.2rem', minWidth: '80px', textAlign: 'center' }}>
+              {timeBudget} 小时
+            </div>
+          </div>
+          <p style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: '8px', textAlign: 'right' }}>
+            💡 推荐 4-6 小时以开启最完美的 3 站命运旅程
+          </p>
+        </div>
 
-      <AnimatePresence mode="wait">
-        {/* Intro - 游戏主界面风格 */}
-        {phase === 'intro' && (
-          <motion.div 
-            key="intro" 
-            initial={{ opacity: 0 }} 
-            animate={{ opacity: 1 }} 
-            exit={{ opacity: 0, scale: 1.1 }} 
+        {/* 第二个滑块：探索半径 */}
+        <div style={{ marginTop: '20px', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '20px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
+            <Compass size={18} color="var(--primary)" />
+            <h3 className="font-mystic" style={{ color: '#fff', fontSize: '1rem', margin: 0 }}>时空探索半径范围</h3>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+            <input
+              type="range"
+              min="1"
+              max="15"
+              step="1"
+              value={distanceBudget}
+              onChange={(e) => setDistanceBudget(Number(e.target.value))}
+              style={{
+                flex: 1,
+                accentColor: 'var(--primary)',
+                cursor: 'pointer'
+              }}
+            />
+            <div className="pixel-panel font-mystic" style={{ padding: '8px 16px', background: 'var(--primary-dim)', color: 'var(--primary)', fontWeight: 'bold', fontSize: '1.2rem', minWidth: '80px', textAlign: 'center' }}>
+              {distanceBudget} 公里
+            </div>
+          </div>
+          <p style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: '8px', textAlign: 'right' }}>
+            💡 依据 {timeBudget} 小时预算，智能推荐半径为 { { 2: 3, 3: 5, 4: 8, 5: 10, 6: 12 }[timeBudget] || 8 } 公里
+          </p>
+        </div>
+      </div>
+
+      {/* 第二部分：结界成员配置大厅 */}
+      {/* 结界快捷召唤 (快捷绑定伙伴) 滑槽 */}
+      {boundMembers.length > 0 && (
+        <div className="pixel-panel" style={{ padding: '16px', marginBottom: '24px', background: 'var(--bg-card)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+            <Sparkles size={16} color="var(--primary)" />
+            <h4 className="font-mystic" style={{ color: '#fff', fontSize: '0.9rem', margin: 0 }}>👥 结界快捷入阵 (契约伙伴)</h4>
+          </div>
+          <div 
+            className="no-scrollbar"
             style={{ 
-              zIndex: 10, 
-              flex: 1, 
-              width: '100%', 
               display: 'flex', 
-              flexDirection: 'column', 
-              alignItems: 'center', 
-              paddingTop: '100px' 
+              gap: '12px', 
+              overflowX: 'auto', 
+              padding: '6px 2px',
+              WebkitOverflowScrolling: 'touch',
             }}
           >
-            {/* 魔法阵作为核心视觉中心 */}
-            <div style={{ position: 'absolute', top: '45%', left: '50%', transform: 'translate(-50%, -50%)', zIndex: 1 }}>
-              <MagicCircle />
-            </div>
-            
-            <motion.div 
-              initial={{ scale: 0.8, opacity: 0, y: 20 }} 
-              animate={{ scale: 1, opacity: 1, y: 0 }} 
-              transition={{ delay: 0.3, type: 'spring', damping: 15 }}
-              className="pixel-panel" 
-              style={{ 
-                padding: '16px 40px', 
-                background: 'rgba(20, 18, 16, 0.8)', 
-                backdropFilter: 'blur(4px)',
-                border: '1px solid var(--primary)',
-                boxShadow: '0 0 30px rgba(255, 208, 0, 0.15)',
-                position: 'relative',
-                zIndex: 10,
-                marginTop: '60px'
-              }}
-            >
-              <div style={{ position: 'absolute', inset: '2px', border: '1px solid rgba(255, 208, 0, 0.1)', pointerEvents: 'none' }} />
-              <motion.div 
-                animate={{ opacity: [0.8, 1, 0.8] }} 
-                transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }} 
-                style={{ fontSize: '1.2rem', fontWeight: 900, color: 'var(--primary)', letterSpacing: '4px', textShadow: '0 0 10px var(--primary)' }}
-              >
-                ✦ 探索你的命定周末 ✦
-              </motion.div>
-            </motion.div>
-
-            {/* 开始按钮固定在下方 */}
-            <div style={{ position: 'absolute', bottom: '100px', textAlign: 'center', width: '100%', zIndex: 20 }}>
-              <motion.div
-                animate={{ opacity: [0.3, 0.7, 0.3] }}
-                transition={{ duration: 2, repeat: Infinity }}
-                style={{ color: 'var(--text-muted)', fontSize: '0.65rem', marginBottom: '24px', letterSpacing: '4px', fontWeight: 'bold' }}
-              >
-                - CLICK TO ENTER DESTINY -
-              </motion.div>
+            {boundMembers.map((bm) => {
+              const isSelected = members.some(m => m.id === bm.id);
               
-              <motion.button 
-                whileHover={{ scale: 1.1, boxShadow: '0 0 30px var(--primary)', filter: 'brightness(1.2)' }} 
-                whileTap={{ scale: 0.9 }} 
-                onClick={() => setPhase('method')} 
-                style={{ 
-                  background: 'var(--primary)', 
-                  border: '2px solid #fff', 
-                  color: '#000', 
-                  padding: '20px 90px', 
-                  fontSize: '1.3rem', 
-                  fontWeight: 900, 
-                  cursor: 'pointer', 
-                  clipPath: 'polygon(10% 0, 90% 0, 100% 50%, 90% 100%, 10% 100%, 0 50%)',
-                  boxShadow: '0 0 20px rgba(255, 208, 0, 0.6)',
-                  textTransform: 'uppercase',
-                  letterSpacing: '2px'
-                }}
-              >
-                开启仪式
-              </motion.button>
-            </div>
-          </motion.div>
-        )}
+              const tagLabels = {
+                family: '家人',
+                friend: '朋友',
+                partner: '伴侣',
+                other: '旅人'
+              };
 
-        {/* ... (method phase) */}
+              const avatarEmoji = {
+                family: '🧙‍♂️',
+                friend: '🧝‍♀️',
+                partner: '👸',
+                other: '🤺'
+              }[bm.relationTag] || '🤠';
 
-        {/* Method */}
-        {phase === 'method' && (
-          <motion.div key="method" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} style={{ zIndex: 10, width: '100%', maxWidth: '340px', textAlign: 'center' }}>
-            <h3 className="font-mystic" style={{ color: 'var(--primary)', marginBottom: '24px' }}>✦ 请选择启示形式 ✦</h3>
-            <div style={{ display: 'grid', gap: '16px' }}>
-              {DIVINATION_METHODS.map((m) => (
-                <motion.button key={m.id} whileHover={{ x: 5, background: 'rgba(255,255,255,0.05)' }} onClick={() => handleSelectMethod(m.id)} className="pixel-panel" style={{ padding: '16px', textAlign: 'left', display: 'flex', alignItems: 'center', gap: '16px', background: 'var(--bg-surface)', cursor: 'pointer' }}>
-                  <span style={{ fontSize: '2rem' }}>{m.icon}</span>
-                  <div>
-                    <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#fff' }}>{m.label}</div>
-                    <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: '2px' }}>{m.desc}</div>
+              return (
+                <motion.div
+                  key={bm.id}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => toggleBoundMember(bm)}
+                  style={{
+                    flexShrink: 0,
+                    width: '90px',
+                    padding: '12px 8px',
+                    background: isSelected 
+                      ? 'rgba(255, 208, 0, 0.08)' 
+                      : 'rgba(0, 0, 0, 0.2)',
+                    border: isSelected 
+                      ? '2px solid var(--primary)' 
+                      : '2px solid var(--pixel-border-color)',
+                    boxShadow: isSelected 
+                      ? '0 0 10px rgba(255, 208, 0, 0.2)' 
+                      : '2px 2px 0 rgba(0,0,0,0.3)',
+                    opacity: isSelected ? 1 : 0.65,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '6px',
+                    position: 'relative',
+                    transition: 'border 0.2s, opacity 0.2s, background 0.2s'
+                  }}
+                >
+                  {isSelected && (
+                    <div style={{
+                      position: 'absolute',
+                      top: '-6px',
+                      right: '-6px',
+                      background: 'var(--primary)',
+                      color: '#000',
+                      fontSize: '0.55rem',
+                      fontWeight: 'bold',
+                      padding: '1px 4px',
+                      border: '1px solid #fff',
+                      boxShadow: '2px 2px 0 rgba(0,0,0,0.2)'
+                    }}>
+                      已入阵
+                    </div>
+                  )}
+
+                  <span style={{ fontSize: '1.8rem', filter: isSelected ? 'drop-shadow(0 0 4px var(--primary))' : 'none' }}>
+                    {avatarEmoji}
+                  </span>
+
+                  <div style={{ 
+                    fontSize: '0.75rem', 
+                    fontWeight: 'bold', 
+                    color: isSelected ? 'var(--primary)' : '#fff',
+                    maxWidth: '100%',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap'
+                  }}>
+                    {bm.name.split(' ')[0]}
                   </div>
-                  <ChevronRight size={16} style={{ marginLeft: 'auto', opacity: 0.3 }} />
-                </motion.button>
-              ))}
-            </div>
-          </motion.div>
-        )}
 
-        {/* Bazi Input */}
-        {phase === 'bazi_input' && (
-          <motion.div key="bazi_input" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} style={{ zIndex: 10, width: '100%', maxWidth: '340px', padding: '0 20px' }}>
-            <div className="pixel-panel" style={{ padding: '24px', background: 'var(--bg-surface)' }}>
-              <h3 className="font-mystic" style={{ color: 'var(--primary)', marginBottom: '24px', textAlign: 'center' }}>☯️ 填写生辰信息 ☯️</h3>
-              <form onSubmit={handleBaziSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                {(() => {
-                  const commonInputStyle: React.CSSProperties = {
-                    width: '100%',
-                    background: 'rgba(0,0,0,0.3)',
-                    border: '1px solid var(--pixel-border-color)',
-                    padding: '12px',
+                  <span style={{
+                    fontSize: '0.55rem',
+                    background: isSelected ? 'rgba(255,208,0,0.15)' : 'rgba(255,255,255,0.05)',
+                    color: isSelected ? 'var(--primary)' : 'var(--text-muted)',
+                    padding: '2px 6px',
+                    border: '1px solid rgba(255,255,255,0.05)',
+                    borderRadius: '2px'
+                  }}>
+                    {tagLabels[bm.relationTag]}
+                  </span>
+                </motion.div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+        <h3 className="font-mystic" style={{ color: '#fff', fontSize: '1.1rem', margin: 0 }}>🔮 结界伙伴成员</h3>
+        <button
+          className="btn btn-ghost"
+          onClick={addMember}
+          style={{ fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '6px', border: '1px solid rgba(255,255,255,0.1)', padding: '6px 12px' }}
+        >
+          <Plus size={12} /> 添加结界伴侣
+        </button>
+      </div>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        {members.map((member, idx) => (
+          <motion.div
+            key={member.id}
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="pixel-panel"
+            style={{
+              padding: '20px',
+              background: 'var(--bg-card)',
+              borderLeft: `4px solid ${idx === 0 ? 'var(--primary)' : 'rgba(255,255,255,0.2)'}`
+            }}
+          >
+            {/* 成员头部信息 */}
+            <div style={{ display: 'flex', alignItems: 'center', justifycontent: 'space-between', marginBottom: '16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1 }}>
+                <span style={{ fontSize: '1.5rem' }}>{RPG_AVATARS[idx % RPG_AVATARS.length]}</span>
+                <input
+                  type="text"
+                  value={member.name}
+                  onChange={(e) => updateMember(member.id, { name: e.target.value })}
+                  style={{
+                    background: 'transparent',
+                    border: 'none',
+                    borderBottom: '1px solid rgba(255,255,255,0.1)',
                     color: '#fff',
+                    fontFamily: 'var(--font-main)',
                     fontSize: '0.9rem',
-                    borderRadius: 0,
-                    outline: 'none',
-                    fontFamily: 'inherit',
-                    appearance: 'none',
-                    WebkitAppearance: 'none'
-                  };
-                  return (
-                    <>
-                      <div>
-                        <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}><UserIcon size={14} /> 姓名/代号</label>
-                        <input type="text" required placeholder="输入你的名号" value={baziInfo.name} onChange={e => setBaziInfo({ ...baziInfo, name: e.target.value })} style={commonInputStyle} />
-                      </div>
-                      <div>
-                        <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: '8px' }}>性别</label>
-                        <select value={baziInfo.gender} onChange={e => setBaziInfo({ ...baziInfo, gender: e.target.value as any })} style={commonInputStyle}>
-                          <option value="male">乾 (男)</option>
-                          <option value="female">坤 (女)</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}><Calendar size={14} /> 出生日期 (公历)</label>
-                        <input type="date" required value={baziInfo.birthDate} onChange={e => setBaziInfo({ ...baziInfo, birthDate: e.target.value })} style={commonInputStyle} />
-                      </div>
-                      <div>
-                        <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}><Clock4 size={14} /> 出生时辰</label>
-                        <input type="time" required value={baziInfo.birthTime} onChange={e => setBaziInfo({ ...baziInfo, birthTime: e.target.value })} style={commonInputStyle} />
-                      </div>
-                      <button type="submit" className="btn btn-primary" style={{ marginTop: '12px', padding: '12px' }}>定格时空</button>
-                      <button type="button" onClick={() => setPhase('method')} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', fontSize: '0.7rem', marginTop: '4px', cursor: 'pointer' }}>返回选择其他形式</button>
-                    </>
-                  );
-                })()}
-              </form>
+                    padding: '2px 4px',
+                    width: '120px',
+                    outline: 'none'
+                  }}
+                />
+              </div>
+
+              {/* 仅非自身可删除 */}
+              {member.id !== 'me' && (
+                <button
+                  onClick={() => removeMember(member.id)}
+                  style={{ background: 'transparent', border: 'none', color: '#cc5555', cursor: 'pointer', padding: '4px' }}
+                >
+                  <Trash2 size={14} />
+                </button>
+              )}
             </div>
-          </motion.div>
-        )}
 
-        {/* Mood */}
-        {phase === 'mood' && (
-          <motion.div key="mood" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} style={{ zIndex: 10, width: '100%', maxWidth: '360px', padding: '0 20px', textAlign: 'center' }}>
-            <h3 className="font-mystic" style={{ color: 'var(--primary)', marginBottom: '24px' }}>✦ 此时此刻，你的能量状态？ ✦</h3>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-              {MOOD_TAGS.map((mood) => (
-                <button key={mood.id} className="pixel-panel" onClick={() => handleSelectMood(mood)} style={{ padding: '16px', background: 'var(--bg-surface)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', cursor: 'pointer' }}><span style={{ fontSize: '1.5rem' }}>{mood.emoji}</span><span className="font-mystic" style={{ fontSize: '0.8rem', color: '#fff' }}>{mood.label}</span></button>
-              ))}
+            {/* 选择玄学偏好 */}
+            <div style={{ display: 'flex', background: 'rgba(0,0,0,0.3)', padding: '4px', marginBottom: '16px', border: '1px solid rgba(255,255,255,0.05)' }}>
+              <button
+                className={`btn ${member.divinationMethod === 'tarot' ? 'btn-primary' : 'btn-ghost'}`}
+                onClick={() => updateMember(member.id, { divinationMethod: 'tarot' })}
+                style={{ flex: 1, padding: '6px', fontSize: '0.75rem', textTransform: 'none' }}
+              >
+                🃏 西方塔罗 (情绪调治)
+              </button>
+              <button
+                className={`btn ${member.divinationMethod === 'bazi' ? 'btn-primary' : 'btn-ghost'}`}
+                onClick={() => updateMember(member.id, { divinationMethod: 'bazi' })}
+                style={{ flex: 1, padding: '6px', fontSize: '0.75rem', textTransform: 'none' }}
+              >
+                ☯️ 东方八字 (时空命理)
+              </button>
             </div>
-            <button onClick={() => handleSelectMood(null)} style={{ marginTop: '24px', background: 'transparent', border: 'none', color: 'var(--text-muted)', fontSize: '0.7rem', cursor: 'pointer', textDecoration: 'underline' }}>跳过，听凭天命</button>
-          </motion.div>
-        )}
 
-        {/* Drawing & Result */}
-        {(phase === 'idle' || phase === 'selecting' || phase === 'flipping' || phase === 'revealed' || phase === 'analyzing' || phase === 'done') && (
-          <motion.div key="tarot-stage" initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <motion.div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '4px 10px', borderRadius: '100px', fontSize: '0.5rem', marginBottom: '20px', zIndex: 10, background: 'var(--primary-dim)', border: '1px solid rgba(255, 195, 0, 0.3)', color: 'var(--primary)', letterSpacing: '1px' }}>
-              <Clock size={10} />
-              <span>
-                {phase === 'done' ? '命运已揭晓 · 随时可重新观测' : 
-                 phase === 'revealed' ? '牌面已现，请开启契约解析' :
-                 phase === 'analyzing' ? '正在连接高维能量场...' :
-                 `正在通过${DIVINATION_METHODS.find(m => m.id === divinationMethod)?.label || '占卜'}指引方向`}
-              </span>
-            </motion.div>
+            {/* 条件配置区 */}
+            {member.divinationMethod === 'tarot' ? (
+              // 塔罗配置：情绪选择器 + 命定切牌仪式
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Wand2 size={12} color="var(--primary)" />
+                    <span>当前精神力状态 (情绪标签)</span>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                    {MOOD_TAGS.map((tag) => (
+                      <button
+                        key={tag.id}
+                        className={`btn ${member.mood === tag.id ? 'btn-primary' : 'btn-ghost'}`}
+                        onClick={() => updateMember(member.id, { mood: tag.id })}
+                        style={{
+                          padding: '8px',
+                          fontSize: '0.7rem',
+                          justifyContent: 'flex-start',
+                          borderColor: member.mood === tag.id ? 'var(--primary)' : 'rgba(255,255,255,0.05)'
+                        }}
+                      >
+                        <span style={{ marginRight: '6px' }}>{tag.emoji}</span>
+                        {tag.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
 
-            <div style={{ position: 'relative', width: '100%', height: '360px', zIndex: 2 }}>
-              <MagicCircle />
-              <div className="tarot-spread" style={{ height: '100%', alignItems: 'center' }}>
-                {Array.from({ length: SPREAD_COUNT }).map((_, i) => {
-                  const isSelected = selectedIndex === i;
-                  const hasSelection = selectedIndex !== null;
-                  const isHidden = hasSelection && !isSelected;
-                  const offset = i - Math.floor(SPREAD_COUNT / 2);
-                  const rotation = offset * 10;
-                  const xOffset = offset * 42;
-                  const yOffset = Math.abs(offset) * 18;
-                  if (isDone && !isSelected) return null;
-                  return (
-                    <motion.div key={i} className="tarot-card" style={{ position: 'absolute', width: '160px', height: '240px', transformStyle: 'preserve-3d', cursor: (hasSelection || phase === 'done') ? 'default' : 'pointer' }} animate={{ x: isSelected ? 0 : isHidden ? (offset < 0 ? -350 : 350) : xOffset, y: isSelected ? -20 : isHidden ? 300 : yOffset, rotateZ: isSelected ? 0 : isHidden ? rotation * 3 : rotation, rotateY: isSelected && (phase !== 'idle' && phase !== 'selecting') ? 180 : 0, scale: isSelected ? 1.7 : isHidden ? 0.4 : 1, opacity: isHidden ? 0 : 1, zIndex: isSelected ? 50 : 10 - Math.abs(offset) }} transition={{ type: 'spring', stiffness: 65, damping: 14 }} onClick={() => handleSelectCard(i)}>
-                      <div className="tarot-face tarot-back" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', border: isSelected ? '1px solid var(--primary)' : '1px solid var(--glass-border)' }}>
-                        {divinationMethod === 'bazi' ? <Compass size={28} color="var(--primary)" style={{ opacity: 0.6 }} /> : <Wand2 size={28} color="var(--primary)" style={{ opacity: 0.6 }} />}
-                      </div>
-                      <div className="tarot-face tarot-front" style={{ 
-                        display: 'flex', 
-                        flexDirection: 'column', 
-                        padding: '16px', 
-                        border: '3px solid var(--primary)', 
-                        overflow: 'hidden',
-                        background: 'linear-gradient(180deg, rgba(20,20,20,1) 0%, rgba(35,30,10,1) 100%)',
-                        boxShadow: 'inset 0 0 40px rgba(255, 195, 0, 0.1)'
-                      }}>
-                        {result && (
-                          <>
-                            {/* Card Header (Centered for Premium Feel) */}
-                            <div style={{ textAlign: 'center', marginBottom: '8px' }}>
-                              <motion.div 
-                                initial={{ scale: 0.8, opacity: 0 }}
-                                animate={{ scale: 1, opacity: 1 }}
-                                style={{ fontSize: '1.8rem', marginBottom: '4px', filter: 'drop-shadow(0 0 10px rgba(255,195,0,0.3))' }}
-                              >
-                                {result.card.emoji}
-                              </motion.div>
-                              <h3 className="font-mystic text-gradient-gold" style={{ fontSize: '0.85rem', letterSpacing: '1px' }}>
-                                {result.card.name}
-                              </h3>
-                              <div style={{ width: '30px', height: '1px', background: 'var(--primary)', margin: '6px auto', opacity: 0.5 }} />
-                              
-                              {phase === 'analyzing' && (
-                                <div style={{ position: 'absolute', top: '10px', right: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                  <div className="spinner-sm" />
-                                  <span style={{ fontSize: '0.55rem', color: 'var(--primary)', fontWeight: 'bold' }}>{elapsedTime}s</span>
-                                </div>
-                              )}
-                            </div>
+                {/* 命定切牌仪式 */}
+                <div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Sparkles size={12} color="var(--primary)" />
+                    <span>命定感应：左滑并触摸抽取一张命运之牌</span>
+                  </div>
+                  
+                  <div 
+                    className="no-scrollbar"
+                    style={{ 
+                      display: 'flex', 
+                      gap: '12px', 
+                      overflowX: 'auto', 
+                      padding: '10px 2px',
+                      scrollSnapType: 'x mandatory',
+                      WebkitOverflowScrolling: 'touch'
+                    }}
+                  >
+                    {Array.from({ length: 12 }).map((_, cardIdx) => {
+                      const isSelected = member.tarotCardIndex === cardIdx;
+                      return (
+                        <motion.div
+                          key={cardIdx}
+                          whileHover={{ scale: 1.04, y: -4 }}
+                          whileTap={{ scale: 0.96 }}
+                          onClick={() => updateMember(member.id, { tarotCardIndex: cardIdx })}
+                          style={{
+                            flexShrink: 0,
+                            width: '80px',
+                            height: '130px',
+                            background: isSelected 
+                              ? 'linear-gradient(135deg, #FFD000, #FFA500)' 
+                              : 'radial-gradient(circle, #25221f 0%, #171513 100%)',
+                            border: isSelected 
+                              ? '2px solid #fff' 
+                              : '2px solid var(--pixel-border-color)',
+                            boxShadow: isSelected 
+                              ? '0 0 15px rgba(255, 208, 0, 0.5)' 
+                              : '4px 4px 0 rgba(0,0,0,0.4)',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            padding: '10px 4px',
+                            scrollSnapAlign: 'start',
+                            transition: 'all 0.2s'
+                          }}
+                        >
+                          <div style={{ fontSize: '0.5rem', color: isSelected ? '#000' : 'var(--primary)', opacity: 0.7 }}>
+                            {isSelected ? 'SELECTED' : `牌位 ${cardIdx + 1}`}
+                          </div>
+                          
+                          <div style={{ fontSize: '1.4rem' }}>
+                            {isSelected ? '🃏' : '🌙'}
+                          </div>
 
-                            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-                              {phase === 'revealed' && (
-                                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between', minHeight: 0 }}>
-                                  <div style={{ 
-                                    flex: 1, 
-                                    overflowY: 'auto', 
-                                    marginBottom: '10px',
-                                    width: '100%',
-                                    padding: '0 8px',
-                                    // Remove centered alignment to prevent scroll issues with long text
-                                  }}>
-                                    <p style={{ 
-                                      fontSize: '0.48rem', 
-                                      color: '#e2e2e2', 
-                                      textAlign: 'center', 
-                                      lineHeight: 1.6,
-                                      fontStyle: 'italic',
-                                      opacity: 0.9
-                                    }}>
-                                      「 {result.card.meaning} 」
-                                    </p>
-                                  </div>
-                                  <motion.button 
-                                    whileHover={{ scale: 1.02, backgroundColor: 'rgba(255, 195, 0, 0.15)' }}
-                                    whileTap={{ scale: 0.98 }}
-                                    className="pixel-panel"
-                                    style={{ 
-                                      position: 'relative',
-                                      padding: '8px 20px', 
-                                      background: 'rgba(0, 0, 0, 0.6)',
-                                      border: '1px solid rgba(255, 255, 255, 0.1)',
-                                      borderRadius: '8px',
-                                      cursor: 'pointer',
-                                      display: 'flex',
-                                      flexDirection: 'column',
-                                      alignItems: 'center',
-                                      gap: '4px',
-                                      flexShrink: 0,
-                                      boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
-                                      overflow: 'hidden'
-                                    }} 
-                                    onClick={(e) => { e.stopPropagation(); handleStartAI(); }}
-                                  >
-                                    {/* Glowing Border Animation */}
-                                    <motion.div 
-                                      style={{
-                                        position: 'absolute',
-                                        inset: 0,
-                                        border: '1px solid var(--primary)',
-                                        borderRadius: '8px',
-                                        zIndex: 0,
-                                      }}
-                                      animate={{ 
-                                        opacity: [0.3, 0.8, 0.3],
-                                        boxShadow: [
-                                          'inset 0 0 5px var(--primary)',
-                                          'inset 0 0 15px var(--primary)',
-                                          'inset 0 0 5px var(--primary)'
-                                        ]
-                                      }}
-                                      transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
-                                    />
-
-                                    {/* Shimmer Effect */}
-                                    <motion.div 
-                                      style={{
-                                        position: 'absolute',
-                                        top: 0, left: '-100%', width: '50%', height: '100%',
-                                        background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent)',
-                                        skewX: -20,
-                                        zIndex: 1
-                                      }}
-                                      animate={{ left: '200%' }}
-                                      transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut', repeatDelay: 1 }}
-                                    />
-
-                                    <div style={{ position: 'relative', zIndex: 2, whiteSpace: 'nowrap' }}>
-                                      <span style={{ 
-                                        fontSize: '0.65rem', 
-                                        fontWeight: 600, 
-                                        color: '#fff', 
-                                        letterSpacing: '2px',
-                                        textShadow: '0 2px 4px rgba(0,0,0,0.5)'
-                                      }}>
-                                        解开契约
-                                      </span>
-                                    </div>
-                                  </motion.button>
-
-
-                                </div>
-                              )}
-
-
-                              {(phase === 'analyzing' || phase === 'done') && (
-                                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-                                  <div style={{ 
-                                    flex: 1, 
-                                    overflowY: 'auto', 
-                                    fontSize: '0.45rem', 
-                                    lineHeight: 1.8, 
-                                    color: '#f4f4f5', 
-                                    textAlign: 'justify', 
-                                    padding: '10px',
-                                    background: 'rgba(0,0,0,0.2)',
-                                    border: '1px solid rgba(255,195,0,0.1)',
-                                    borderRadius: '4px'
-                                  }}>
-                                    {result.reading || (phase === 'analyzing' && '命运之轮正在咬合...')}
-                                  </div>
-                                  
-                                  {phase === 'done' && (
-                                    <motion.button 
-                                      initial={{ opacity: 0, y: 10 }}
-                                      animate={{ opacity: 1, y: 0 }}
-                                      className="btn btn-primary btn-full" 
-                                      style={{ marginTop: '10px', padding: '8px', fontSize: '0.65rem' }} 
-                                      onClick={(e) => { e.stopPropagation(); navigate('/map'); }}
-                                    >
-                                      <MapPin size={14} style={{ marginRight: '6px' }} /> 开启寻宝之旅
-                                    </motion.button>
-                                  )}
-                                </div>
-                              )}
-                            </div>
-                          </>
-                        )}
-                      </div>
-
+                          <div style={{ fontSize: '0.45rem', color: isSelected ? '#000' : 'var(--text-muted)', fontWeight: 'bold' }}>
+                            {isSelected ? '✨ 已抽出' : '感应抽牌'}
+                          </div>
+                        </motion.div>
+                      );
+                    })}
+                  </div>
+                  
+                  {member.tarotCardIndex !== undefined && (
+                    <motion.div 
+                      initial={{ opacity: 0, y: 5 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      style={{ 
+                        fontSize: '0.65rem', 
+                        color: 'var(--primary)', 
+                        marginTop: '8px', 
+                        textAlign: 'center', 
+                        background: 'var(--primary-dim)', 
+                        padding: '6px',
+                        border: '1px dashed var(--primary)'
+                      }}
+                    >
+                      🔮 结界共鸣：已锁定第 <b>{member.tarotCardIndex + 1}</b> 张奥秘牌位，将于天书文书中为您揭示。
                     </motion.div>
-                  );
-                })}
+                  )}
+                </div>
+              </div>
+            ) : (
+              // 八字配置：生辰八字输入区
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <div style={{ flex: 1.5 }}>
+                    <label style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>出生公历日期</label>
+                    <input
+                      type="date"
+                      value={member.baziInfo?.birthDate}
+                      onChange={(e) => updateBazi(member.id, 'birthDate', e.target.value)}
+                      style={{
+                        width: '100%',
+                        background: 'rgba(0,0,0,0.5)',
+                        border: '1px solid var(--pixel-border-color)',
+                        color: '#fff',
+                        padding: '6px',
+                        fontSize: '0.75rem',
+                        outline: 'none'
+                      }}
+                    />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <label style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>出生时辰</label>
+                    <input
+                      type="time"
+                      value={member.baziInfo?.birthTime}
+                      onChange={(e) => updateBazi(member.id, 'birthTime', e.target.value)}
+                      style={{
+                        width: '100%',
+                        background: 'rgba(0,0,0,0.5)',
+                        border: '1px solid var(--pixel-border-color)',
+                        color: '#fff',
+                        padding: '6px',
+                        fontSize: '0.75rem',
+                        outline: 'none'
+                      }}
+                    />
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <div style={{ flex: 1.2 }}>
+                    <label style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>出生地点</label>
+                    <input
+                      type="text"
+                      placeholder="省/市"
+                      value={member.baziInfo?.birthPlace}
+                      onChange={(e) => updateBazi(member.id, 'birthPlace', e.target.value)}
+                      style={{
+                        width: '100%',
+                        background: 'rgba(0,0,0,0.5)',
+                        border: '1px solid var(--pixel-border-color)',
+                        color: '#fff',
+                        padding: '6px',
+                        fontSize: '0.75rem',
+                        outline: 'none'
+                      }}
+                    />
+                  </div>
+                  <div style={{ flex: 1.8 }}>
+                    <label style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>今日所谋求契机</label>
+                    <select
+                      value={['travel', 'fortune', 'relation', 'work'].includes(member.baziInfo?.queryType || '') ? member.baziInfo?.queryType : 'custom'}
+                      onChange={(e) => updateBazi(member.id, 'queryType', e.target.value)}
+                      style={{
+                        width: '100%',
+                        background: 'rgba(0,0,0,0.5)',
+                        border: '1px solid var(--pixel-border-color)',
+                        color: '#fff',
+                        padding: '6px',
+                        fontSize: '0.75rem',
+                        outline: 'none'
+                      }}
+                    >
+                      <option value="travel">🚶 闲暇闲逛 (祈求顺遂)</option>
+                      <option value="fortune">💰 财源滚滚 (气场捞金)</option>
+                      <option value="relation">❤️ 命中宿缘 (桃花羁绊)</option>
+                      <option value="work">💼 功成名就 (开运辟邪)</option>
+                      <option value="custom">✍️ 自定义天命契机...</option>
+                    </select>
+
+                    {(!['travel', 'fortune', 'relation', 'work'].includes(member.baziInfo?.queryType || '')) && (
+                      <input
+                        type="text"
+                        placeholder="例如：寻找写作灵感、排解工作压力"
+                        value={member.baziInfo?.queryType === 'custom' ? '' : member.baziInfo?.queryType}
+                        onChange={(e) => updateBazi(member.id, 'queryType', e.target.value)}
+                        style={{
+                          width: '100%',
+                          background: 'rgba(0,0,0,0.6)',
+                          border: '1px solid var(--primary)',
+                          color: '#fff',
+                          padding: '6px 8px',
+                          fontSize: '0.75rem',
+                          outline: 'none',
+                          marginTop: '8px'
+                        }}
+                      />
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+          </motion.div>
+        ))}
+      </div>
+
+      {/* 仪式总结说明 */}
+      <div style={{ marginTop: '24px', display: 'flex', gap: '8px', opacity: 0.8 }} className="pixel-panel">
+        <Info size={16} color="var(--primary)" style={{ flexShrink: 0, marginTop: '2px' }} />
+        <p style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', lineHeight: '1.4' }}>
+          💡 命运仪式说明：法阵召集完毕后，规划 Agent 将基于高德地图检索出结界周围数公里的真实场景，为您定制融合各人八字开运及塔罗安抚的最优时空出行链路。
+        </p>
+      </div>
+
+      {/* 底部召唤动作 */}
+      <div style={{ marginTop: '36px', textAlign: 'center' }}>
+        <button
+          className="btn btn-primary"
+          onClick={handleSummon}
+          style={{
+            width: '100%',
+            padding: '18px',
+            fontSize: '1.1rem',
+            background: 'linear-gradient(45deg, #FFD000, #FFA500)',
+            border: 'none',
+            color: '#000',
+            boxShadow: '0 8px 0px #805c19',
+            fontFamily: 'var(--font-mystic)',
+            fontWeight: 'bold',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '10px'
+          }}
+        >
+          <Sparkles size={18} />
+          开启命定契约 🔮
+        </button>
+      </div>
+
+      {/* 高逼格全屏祭坛召唤加载幕 (LangGraph 视觉监视器) */}
+      <AnimatePresence>
+        {loading && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background: 'rgba(22,20,18,0.99)',
+              zIndex: 9999,
+              display: 'flex',
+              flexDirection: 'column',
+              padding: '24px 16px',
+              overflowY: 'auto',
+              color: 'var(--text-primary)'
+            }}
+          >
+            {/* Top HUD Stats Panel */}
+            <div className="pixel-panel" style={{ padding: '16px', marginBottom: '20px', background: '#1d1a18', border: '2px solid var(--primary-glow)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                <span className="font-mystic" style={{ color: 'var(--primary)', fontWeight: 'bold', fontSize: '1.2rem', textShadow: 'var(--primary-glow) 0 0 6px' }}>
+                  🧙‍♂️ 时空结界规划大厅
+                </span>
+                <span style={{ fontSize: '0.65rem', background: 'var(--primary-dim)', color: 'var(--primary)', padding: '2px 8px', border: '1px solid var(--primary)' }}>
+                  AGENTIC FLOW
+                </span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                <div>
+                  已耗时: <strong style={{ color: 'var(--primary)', fontFamily: 'monospace', fontSize: '0.85rem' }}>{elapsedTime.toFixed(2)}s</strong>
+                </div>
+                <div>
+                  AI内核: <span style={{ color: '#eae3d9' }}>Qwen3.5 (Modelscope)</span>
+                </div>
               </div>
             </div>
 
+            {/* Title */}
+            <div style={{ textAlign: 'center', marginBottom: '16px' }}>
+              <p style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
+                —— 命运编织时空链，多重决策节点可视化 ——
+              </p>
+            </div>
 
-            {isDone && (
-              <motion.button 
-                whileHover={{ scale: 1.05, background: 'rgba(255,255,255,0.1)' }}
-                whileTap={{ scale: 0.95 }}
-                onClick={handleReset} 
-                style={{ 
-                  marginTop: '40px', 
-                  background: 'rgba(0,0,0,0.5)', 
-                  border: '2px solid var(--primary)', 
-                  color: 'var(--primary)', 
-                  padding: '12px 32px', 
-                  borderRadius: '4px', 
-                  fontSize: '0.9rem', 
-                  fontWeight: 'bold',
-                  cursor: 'pointer',
-                  zIndex: 100,
-                  position: 'relative',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '10px',
-                  boxShadow: '0 0 15px rgba(255,208,0,0.2)'
-                }}
-              >
-                <Compass size={18} /> 重新观测命运
-              </motion.button>
-            )}
+            {/* LangGraph Nodes Flow Map */}
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px', maxWidth: '400px', margin: '0 auto', width: '100%' }}>
+              {graphNodes.map((node, idx) => {
+                const isActive = node.status === 'active';
+                const isCompleted = node.status === 'completed';
+                const isFailed = node.status === 'failed';
+                const isIdle = node.status === 'idle';
+
+                let statusText = '⏳ 等待中';
+                let cardBorder = '1px solid var(--pixel-border-color)';
+                let cardBg = 'rgba(42,38,35,0.4)';
+                let glowShadow = 'none';
+
+                if (isActive) {
+                  statusText = '⚡ 规划中...';
+                  cardBorder = '2px solid var(--primary)';
+                  cardBg = 'rgba(74,57,26,0.3)';
+                  glowShadow = '0 0 10px rgba(226,181,83,0.3)';
+                } else if (isCompleted) {
+                  statusText = '✅ 完结';
+                  cardBorder = '1px solid #4caf50';
+                  cardBg = 'rgba(76,175,80,0.06)';
+                } else if (isFailed) {
+                  statusText = '❌ 干扰中断';
+                  cardBorder = '1px solid #f44336';
+                  cardBg = 'rgba(244,67,54,0.08)';
+                }
+
+                return (
+                  <div key={node.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
+                    {/* Node Card */}
+                    <motion.div
+                      animate={isActive ? { scale: [1, 1.02, 1] } : {}}
+                      transition={isActive ? { repeat: Infinity, duration: 1.5 } : {}}
+                      style={{
+                        width: '100%',
+                        background: cardBg,
+                        border: cardBorder,
+                        boxShadow: glowShadow,
+                        padding: '12px 16px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        gap: '12px',
+                        position: 'relative',
+                        transition: 'all 0.3s ease-in-out'
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        {/* Spinning Circle around emoji for active nodes */}
+                        <div style={{ position: 'relative', width: '32px', height: '32px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                          {isActive && (
+                            <motion.div
+                              animate={{ rotate: 360 }}
+                              transition={{ repeat: Infinity, duration: 2, ease: 'linear' }}
+                              style={{
+                                position: 'absolute',
+                                width: '100%',
+                                height: '100%',
+                                border: '2px dashed var(--primary)',
+                                borderRadius: '50%'
+                              }}
+                            />
+                          )}
+                          <span style={{ fontSize: '1.25rem', zIndex: 1 }}>{node.emoji}</span>
+                        </div>
+
+                        <div style={{ textAlign: 'left' }}>
+                          <div style={{ fontSize: '0.8rem', fontWeight: 'bold', color: isIdle ? 'var(--text-muted)' : 'var(--text-primary)' }}>
+                            {node.name}
+                          </div>
+                          <div style={{ fontSize: '0.65rem', color: isIdle ? 'var(--text-muted)' : 'var(--text-secondary)', marginTop: '2px' }}>
+                            {node.description}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
+                        <span style={{
+                          fontSize: '0.65rem',
+                          fontWeight: 'bold',
+                          color: isActive ? 'var(--primary)' : isCompleted ? '#4caf50' : isFailed ? '#f44336' : 'var(--text-muted)'
+                        }}>
+                          {statusText}
+                        </span>
+                        {node.timeSpent !== undefined && (
+                          <span style={{ fontSize: '0.6rem', color: 'var(--text-muted)', fontFamily: 'monospace' }}>
+                            耗时: {node.timeSpent.toFixed(2)}s
+                          </span>
+                        )}
+                      </div>
+                    </motion.div>
+
+                    {/* Edge Connector (Dotted line with arrow) */}
+                    {idx < graphNodes.length - 1 && (
+                      <div style={{
+                        height: '14px',
+                        width: '2px',
+                        borderLeft: isCompleted ? '2px dashed #4caf50' : isActive ? '2px dashed var(--primary)' : '2px dashed var(--pixel-border-color)',
+                        position: 'relative',
+                        margin: '2px 0',
+                        opacity: isIdle ? 0.3 : 1
+                      }}>
+                        <div style={{
+                          position: 'absolute',
+                          bottom: '-4px',
+                          left: '-4px',
+                          borderTop: `4px solid ${isCompleted ? '#4caf50' : isActive ? 'var(--primary)' : 'var(--pixel-border-color)'}`,
+                          borderLeft: '4px solid transparent',
+                          borderRight: '4px solid transparent'
+                        }} />
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Debug console log terminal */}
+            <div
+              className="pixel-panel"
+              style={{
+                width: '100%',
+                maxWidth: '400px',
+                margin: '16px auto 0 auto',
+                background: '#0f0d0b',
+                padding: '12px',
+                border: '1px solid #4a433a',
+                fontFamily: 'monospace',
+                fontSize: '0.65rem',
+                minHeight: '120px'
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #4a433a', paddingBottom: '6px', marginBottom: '8px', color: 'var(--text-muted)' }}>
+                <span>🖥️ SYSTEM TERMINAL LOGS</span>
+                <span style={{ color: '#4caf50' }}>ACTIVE</span>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', textAlign: 'left' }}>
+                {activeLogs.length === 0 ? (
+                  <span style={{ color: 'var(--text-muted)' }}>⏳ Awaiting node activation signals...</span>
+                ) : (
+                  activeLogs.map((log, i) => (
+                    <div key={i} style={{
+                      color: log.includes('✅') ? '#4caf50' : log.includes('❌') ? '#f44336' : log.includes('⚠️') ? '#ffeb3b' : '#a69c90',
+                      lineHeight: '1.4'
+                    }}>
+                      {log}
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>

@@ -8,6 +8,12 @@ export interface User {
   email?: string;
   level: number;
   exp: number;
+  divinationPreference?: 'tarot' | 'bazi';
+  baziInfo?: {
+    birthDate: string;
+    birthTime: string;
+    birthPlace: string;
+  };
 }
 
 export interface POIData {
@@ -48,6 +54,54 @@ export interface ReadingResult {
   poi: POIData;
   reading: string;
   drawnAt: string;
+}
+
+export interface GroupMember {
+  id: string;
+  name: string;
+  divinationMethod: 'tarot' | 'bazi';
+  mood?: string;
+  tarotCardIndex?: number;
+  baziInfo?: {
+    birthDate: string;
+    birthTime: string;
+    birthPlace: string;
+    queryType: 'travel' | 'fortune' | 'relation' | 'work';
+  };
+}
+
+export interface ActivityEvent {
+  id: string;
+  poi: POIData;
+  timeSlot: string;
+  activityName: string;
+  mysticReasoning: string;
+  bookingStatus?: {
+    type: 'didi' | 'coupon' | 'ticket' | 'none';
+    name: string;
+    status: 'pending' | 'success' | 'failed';
+    detail?: string;
+  };
+}
+
+export interface JointPlanResult {
+  id: string;
+  members: GroupMember[];
+  timeBudget: number;
+  divinationSynthesis: string;
+  itinerary: ActivityEvent[];
+  individualReadings: {
+    memberId: string;
+    readingText: string;
+    tarotCard?: TarotCard;
+    baziChart?: {
+      fourPillars: string[];
+      elements: { name: string; value: number; color: string }[];
+      mainElement: string;
+      luckyElement: string;
+    };
+  }[];
+  createdAt: string;
 }
 
 export interface TarotCard {
@@ -255,6 +309,7 @@ const STORAGE_KEYS = {
   CURRENT_USER: 'plc_current_user',
   USERS_DB: 'plc_users_db',
   ROUTE_CACHE: 'plc_route_cache',
+  JOINT_PLAN: 'plc_joint_plan',
 } as const;
 
 export interface CachedRoute {
@@ -335,6 +390,78 @@ export function clearStamps(): void {
 }
 
 // ==========================================
+// Joint Plan helpers
+// ==========================================
+export function saveJointPlan(plan: JointPlanResult): void {
+  localStorage.setItem(STORAGE_KEYS.JOINT_PLAN, JSON.stringify(plan));
+}
+
+export function getLatestJointPlan(): JointPlanResult | null {
+  const raw = localStorage.getItem(STORAGE_KEYS.JOINT_PLAN);
+  return raw ? JSON.parse(raw) : null;
+}
+
+export function clearJointPlans(): void {
+  localStorage.removeItem(STORAGE_KEYS.JOINT_PLAN);
+}
+
+// ==========================================
+// Bound Members & Relationships
+// ==========================================
+export interface BoundMember {
+  id: string;
+  name: string;
+  divinationMethod: 'tarot' | 'bazi';
+  relationTag: 'family' | 'friend' | 'partner' | 'other';
+  mood?: string;
+  baziInfo?: {
+    birthDate: string;
+    birthTime: string;
+    birthPlace: string;
+    queryType: string;
+  };
+}
+
+export function getBoundMembers(): BoundMember[] {
+  const raw = localStorage.getItem('plc_bound_members');
+  if (!raw) {
+    // 默认注入 2 个有趣的家人与伴侣，作为极佳的冷启动体验
+    const defaultMembers: BoundMember[] = [
+      {
+        id: 'bound_family_1',
+        name: '大雷 (爸爸)',
+        divinationMethod: 'bazi',
+        relationTag: 'family',
+        baziInfo: {
+          birthDate: '1970-05-10',
+          birthTime: '08:30',
+          birthPlace: '杭州',
+          queryType: 'fortune'
+        }
+      },
+      {
+        id: 'bound_partner_1',
+        name: '小花 (伴侣)',
+        divinationMethod: 'tarot',
+        relationTag: 'partner',
+        mood: 'tired'
+      }
+    ];
+    localStorage.setItem('plc_bound_members', JSON.stringify(defaultMembers));
+    return defaultMembers;
+  }
+  return JSON.parse(raw);
+}
+
+export function saveBoundMembers(members: BoundMember[]): void {
+  localStorage.setItem('plc_bound_members', JSON.stringify(members));
+}
+
+export function saveCurrentUser(user: User): void {
+  localStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(user));
+}
+
+// ==========================================
 // Auth helpers
 // ==========================================
 export function getCurrentUser(): User | null {
@@ -342,18 +469,25 @@ export function getCurrentUser(): User | null {
   return raw ? JSON.parse(raw) : null;
 }
 
-export function login(username: string, userId?: string, email?: string): User | null {
+export function login(
+  username: string, 
+  userId?: string, 
+  email?: string,
+  divinationPreference?: 'tarot' | 'bazi',
+  baziInfo?: { birthDate: string; birthTime: string; birthPlace: string }
+): User | null {
   try {
     const trimmedUsername = username.trim();
     if (!trimmedUsername) return null;
 
-    // 只要 Supabase 认证过了，我们就直接创建/更新本地 User 状态
     const user: User = {
       id: userId || `user_${Date.now()}`,
       username: trimmedUsername,
       email: email,
-      level: 1, // 这里以后可以从 Supabase 的 profiles 表读取
+      level: 1,
       exp: 0,
+      divinationPreference,
+      baziInfo
     };
     
     localStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(user));
@@ -364,7 +498,13 @@ export function login(username: string, userId?: string, email?: string): User |
   return null;
 }
 
-export function register(username: string, userId?: string, email?: string): User | null {
+export function register(
+  username: string, 
+  userId?: string, 
+  email?: string,
+  divinationPreference?: 'tarot' | 'bazi',
+  baziInfo?: { birthDate: string; birthTime: string; birthPlace: string }
+): User | null {
   try {
     const trimmedUsername = username.trim();
     if (!trimmedUsername) return null;
@@ -375,6 +515,8 @@ export function register(username: string, userId?: string, email?: string): Use
       email: email,
       level: 1,
       exp: 0,
+      divinationPreference,
+      baziInfo
     };
     
     localStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(newUser));

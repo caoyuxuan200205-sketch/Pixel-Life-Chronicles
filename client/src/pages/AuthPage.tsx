@@ -14,6 +14,12 @@ export const AuthPage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  // 新建注册用天命偏好与生日状态
+  const [pref, setPref] = useState<'tarot' | 'bazi'>('bazi');
+  const [birthDate, setBirthDate] = useState('1998-06-15');
+  const [birthTime, setBirthTime] = useState('12:00');
+  const [birthPlace, setBirthPlace] = useState('杭州');
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -57,17 +63,20 @@ export const AuthPage = () => {
 
         track(isLogin ? 'user_login_success' : 'user_register_success', { email: userEmail });
         
-        // 更新全局 Store 状态
-        login(username, userId, userEmail); 
+        // 更新全局 Store 状态 (保存注册时的天命偏好与生辰八字)
+        if (isLogin) {
+          login(username, userId, userEmail); 
+        } else {
+          register(username, userId, userEmail, pref, pref === 'bazi' ? { birthDate, birthTime, birthPlace } : undefined);
+        }
         
         if (!isLogin) {
           alert('契约达成！欢迎来到像素生活志。');
         }
-        navigate(-1);
+        navigate('/', { replace: true });
       }
     } catch (err: any) {
       console.error('Auth full error:', err);
-      // 弹出详细错误，帮助排查
       alert(`认证异常: ${err.message}`);
       setError(err.message || '操作失败，请重试');
       track(isLogin ? 'user_login_failure' : 'user_register_failure', { reason: err.message });
@@ -170,6 +179,115 @@ export const AuthPage = () => {
               />
             </div>
           </div>
+
+          {/* 注册专属：天命偏好与生日八字档案设置 */}
+          {!isLogin && (
+            <div className="pixel-panel" style={{ padding: '16px', background: 'rgba(0,0,0,0.3)', border: '1px solid var(--pixel-border-color)', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <h4 className="font-mystic" style={{ color: 'var(--primary)', fontSize: '0.85rem', marginBottom: '4px', textAlign: 'center' }}>
+                ☯️ 天命档案初始化
+              </h4>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '6px' }}>占卜仪式偏好</label>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button
+                    type="button"
+                    className="btn"
+                    onClick={() => setPref('bazi')}
+                    style={{
+                      flex: 1,
+                      padding: '8px',
+                      fontSize: '0.75rem',
+                      background: pref === 'bazi' ? 'var(--primary-dim)' : 'transparent',
+                      color: pref === 'bazi' ? 'var(--primary)' : 'var(--text-muted)',
+                      border: `1px solid ${pref === 'bazi' ? 'var(--primary)' : 'var(--pixel-border-color)'}`,
+                      boxShadow: 'none',
+                      height: 'auto'
+                    }}
+                  >
+                    ☯️ 东方八字
+                  </button>
+                  <button
+                    type="button"
+                    className="btn"
+                    onClick={() => setPref('tarot')}
+                    style={{
+                      flex: 1,
+                      padding: '8px',
+                      fontSize: '0.75rem',
+                      background: pref === 'tarot' ? 'var(--primary-dim)' : 'transparent',
+                      color: pref === 'tarot' ? 'var(--primary)' : 'var(--text-muted)',
+                      border: `1px solid ${pref === 'tarot' ? 'var(--primary)' : 'var(--pixel-border-color)'}`,
+                      boxShadow: 'none',
+                      height: 'auto'
+                    }}
+                  >
+                    🃏 西方塔罗
+                  </button>
+                </div>
+              </div>
+
+              {pref === 'bazi' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '4px' }}>出生公历日期</label>
+                    <input
+                      type="date"
+                      value={birthDate}
+                      onChange={(e) => setBirthDate(e.target.value)}
+                      style={{
+                        width: '100%',
+                        background: '#1a1714',
+                        border: '1px solid var(--pixel-border-color)',
+                        color: '#fff',
+                        padding: '8px',
+                        fontSize: '0.8rem',
+                        outline: 'none'
+                      }}
+                    />
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '10px' }}>
+                    <div style={{ flex: 1.2 }}>
+                      <label style={{ display: 'block', fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '4px' }}>出生时辰</label>
+                      <input
+                        type="time"
+                        value={birthTime}
+                        onChange={(e) => setBirthTime(e.target.value)}
+                        style={{
+                          width: '100%',
+                          background: '#1a1714',
+                          border: '1px solid var(--pixel-border-color)',
+                          color: '#fff',
+                          padding: '8px',
+                          fontSize: '0.8rem',
+                          outline: 'none'
+                        }}
+                      />
+                    </div>
+                    <div style={{ flex: 1.8 }}>
+                      <label style={{ display: 'block', fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '4px' }}>出生地点</label>
+                      <input
+                        type="text"
+                        placeholder="省/市"
+                        value={birthPlace}
+                        onChange={(e) => setBirthPlace(e.target.value)}
+                        style={{
+                          width: '100%',
+                          background: '#1a1714',
+                          border: '1px solid var(--pixel-border-color)',
+                          color: '#fff',
+                          padding: '8px',
+                          fontSize: '0.8rem',
+                          outline: 'none'
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           <AnimatePresence>
             {error && (
