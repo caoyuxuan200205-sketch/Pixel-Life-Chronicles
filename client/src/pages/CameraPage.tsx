@@ -1,7 +1,7 @@
 import { useRef, useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Save, ShoppingCart, MapPin, Scissors, Info, Loader2, Sparkles, X, ChevronRight } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { track } from "@vercel/analytics";
 import { saveStamp, type StampRecord, getLatestJointPlan, getCurrentUser, type BeadPattern } from '../store';
 
@@ -189,13 +189,16 @@ export const CameraPage = () => {
   const [bookingSuccess, setBookingSuccess] = useState(false);
 
   const navigate = useNavigate();
+  const location = useLocation();
+  const state = location.state as { eventIndex?: number } | null;
+  const eventIndex = state?.eventIndex ?? 0;
   
   const plan = getLatestJointPlan();
-  const activeEvent = plan ? plan.itinerary[0] : null;
+  const activeEvent = plan ? (plan.itinerary[eventIndex] || plan.itinerary[0]) : null;
   const reading = activeEvent ? {
     poi: activeEvent.poi,
     card: plan.individualReadings[0]?.tarotCard || { name: '命运契约', emoji: '☯️', meaning: '命运契约的神秘交融。' },
-    reading: plan.divinationSynthesis,
+    reading: activeEvent.mysticReasoning || plan.divinationSynthesis,
     drawnAt: plan.createdAt
   } : null;
   const user = getCurrentUser();

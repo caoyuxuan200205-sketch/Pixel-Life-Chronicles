@@ -288,9 +288,31 @@ export const MapPage = () => {
               <span>距您约 {activeEvent.poi.distance}m</span>
             </div>
 
-            <p style={{ fontSize: '0.7rem', color: 'var(--text-primary)', lineHeight: '1.4', background: 'rgba(0,0,0,0.3)', padding: '10px', borderLeft: '2px solid var(--primary)', margin: 0 }}>
+            <p style={{ fontSize: '0.7rem', color: 'var(--text-primary)', lineHeight: '1.4', background: 'rgba(0,0,0,0.3)', padding: '10px', borderLeft: '2px solid var(--primary)', margin: '0 0 12px 0' }}>
               {activeEvent.mysticReasoning}
             </p>
+
+            <button
+              onClick={() => navigate('/camera', { state: { eventIndex: activeStopIndex } })}
+              style={{
+                width: '100%',
+                background: 'linear-gradient(135deg, var(--primary) 0%, #d49f24 100%)',
+                color: '#000',
+                border: 'none',
+                padding: '8px 12px',
+                fontSize: '0.7rem',
+                fontWeight: 'bold',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '6px',
+                cursor: 'pointer',
+                boxShadow: '2px 2px 0 rgba(0,0,0,0.3)',
+                fontFamily: 'var(--font-main)'
+              }}
+            >
+              🎨 创作“命运纪念印章”
+            </button>
           </motion.div>
         </AnimatePresence>
       </div>
