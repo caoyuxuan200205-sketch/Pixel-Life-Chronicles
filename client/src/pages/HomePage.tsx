@@ -338,7 +338,14 @@ export const HomePage = () => {
       });
 
       if (!planRes.ok) {
-        throw new Error('召唤法阵未响应');
+        let errorMsg = '召唤法阵未响应';
+        try {
+          const errJSON = await planRes.json();
+          if (errJSON && errJSON.error) {
+            errorMsg = errJSON.error;
+          }
+        } catch (_) {}
+        throw new Error(errorMsg);
       }
 
       const planData = await planRes.json();

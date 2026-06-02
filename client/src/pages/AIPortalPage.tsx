@@ -333,14 +333,21 @@ export const AIPortalPage = () => {
       });
 
       if (!response.ok) {
-        throw new Error('对话召集令未获响应');
+        let errorMsg = '对话召集令未获响应';
+        try {
+          const errJSON = await response.json();
+          if (errJSON && errJSON.error) {
+            errorMsg = errJSON.error;
+          }
+        } catch (_) {}
+        throw new Error(errorMsg);
       }
 
       const resData = await response.json();
       if (resData.success && resData.reply) {
         setMessages(prev => [...prev, { role: 'assistant', content: resData.reply }]);
       } else {
-        throw new Error('解析出游契约答复失败');
+        throw new Error(resData.error || '解析出游契约答复失败');
       }
     } catch (err: any) {
       console.error('Chat AI query error:', err);
