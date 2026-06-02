@@ -340,15 +340,13 @@ export async function performAIReading(
       isAI = true;
       onStatusChange?.('命运已揭晓');
     } catch (err) {
-      console.warn('AI 失败:', err);
-      onStatusChange?.('信号微弱，启用本地占卜…');
-      await delay(500);
-      aiResult = generateLocalFallback(mood, validPois);
+      console.error('AI 失败:', err);
+      onStatusChange?.('命运感应失败！');
+      throw err;
     }
   } else {
-    onStatusChange?.('解析中…');
-    await delay(1000);
-    aiResult = generateLocalFallback(mood, validPois);
+    onStatusChange?.('AI 服务未配置！');
+    throw new Error('AI 服务未配置，降级占卜已禁用。');
   }
 
   // 最终确定的卡片（优先尊重 AI 返回的结果，如果没有则使用我们抽中的那张）

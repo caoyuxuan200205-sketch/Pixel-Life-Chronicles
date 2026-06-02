@@ -342,38 +342,14 @@ export const AIPortalPage = () => {
       } else {
         throw new Error('解析出游契约答复失败');
       }
-    } catch (err) {
-      console.error('Chat AI query error, falling back to dynamic sandboxed reply:', err);
+    } catch (err: any) {
+      console.error('Chat AI query error:', err);
       
-      // 动态高保真 Mock 契约，消解心里话意图并保证绝对的演示稳定性
-      await new Promise(r => setTimeout(r, 1500));
+      // 真实反馈错误，完全禁用降级兜底方案
+      await new Promise(r => setTimeout(r, 800));
       setMessages(prev => [...prev, {
         role: 'assistant',
-        content: `🔮 本时空遭遇微弱磁场波动，但我依然通过结界成功为您凝聚了专属天命周边游方案：\n\n根据您的心里话意向与幸运五行【${luckyElement}】，本周末自驾出行最利开运！特为您在美团锁定了以下周边民宿与景区图谱，要即刻开启契约履行吗？\n\n<travel_deal>
-{
-  "hotel": {
-    "name": "🏨 ${currentUser?.baziInfo?.birthPlace || '杭州'}星曜${luckyElement}灵隐私汤山庄",
-    "rating": "4.9分 (美团金牌推荐)",
-    "tag": "五行${luckyElement}系能量 | 隐奢私汤",
-    "price": "￥580/晚",
-    "room": "观澜${luckyElement}耀玄机大床房",
-    "desc": "依傍时空结界，特别融合您的幸运五行【${luckyElement}】属性进行建筑规划与能量微调，能完美消解近期疲劳并达成出行心里话愿望。"
-  },
-  "scenic": {
-    "name": "🏕️ ${currentUser?.baziInfo?.birthPlace || '杭州'}${luckyElement}曜森林自驾探索景区",
-    "rating": "4.8分 (本周自驾热度No.1)",
-    "tag": "五行${luckyElement}互补 | 宿命探索",
-    "price": "￥88 (大门票+时空体验)",
-    "desc": "该景区磁场具有深厚的【${luckyElement}】元素特质，契合您的天命八字，漫步或自驾其中可感应到极佳的能量流动。"
-  },
-  "auspiciousHour": {
-    "time": "07:00-09:00 (辰时)",
-    "label": "天乙贵人",
-    "luckLevel": "大吉",
-    "desc": "贵人临门，吉星高照，自驾出行大吉。"
-  }
-}
-</travel_deal>`
+        content: `❌ 时空天命法则编织失败！\n\n【时空断裂报错】：${err.message || err || '未知时空扰动'}\n\n这表明当前 AI 调用未成功跑通。请检查后端环境配置中的 \`QWEN_API_KEY\` 是否正确设置、服务是否在线，或重试提问。`
       }]);
     } finally {
       setIsLoading(false);

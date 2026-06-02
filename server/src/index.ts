@@ -642,7 +642,7 @@ ${baziInfo ? `【八字信息】${JSON.stringify(baziInfo)}` : ''}
           'Authorization': `Bearer ${apiKey}`,
         },
         responseType: 'stream',
-        timeout: 6000 // 6s timeout to prevent Vercel 10s Hobby timeout limits
+        timeout: 180000 // 180s timeout to support slow/complex AI generations
       });
 
       res.setHeader('Content-Type', 'text/event-stream');
@@ -668,7 +668,7 @@ ${baziInfo ? `【八字信息】${JSON.stringify(baziInfo)}` : ''}
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${apiKey}`,
         },
-        timeout: 6000 // 6s timeout
+        timeout: 180000 // 180s timeout
       });
 
       let content = response.data.choices?.[0]?.message?.content;
@@ -830,8 +830,6 @@ app.post('/api/agent/plan', async (req, res) => {
     });
 
     const { apiKey, baseUrl, modelId } = getAIConfig();
-
-    // 筛选前15个候选商户进行规划，防止 prompt 过长
     const candidatePois = pois.length > 0 ? pois.slice(0, 15) : [
       { id: 'poi_1', name: '猫空时光咖啡馆', type: '咖啡馆', rating: 4.8, distance: 350, location: [120.153, 30.258], address: '南山路22号' },
       { id: 'poi_2', name: '涌金门遗址公园', type: '公园/名胜', rating: 4.7, distance: 820, location: [120.155, 30.252], address: '西湖风景区内' },
@@ -846,28 +844,30 @@ app.post('/api/agent/plan', async (req, res) => {
         const systemPrompt = `你是一个融合了东方命理学（生辰八字）与西方神秘学（塔罗占卜）的“时空命运规划御史” (Chrono-Destiny Plan Agent)。
 你的任务是为结界中的所有成员，在候选商户 POI 中，规划一条长约 ${timeBudget} 小时的周末出行轨迹，并完成各自的命运解读。你必须严格甄选商户，使行程顺次相连（由近及远或圆弧线路），并且具备命运关联的寓意。
 
-请必须按照以下 JSON 格式返回，不要包含任何 markdown 标记、\`\`\`json 块或多余解释文本：
+【🚨🚨🚨极其重要的高并发极速响应规则：为了彻底避免 Vercel 10s Serverless 网络网关超时杀死进程，你必须让你的回复极其精简，严格控制字数！不要使用长难句，字数一定要精细到限制的字数以内！】
+
+请必须按照以下 JSON 格式返回，绝对不要包含任何 markdown 标记（如 \`\`\`json）、多余解释或属性外文本，必须是纯粹的可解析 JSON：
 {
-  "divinationSynthesis": "一段优美的命运交织综述，说明为何大家今天走在一起，各自的能量如何互补（中文，富有玄学意境和诗意，约150字）",
+  "divinationSynthesis": "命运交织最精炼综述，说明为何大家今天走在一起（中文，限35字以内）",
   "itinerary": [
     {
       "id": "活动1的唯一ID",
       "poiId": "对应的候选商户ID",
       "timeSlot": "例如 14:00 - 15:30",
-      "activityName": "例如 命定灵感、乾坤补水 等富有玄学像素风的名字",
-      "mysticReasoning": "命运羁绊分析：结合成员的塔罗牌或八字五行，解释为什么在这个时间在这个地方活动，能给他们补充什么能量",
+      "activityName": "例如 命定灵感 等富有玄学风的名字，限8字",
+      "mysticReasoning": "命运分析：简述为什么在这里，限15-20字！",
       "suggestedBooking": {
         "type": "didi" | "coupon" | "ticket" | "none",
-        "name": "例如：呼叫像素专车 / 领取满100减20代金券 / 预订手作双人票",
-        "detail": "补充预订说明参数"
+        "name": "例如：呼叫专车 / 预订双人票，限10字",
+        "detail": "参数"
       }
     }
   ],
   "individualReadings": [
     {
       "memberId": "成员的ID",
-      "readingText": "针对该成员的详细命运占卜词。若是塔罗牌，必须结合你为他抽中的牌面和其情绪标签来解读；若是八字，必须分析其日主五行、喜用五行以及和今日行程的契合点。",
-      "tarotCardName": "如果是塔罗，返回抽中的塔罗牌英文名（如 The Sun，必须在标准大阿卡纳中），否则不填",
+      "readingText": "详细命运简短占卜词。分析其八字喜忌或塔罗，绝对不要超过30字！越少越精炼越好！",
+      "tarotCardName": "如果是塔罗，返回抽中的塔罗牌英文名（如 The Sun），否则不填",
       "tarotCardEmoji": "如果是塔罗，返回对应的 emoji，否则不填"
     }
   ]
@@ -888,13 +888,13 @@ ${JSON.stringify(candidatePois, null, 2)}
 请对上述成员与商户进行命轨编织，合理利用时间预算（${timeBudget} 小时），返回纯 JSON。`
             }
           ],
-          temperature: 0.8
+          temperature: 0.6 // 降低温度以加快生成速度并确保格式100%精准
         }, {
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${apiKey}`
           },
-          timeout: 6000 // 6s timeout to prevent Vercel 10s timeout limits, triggers fallback immediately
+          timeout: 180000 // 180s timeout to support slow/complex AI plan generation
         });
 
         const content = response.data?.choices?.[0]?.message?.content;
@@ -904,74 +904,14 @@ ${JSON.stringify(candidatePois, null, 2)}
             planData = JSON.parse(jsonMatch[1]);
           }
         }
-      } catch (err) {
-        console.error('Doubao Agent API call failed, falling back to local generator:', err);
+      } catch (err: any) {
+        console.error('Qwen Agent plan API call failed:', err);
+        throw new Error(`时空编织大模型响应失败: ${err.message || '网络连接超时'}`);
       }
     }
 
-    // 2. 健壮的本地备用生成逻辑 (在 API 失败或未配置时确保 100% 成功返回，保证演示流畅)
     if (!planData) {
-      console.log('Generating high-fidelity fallback plan locally...');
-      const planId = `plan_${Date.now()}`;
-      
-      // 精选 2-3 个 POI 作为路线
-      const itineraryCount = timeBudget <= 3 ? 2 : 3;
-      const selectedPois = candidatePois.slice(0, Math.min(itineraryCount, candidatePois.length));
-      
-      const itinerary = selectedPois.map((poi: any, idx: number) => {
-        const timeSlots = ["14:00 - 15:30", "15:45 - 17:15", "17:30 - 19:30"];
-        const names = ["【命定探幽】释放尘世尘嚣", "【结界补充】汲取星灵之力", "【乾坤契约】命运之火炙烤"];
-        const reasons = [
-          `此地气场纯净，极佳地回应了成员在命盘中对于环境互补的渴求，是一场天意注定的停留。`,
-          `此处处于结界的生气方位，五行交织，是平衡结界内成员各自命轨中短板能量的最佳时空节点。`,
-          `在今日命运的收尾时刻，选择此处共进晚宴或聚会，将为结界诸人的运势牢牢打上命定钢印。`
-        ];
-        const bookingTypes: ('didi' | 'coupon' | 'ticket' | 'none')[] = ['didi', 'ticket', 'coupon'];
-        const bookingNames = [
-          `呼叫像素专车往返接送`,
-          `获取商户门票/预约手作材料包`,
-          `一键获取专享满百减二十代金券`
-        ];
-
-        return {
-          id: `event_${planId}_${idx}`,
-          poiId: poi.id,
-          poi: poi,
-          timeSlot: timeSlots[idx] || "18:00 - 19:30",
-          activityName: names[idx] || "命运余晖",
-          mysticReasoning: reasons[idx],
-          bookingStatus: bookingTypes[idx] !== 'none' ? {
-            type: bookingTypes[idx],
-            name: bookingNames[idx],
-            status: 'pending'
-          } : undefined
-        };
-      });
-
-      const individualReadings = processedMembers.map((member: any) => {
-        if (member.divinationMethod === 'tarot') {
-          const cardIdx = member.tarotCardIndex !== undefined ? member.tarotCardIndex : Math.floor(Math.random() * LOCAL_TAROT_CARDS.length);
-          const drawn = LOCAL_TAROT_CARDS[cardIdx % LOCAL_TAROT_CARDS.length];
-          return {
-            memberId: member.id,
-            tarotCard: drawn,
-            readingText: `您感应并抽中了【${drawn.name}】牌 (${drawn.emoji})。针对您当前“${member.mood || '随便走走'}”的心态，此牌昭示着一次能量的大跨步。今日的行程将为您拂去心灵的负荷，在命定锚点与朋友的磁场共振，注入崭新的创造力。`
-          };
-        } else {
-          const chart = member.baziChart;
-          return {
-            memberId: member.id,
-            baziChart: chart,
-            readingText: `您的生辰八字命盘排定：日主属【${chart?.mainElement || '土'}】。今日时空星轨中，【${chart?.luckyElement || '水'}】气最旺。而今日为您规划的目的地正好极富【${chart?.luckyElement || '水'}】之本源，与您的命盘产生良性的相生磁场，对于您所求的“出行与气运”将带来极佳的护持与净化。`
-          };
-        }
-      });
-
-      planData = {
-        divinationSynthesis: "星斗偏转，金木互济。今天结界诸人的缘分线在时空经纬中悄然重叠。这是一场动静相宜的旅程：用塔罗的热烈与探寻去点燃平静的乾坤，同时用八字五行的浑厚土木之气去包容情绪的波动。这是一场上苍早有安排的完美会盟。",
-        itinerary,
-        individualReadings
-      };
+      throw new Error('AI时空命格编织未能生成有效方案，请检查您的 QWEN_API_KEY 配置并重试。');
     }
 
     // 3. 对预订项初始化 pending 状态，并在返回前进行结构调整
@@ -1068,42 +1008,19 @@ app.post('/api/agent/book', (req, res) => {
   }
 });
 
-// 美团酒旅真实 API & 离线 Mock 双核服务层 (参考 manlv-backend 规范)
 app.post('/api/agent/meituan', async (req, res) => {
   try {
     const { city = '杭州', query = '周边游温泉度假', luckyElement = '金' } = req.body;
     
-    // 构造高保真动态兜底数据
-    const fallbackMock = {
-      hotel: {
-        name: `🏨 ${city}星曜${luckyElement}灵隐私汤山庄`,
-        rating: '4.9分 (美团金牌推荐)',
-        tag: `五行${luckyElement}系能量 | 隐奢私汤`,
-        price: '￥580/晚',
-        room: `观澜${luckyElement}耀玄机大床房`,
-        desc: `依傍时空结界，特别融合您的幸运五行【${luckyElement}】属性进行建筑规划与能量微调，能完美消解近期疲劳并达成出行愿望：“${query}”。`
-      },
-      scenic: {
-        name: `🏕️ ${city}${luckyElement}曜森林自驾探索景区`,
-        rating: '4.8分 (本周自驾热度No.1)',
-        tag: `五行${luckyElement}互补 | 宿命探索`,
-        price: '￥88 (大门票+时空体验)',
-        desc: `该景区磁场具有深厚的【${luckyElement}】元素特质，契合您的天命八字，漫步或自驾其中可感应到极佳的能量流动，消解：“${query}”。`
-      },
-      auspiciousHour: {
-        time: '07:00-09:00 (辰时)',
-        label: '天乙贵人',
-        luckLevel: '大吉',
-        desc: '贵人临门，吉星高照，自驾出行大吉。'
-      }
-    };
-
     // 1. 尝试使用真实的 Qwen / 大模型 AI 接口生成
     const { apiKey, baseUrl, modelId } = getAIConfig();
-    if (apiKey && modelId) {
-      console.log(`Connecting to Qwen/Backend AI to generate surrounding tour for luckyElement=${luckyElement}, query=${query}...`);
-      try {
-        const systemPrompt = `你是一位精通东方神秘学（八字、五行生克）与现代生活美学的"时空探路祭司"。
+    if (!apiKey || !modelId) {
+      return res.status(500).json({ error: 'AI 大模型服务未配置，降级策略已禁用' });
+    }
+
+    console.log(`Connecting to Qwen/Backend AI to generate surrounding tour for luckyElement=${luckyElement}, query=${query}...`);
+    
+    const systemPrompt = `你是一位精通东方神秘学（八字、五行生克）与现代生活美学的"时空探路祭司"。
 你的任务是根据用户的幸运五行属性、所处城市以及出游心里话（天命契机），利用AI为他们推荐一款高度契合的美团特色隐奢民宿/酒店、一款开运自驾景区，并推算一个本周末最佳的出征吉时。
 
 你必须严格按照以下 JSON 格式返回结果，不得包含任何 Markdown 格式标记（如 \`\`\`json）：
@@ -1131,107 +1048,58 @@ app.post('/api/agent/meituan', async (req, res) => {
   }
 }`;
 
-        const userMessage = `【用户基本天命参数】
+    const userMessage = `【用户基本天命参数】
 - 当前探索地盘：${city}
 - 用户幸运五行：${luckyElement}
 - 用户心里话出行心里话 (自定义天命契机)："${query || '放松身心，呼吸大自然'}"
 
 请结合上述信息，编织专属的周边游美团酒旅契约！`;
 
-        const endpoint = `${baseUrl}/chat/completions`;
-        const payload = {
-          model: modelId,
-          messages: [
-            { role: 'system', content: systemPrompt },
-            { role: 'user', content: userMessage }
-          ],
-          temperature: 0.7,
-          response_format: { type: "json_object" }
-        };
+    const endpoint = `${baseUrl}/chat/completions`;
+    const payload = {
+      model: modelId,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userMessage }
+      ],
+      temperature: 0.7,
+      response_format: { type: "json_object" }
+    };
 
-        const aiResponse = await axios.post(endpoint, payload, {
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${apiKey}`
-          },
-          timeout: 6000
-        });
-
-        if (aiResponse.status === 200) {
-          const aiData = aiResponse.data;
-          const content = aiData?.choices?.[0]?.message?.content;
-          if (content) {
-            let cleanedContent = content.trim();
-            if (cleanedContent.startsWith('```json')) {
-              cleanedContent = cleanedContent.replace(/^```json\s*/, '').replace(/\s*```$/, '');
-            } else if (cleanedContent.startsWith('```')) {
-              cleanedContent = cleanedContent.replace(/^```\s*/, '').replace(/\s*```$/, '');
-            }
-            const aiResult = JSON.parse(cleanedContent);
-            console.log("Successfully generated real AI travel items from Qwen!");
-            return res.json({
-              success: true,
-              source: 'real_qwen_ai',
-              aiResult,
-              luckyElement,
-              city,
-              query
-            });
-          }
-        }
-      } catch (err: any) {
-        console.error('Qwen AI generation failed, falling back to mock:', err);
-      }
-    }
-
-    // 2. 尝试使用真实美团 API
-    const mtToken = process.env.MEITUAN_TRAVEL_TOKEN || process.env.VITE_MEITUAN_TRAVEL_TOKEN;
-    if (mtToken) {
-      console.log(`Connecting to real Meituan API for city=${city}, query=${query}...`);
-      try {
-        const mtConfigDir = path.join(os.homedir(), '.config', 'meituan-travel');
-        await fs.promises.mkdir(mtConfigDir, { recursive: true });
-        await fs.promises.writeFile(
-          path.join(mtConfigDir, 'config.json'), 
-          JSON.stringify({ key: mtToken }), 
-          'utf-8'
-        );
-
-        const { stdout, stderr } = await execFileAsync('npx', [
-          '-p', '@meituan-travel/travel-cli', 'mttravel',
-          city.trim(), query.trim()
-        ], {
-          timeout: 120000,
-          maxBuffer: 1024 * 1024 * 10,
-          windowsHide: true,
-          shell: process.platform === 'win32'
-        });
-        
-        const output = [stdout, stderr].map(String).filter(Boolean).join('\n');
-        return res.json({ 
-          success: true,
-          source: 'real_meituan_api', 
-          result: output,
-          aiResult: fallbackMock
-        });
-      } catch (err: any) {
-        console.error('Real Meituan API failed, falling back to mock dataset:', err);
-      }
-    }
-
-    // 3. 离线沙盒高保真数据兜底
-    console.log(`Using mock Meituan dataset for luckyElement=${luckyElement}...`);
-    return res.json({
-      success: true,
-      source: 'offline_sandbox',
-      aiResult: fallbackMock,
-      luckyElement,
-      city,
-      query
+    const aiResponse = await axios.post(endpoint, payload, {
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      timeout: 180000 // 180s timeout to support slow AI generation
     });
+
+    if (aiResponse.status === 200) {
+      const aiData = aiResponse.data;
+      const content = aiData?.choices?.[0]?.message?.content;
+      if (content) {
+        let cleanedContent = content.trim();
+        if (cleanedContent.startsWith('```json')) {
+          cleanedContent = cleanedContent.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+        } else if (cleanedContent.startsWith('```')) {
+          cleanedContent = cleanedContent.replace(/^```\s*/, '').replace(/\s*```$/, '');
+        }
+        const aiResult = JSON.parse(cleanedContent);
+        console.log("Successfully generated real AI travel items from Qwen!");
+        return res.json({
+          success: true,
+          source: 'real_qwen_ai',
+          aiResult,
+          luckyElement,
+          city,
+          query
+        });
+      }
+    }
+    throw new Error(`AI大模型响应错误: 状态码 ${aiResponse.status}`);
   } catch (error: any) {
-    console.error('Meituan API handler error:', error);
-    res.status(500).json({ error: error.message || '内部服务异常' });
+    console.error('Meituan AI generation error:', error);
+    res.status(500).json({ error: `AI周边游契约生成失败: ${error.message || '内部服务异常'}` });
   }
 });
 
@@ -1297,7 +1165,7 @@ app.post('/api/agent/chat', async (req, res) => {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${apiKey}`
       },
-      timeout: 6000
+      timeout: 180000 // 180s timeout
     });
 
     if (aiResponse.status === 200) {
