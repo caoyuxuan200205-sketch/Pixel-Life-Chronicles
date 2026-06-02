@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Compass, Sparkles, Wand2, Clock, MapPin, CheckCircle, Navigation, Info, ChevronRight, User, Send, RefreshCw, Trash2, Download, Share2 } from 'lucide-react';
+import { Compass, Sparkles, Wand2, Clock, MapPin, CheckCircle, Navigation, Info, ChevronRight, User, Send, RefreshCw, Trash2, Download, Share2, Train, Plane } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import html2canvas from 'html2canvas';
 import { getCurrentUser, getBoundMembers, type BoundMember } from '../store';
@@ -251,6 +251,7 @@ export const AIPortalPage = () => {
   const [captureProgress, setCaptureProgress] = useState('');
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const isSendingRef = useRef(false);
 
   // 获取当前幸运五行动态主题
   const theme = ELEMENT_THEME_MAP[luckyElement] || ELEMENT_THEME_MAP['土'];
@@ -296,8 +297,9 @@ export const AIPortalPage = () => {
   // 发送消息核心逻辑
   const handleSendMessage = async (customQuery?: string) => {
     const textToSend = customQuery !== undefined ? customQuery : inputValue;
-    if (!textToSend.trim() || isLoading) return;
+    if (!textToSend.trim() || isLoading || isSendingRef.current) return;
 
+    isSendingRef.current = true;
     // 清空输入框
     setInputValue('');
 
@@ -364,6 +366,7 @@ export const AIPortalPage = () => {
       }]);
     } finally {
       setIsLoading(false);
+      isSendingRef.current = false;
     }
   };
 
@@ -376,22 +379,38 @@ export const AIPortalPage = () => {
     }
   };
 
-  // 辅助 JSON 解析器 (扫描 XML 标签)
+  // 辅助 JSON 解析器 (扫描 XML 标签，支持 travel_deal 和 ticket_deal)
   const parseMessageContent = (text: string) => {
     const dealRegex = /<travel_deal>([\s\S]*?)<\/travel_deal>/;
-    const match = text.match(dealRegex);
-    if (match) {
-      const rawJson = match[1].trim();
-      const textWithoutDeal = text.replace(dealRegex, '').trim();
+    const ticketRegex = /<ticket_deal>([\s\S]*?)<\/ticket_deal>/;
+
+    let textWithoutDeals = text;
+    let deal = null;
+    let ticketDeal = null;
+
+    const dealMatch = text.match(dealRegex);
+    if (dealMatch) {
+      const rawJson = dealMatch[1].trim();
+      textWithoutDeals = textWithoutDeals.replace(dealRegex, '').trim();
       try {
-        const dealData = JSON.parse(rawJson);
-        return { text: textWithoutDeal, deal: dealData };
+        deal = JSON.parse(rawJson);
       } catch (e) {
-        console.error('Failed to parse deal JSON:', e);
-        return { text, deal: null };
+        // 忽略流式传输中不完整的 JSON 解析错误
       }
     }
-    return { text, deal: null };
+
+    const ticketMatch = text.match(ticketRegex);
+    if (ticketMatch) {
+      const rawJson = ticketMatch[1].trim();
+      textWithoutDeals = textWithoutDeals.replace(ticketRegex, '').trim();
+      try {
+        ticketDeal = JSON.parse(rawJson);
+      } catch (e) {
+        // 忽略流式传输中不完整的 JSON 解析错误
+      }
+    }
+
+    return { text: textWithoutDeals, deal, ticketDeal };
   };
 
   // 预订成功触发
@@ -456,7 +475,7 @@ export const AIPortalPage = () => {
   // 渲染单条对话气泡组件 (包含 inline 卡片展示)
   const renderMessage = (msg: typeof messages[0], index: number) => {
     const isUser = msg.role === 'user';
-    const { text, deal } = parseMessageContent(msg.content);
+    const { text, deal, ticketDeal } = parseMessageContent(msg.content);
     const isBooked = bookingSuccessMap[index];
 
     return (
@@ -778,6 +797,146 @@ export const AIPortalPage = () => {
                 )}
               </div>
 
+            </motion.div>
+          )}
+
+          {/* 美团天命车票/机票卡片 TicketDeal */}
+          {ticketDeal && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              id={`ticket-card-${index}`}
+              style={{ 
+                display: 'flex', 
+                flexDirection: 'column', 
+                gap: '0px', 
+                width: '100%', 
+                maxWidth: '320px', 
+                marginTop: '4px',
+                border: `2px solid ${theme.color}`,
+                boxShadow: `0 0 15px ${theme.glow}, 4px 4px 0 rgba(0,0,0,0.5)`,
+                borderRadius: '0px',
+                background: 'linear-gradient(135deg, #1b1624 0%, #0d0a12 100%)',
+                overflow: 'hidden',
+                position: 'relative'
+              }}
+            >
+              {/* 卡片顶头饰条 */}
+              <div style={{ 
+                height: '8px', 
+                background: `linear-gradient(90deg, ${theme.color} 0%, rgba(255,255,255,0.2) 50%, ${theme.color} 100%)` 
+              }} />
+
+              {/* 契约头部 */}
+              <div style={{ padding: '12px 14px 8px 14px', borderBottom: '1px dashed rgba(255,255,255,0.1)', position: 'relative' }}>
+                <span className="font-mystic" style={{ fontSize: '0.85rem', fontWeight: 'bold', color: theme.color, textShadow: `0 0 8px ${theme.glow}`, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  🎫 时空枢纽·{ticketDeal.type === 'train' ? '列车契约' : '飞行契约'}
+                </span>
+                <span style={{ fontSize: '0.55rem', position: 'absolute', top: '13px', right: '14px', color: '#ffb300', border: '1px solid #ffb300', padding: '1px 3px' }}>
+                  {luckyElement}命特惠
+                </span>
+              </div>
+
+              {/* 行程路线与时间 */}
+              <div style={{ padding: '12px 14px 8px 14px', background: 'rgba(255,255,255,0.02)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+                    <span style={{ fontSize: '1rem', fontWeight: 'bold', color: '#fff' }}>{ticketDeal.from}</span>
+                    <span style={{ fontSize: '0.55rem', color: 'var(--text-muted)' }}>出发站</span>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1, position: 'relative', margin: '0 10px' }}>
+                    <span style={{ fontSize: '0.55rem', color: theme.color, position: 'absolute', top: '-12px' }}>{ticketDeal.date}</span>
+                    <div style={{ width: '100%', height: '2px', background: 'rgba(255,255,255,0.15)', display: 'flex', justifyContent: 'center', alignItems: 'center', position: 'relative' }}>
+                      <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: theme.color, position: 'absolute', left: 0 }} />
+                      {ticketDeal.type === 'train' ? <Train size={12} style={{ color: theme.color, background: '#120d1c', padding: '0 2px', zIndex: 2 }} /> : <Plane size={12} style={{ color: theme.color, background: '#120d1c', padding: '0 2px', zIndex: 2 }} />}
+                      <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: theme.color, position: 'absolute', right: 0 }} />
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+                    <span style={{ fontSize: '1rem', fontWeight: 'bold', color: '#fff' }}>{ticketDeal.to}</span>
+                    <span style={{ fontSize: '0.55rem', color: 'var(--text-muted)' }}>到达站</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* 方案列表 */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '10px 14px', borderBottom: '1px dashed rgba(255,255,255,0.08)' }}>
+                {ticketDeal.options && ticketDeal.options.map((opt: any, optIdx: number) => (
+                  <div 
+                    key={optIdx} 
+                    style={{ 
+                      padding: '10px', 
+                      background: 'rgba(255,255,255,0.03)', 
+                      border: '1px solid rgba(255,255,255,0.08)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '6px',
+                      borderRadius: '0px'
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: '0.8rem', fontWeight: 'bold', color: theme.color }}>
+                        {opt.number} ({opt.seatType})
+                      </span>
+                      <span style={{ fontSize: '0.9rem', fontWeight: 'bold', color: '#3CD070' }}>
+                        {opt.price}
+                      </span>
+                    </div>
+
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.62rem', color: '#eae3d9' }}>
+                      <span>🕒 {opt.fromTime} → {opt.toTime} ({opt.duration})</span>
+                    </div>
+
+                    <p style={{ fontSize: '0.58rem', color: 'var(--text-muted)', margin: '0', textAlign: 'left', fontStyle: 'italic', lineHeight: '1.4' }}>
+                      {opt.desc}
+                    </p>
+
+                    {/* 一键预订操作 */}
+                    <div style={{ marginTop: '4px', display: 'flex', gap: '6px' }}>
+                      <a
+                        href={opt.link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                          flex: 1,
+                          padding: '8px 10px',
+                          background: `linear-gradient(45deg, ${theme.color}, ${theme.accent})`,
+                          color: '#000',
+                          fontWeight: 'bold',
+                          fontSize: '0.68rem',
+                          textAlign: 'center',
+                          textDecoration: 'none',
+                          boxShadow: '0 3px 0 rgba(0,0,0,0.3)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '4px',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        <span>🤝 契约预订 (美团直达)</span>
+                      </a>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* 底部票根撕扯装饰效果 */}
+              <div style={{ display: 'flex', alignItems: 'center', width: '100%', height: '14px', overflow: 'hidden', position: 'relative' }}>
+                <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#0d0b0a', borderRight: `2px solid ${theme.color}`, marginLeft: '-6px', zIndex: 10 }} />
+                <div style={{ flex: 1, borderTop: '2px dashed rgba(255,255,255,0.15)', margin: '0 4px' }} />
+                <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#0d0b0a', borderLeft: `2px solid ${theme.color}`, marginRight: '-6px', zIndex: 10 }} />
+              </div>
+
+              {/* 出征吉时推荐 */}
+              <div style={{ 
+                padding: '10px 14px 12px 14px', 
+                fontSize: '0.6rem', 
+                color: 'var(--text-muted)', 
+                textAlign: 'left'
+              }}>
+                ℹ️ 乘此列车/航班出行，可于时空中契合幸运【{luckyElement}】气场，助推宿命吉运！
+              </div>
             </motion.div>
           )}
 

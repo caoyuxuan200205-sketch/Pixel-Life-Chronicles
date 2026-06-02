@@ -1158,6 +1158,101 @@ app.post('/api/agent/meituan', async (req, res) => {
   }
 });
 
+// ==========================================
+// 真实车票意图识别与美团酒旅 CLI 供给查询服务
+// ==========================================
+async function extractTicketIntent(userText: string, defaultCity: string) {
+  const { apiKey, baseUrl, modelId } = getAIConfig();
+  if (!apiKey) return { isTicketQuery: false, city: defaultCity, query: '' };
+
+  try {
+    const response = await axios.post(`${baseUrl}/chat/completions`, {
+      model: modelId,
+      messages: [
+        {
+          role: 'system',
+          content: `你是一个出行业务意图识别助手。请分析用户的输入，判断用户是否在查询或订购【火车票】或【机票】。
+如果是，请从输入中提取出查询对应的城市（出发城市）和完整的查询需求。
+
+你必须严格返回以下 JSON 格式，不要包含任何 markdown 标记：
+{
+  "isTicketQuery": true,
+  "city": "出发城市（如南京、北京，若没有则默认为当前城市）",
+  "query": "精简的查询句子，例如'明天南京到上海的火车票'或'6月3日北京到广州的机票'"
+}
+如果用户不是在查询火车票或机票，请直接返回：
+{
+  "isTicketQuery": false,
+  "city": "",
+  "query": ""
+}`
+        },
+        {
+          role: 'user',
+          content: `用户输入："${userText}"，默认当前城市："${defaultCity}"`
+        }
+      ],
+      temperature: 0.1,
+      response_format: { type: "json_object" }
+    }, {
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json'
+      },
+      timeout: 6000
+    });
+
+    const content = response.data?.choices?.[0]?.message?.content || '';
+    console.log('Ticket intent extraction result from Qwen:', content);
+    let cleaned = content.trim();
+    if (cleaned.startsWith('```json')) {
+      cleaned = cleaned.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+    } else if (cleaned.startsWith('```')) {
+      cleaned = cleaned.replace(/^```\s*/, '').replace(/\s*```$/, '');
+    }
+    const parsed = JSON.parse(cleaned);
+    return {
+      isTicketQuery: !!parsed.isTicketQuery,
+      city: (parsed.city || defaultCity).trim(),
+      query: (parsed.query || userText).trim()
+    };
+  } catch (error) {
+    console.error('Failed to extract ticket intent with Qwen:', error);
+    // 降级使用简单的正则匹配
+    const hasTicketKw = /票|车|机|航班|高铁|火车|飞|出行/.test(userText);
+    if (hasTicketKw) {
+      return { isTicketQuery: true, city: defaultCity, query: userText };
+    }
+    return { isTicketQuery: false, city: defaultCity, query: '' };
+  }
+}
+
+async function queryMeituanTravelCLI(city: string, query: string) {
+  const mtToken = process.env.MEITUAN_TRAVEL_TOKEN;
+  if (!mtToken) {
+    throw new Error('服务端未配置 MEITUAN_TRAVEL_TOKEN 环境变量，无法查询车票');
+  }
+
+  // 动态注入 config.json 以兼容部署环境
+  const mtConfigDir = path.join(os.homedir(), '.config', 'meituan-travel');
+  if (!fs.existsSync(mtConfigDir)) {
+    fs.mkdirSync(mtConfigDir, { recursive: true });
+  }
+  fs.writeFileSync(path.join(mtConfigDir, 'config.json'), JSON.stringify({ key: mtToken }), 'utf-8');
+
+  console.log(`Executing Meituan CLI: mttravel "${city}" "${query}"`);
+  const { stdout, stderr } = await execFileAsync('npx', [
+    '-p', '@meituan-travel/travel-cli', 'mttravel',
+    city.trim(), query.trim()
+  ], {
+    timeout: 45000,
+    maxBuffer: 1024 * 1024 * 5,
+    windowsHide: true,
+    shell: process.platform === 'win32'
+  });
+  return [stdout, stderr].map(String).filter(Boolean).join('\n');
+}
+
 // AI 探路祭司自然语言对话交互接口
 app.post('/api/agent/chat', async (req, res) => {
   try {
@@ -1168,6 +1263,33 @@ app.post('/api/agent/chat', async (req, res) => {
       return res.status(500).json({ error: 'Backend AI not configured' });
     }
 
+    // 1. 获取最新一条用户提问消息
+    const userMessages = messages.filter((m: any) => m.role === 'user');
+    const latestUserMsg = userMessages[userMessages.length - 1]?.content || '';
+
+    let cliResultText = '';
+    let isTicket = false;
+    let extractedParams = { city, query: latestUserMsg };
+
+    if (latestUserMsg) {
+      // 2. 识别车票查询意图
+      const extraction = await extractTicketIntent(latestUserMsg, city);
+      isTicket = extraction.isTicketQuery;
+      extractedParams = { city: extraction.city, query: extraction.query };
+
+      if (isTicket) {
+        console.log(`[Ticket Query Detected] city=${extraction.city}, query=${extraction.query}`);
+        try {
+          cliResultText = await queryMeituanTravelCLI(extraction.city, extraction.query);
+          console.log(`[CLI Success] Result length: ${cliResultText.length}`);
+        } catch (cliError: any) {
+          console.error('[CLI Failure] Error:', cliError.message);
+          cliResultText = `时空枢纽在现实票务系统对接中发生波动：${cliError.message}`;
+        }
+      }
+    }
+
+    // 3. 构建 systemPrompt
     const systemPrompt = `你是一位精通东方神秘学（八字五行、奇门遁甲）与现代旅行美学的"时空探路祭司"智能出行 Agent。
 你正在 Pixel Life Chronicles 中与探险者【${username}】交谈。用户的幸运五行为【${luckyElement}】，当前处于地盘【${city}】。
 
@@ -1203,17 +1325,52 @@ app.post('/api/agent/chat', async (req, res) => {
 }
 </travel_deal>
 
+5. 如果用户正在查询【车票】（火车票/高铁票/机票/航班），并且下文中提供了【时空天命枢纽真实车票/机票供给数据】，你必须在你的文字回复的【最后】，将这些真实的列车车次/航班方案包装成如下严格的 XML 标记包裹的 JSON 格式（options中最多只放2-3个方案即可，且内容必须完全基于供给数据提取，不得编造）：
+
+<ticket_deal>
+{
+  "type": "train", // 或 "flight"
+  "from": "出发站/出发机场",
+  "to": "到达站/到达机场",
+  "date": "乘车日期（如6月3日）",
+  "options": [
+    {
+      "number": "车次或航班号，例如 G3059",
+      "fromTime": "出发时间，例如 06:14",
+      "toTime": "到达时间，例如 07:29",
+      "duration": "历时，例如 1小时15分",
+      "seatType": "席别，例如 二等座 或 经济舱",
+      "price": "价格，例如 ¥136",
+      "link": "美团真实抢票/购买链接，必须完全使用供给数据中方括号[]里的dpurl.cn链接",
+      "desc": "这趟列车/航班特色，如：这趟高铁早晨6:14出发，7:29到达，全程仅1小时15分，是当天最快的一班～"
+    }
+  ]
+}
+</ticket_deal>
+
 请直接以自然语言跟用户对话，需要推荐时再附带上述标记。请不要包含 markdown 的 \`\`\`json 标记。`;
+
+    // 4. 构建上下文并注入真实车票结果
+    const adjustedMessages = [...messages];
+    if (isTicket && cliResultText) {
+      adjustedMessages.push({
+        role: 'system',
+        content: `【时空天命枢纽真实车票/机票供给数据】：
+${cliResultText}
+
+请你根据此真实供给数据，为探险者卜算并生成 <ticket_deal> 标记包裹的车票方案 JSON 数据！注意 options 里的链接必须是数据中对应的真实 dpurl.cn 链接，不得做任何修改！`
+      });
+    }
 
     const endpoint = `${baseUrl}/chat/completions`;
     const payload = {
       model: modelId,
       messages: [
         { role: 'system', content: systemPrompt },
-        ...messages
+        ...adjustedMessages
       ],
       temperature: 0.7,
-      max_tokens: 1000
+      max_tokens: 1200
     };
 
     const postProcess = (fullContent: string) => {
