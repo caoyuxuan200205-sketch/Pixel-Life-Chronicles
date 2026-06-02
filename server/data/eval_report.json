@@ -1,0 +1,53 @@
+{
+  "evaluatedAt": "2026-06-02T15:57:23.170Z",
+  "targetModel": "Qwen/Qwen3.5-35B-A3B",
+  "totalTests": 4,
+  "passedChecks": 4,
+  "passRate": "100%",
+  "testResults": [
+    {
+      "caseId": 1,
+      "description": "常规周边温泉出游规划需求",
+      "query": "我想去个清静的地方泡温泉、吃土鸡，呼吸大自然",
+      "latencyMs": 19948,
+      "responseLength": 572,
+      "expectedTag": "travel_deal",
+      "tagCheckPassed": true,
+      "apiStatus": "success",
+      "replyPreview": "旅人你好。吾观你字里行间，水气氤氲（温泉），土火相生（土鸡），木气疏泄（自然）。此乃一场洗心涤虑之“归元”之旅，意在以水润燥，以食养身，以林纳气。\n\n在东方玄学..."
+    },
+    {
+      "caseId": 2,
+      "description": "火车票真实供给查询需求",
+      "query": "请帮我订明天南京到上海的火车票，最好是早班车",
+      "latencyMs": 12708,
+      "responseLength": 474,
+      "expectedTag": "ticket_deal",
+      "tagCheckPassed": true,
+      "apiStatus": "success",
+      "replyPreview": "旅者你好，吾乃穿梭于时空缝隙的探路祭司。\n\n南京与上海，一为六朝古都，沉淀着厚重的历史气场；一为东方魔都，涌动着现代经济的潮汐。明日从金陵出发奔赴申城，这不仅是..."
+    },
+    {
+      "caseId": 3,
+      "description": "机票真实供给查询需求",
+      "query": "我下周五下午想飞北京，帮我看看南京到北京的机票航班",
+      "latencyMs": 13577,
+      "responseLength": 413,
+      "expectedTag": "ticket_deal",
+      "tagCheckPassed": true,
+      "apiStatus": "success",
+      "replyPreview": "旅人，你选择了从金陵（南京）向燕京（北京）飞去。这不仅是地理上的跨越，更是水气与金气的交汇。下周五，时日流转，午后之时阳气渐敛，阴气初生，此时启程，正如飞鸟归林..."
+    },
+    {
+      "caseId": 4,
+      "description": "纯命理解读与倾诉心里话",
+      "query": "祭司大人，我最近在工作上面临瓶颈，周末想换个气场充电，五行有什么指引吗？",
+      "latencyMs": 30438,
+      "responseLength": 443,
+      "expectedTag": "none",
+      "tagCheckPassed": true,
+      "apiStatus": "success",
+      "replyPreview": "旅人，见字如面。\n\n听闻你在尘世职场的“金戈铁马”中暂遇瓶颈，心气郁结，想要借周末的一隅天地，洗涤蒙尘的神识。此乃顺势而为之举，所谓“穷则变，变则通”，气场流转..."
+    }
+  ]
+}

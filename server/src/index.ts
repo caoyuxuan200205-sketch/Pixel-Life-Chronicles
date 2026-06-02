@@ -1387,6 +1387,35 @@ ${cliResultText}
   }
 });
 
+// AI PM 数据对齐收集链路：接受用户点击“一键代订”或“保存长图”的正反馈
+app.post('/api/agent/feedback', async (req, res) => {
+  try {
+    const { feedbackType, query = '', reply = '' } = req.body;
+    console.log(`[AI PM Alignment Data Loop] Received positive feedback: type=${feedbackType}`);
+    
+    // 写入日志文件以作为大模型微调 SFT 的优质数据集来源
+    const dataDir = path.join(process.cwd(), 'server', 'data');
+    if (!fs.existsSync(dataDir)) {
+      fs.mkdirSync(dataDir, { recursive: true });
+    }
+    const logPath = path.join(dataDir, 'alignment_data.jsonl');
+    const entry = JSON.stringify({
+      timestamp: new Date().toISOString(),
+      feedbackType,
+      messages: [
+        { role: 'user', content: query },
+        { role: 'assistant', content: reply }
+      ]
+    });
+    fs.appendFileSync(logPath, entry + '\n', 'utf-8');
+    
+    res.json({ success: true, message: 'Alignment feedback securely logged for AIGC data loop' });
+  } catch (error: any) {
+    console.error('Feedback logging failed:', error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // 基础路由
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'Pixel Life Chronicles Backend is running' });

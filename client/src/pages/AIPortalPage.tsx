@@ -413,12 +413,34 @@ export const AIPortalPage = () => {
     return { text: textWithoutDeals, deal, ticketDeal };
   };
 
+  // AI PM 对齐反馈日志推送：将优质样本（如用户保存图片、一键预订）记录为对齐数据飞轮
+  const sendPMFeedback = async (index: number, feedbackType: 'positive_booking' | 'positive_capture') => {
+    try {
+      const baseUrl = import.meta.env.VITE_BACKEND_URL || window.location.origin;
+      const userMsg = messages[index - 1]?.content || '';
+      const aiMsg = messages[index]?.content || '';
+      await fetch(`${baseUrl.replace(/\/$/, '')}/api/agent/feedback`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          feedbackType,
+          query: userMsg,
+          reply: aiMsg
+        })
+      });
+      console.log(`[AI PM Alignment Data Loop] Push successful for type=${feedbackType}`);
+    } catch (e) {
+      console.error('Failed to send PM feedback:', e);
+    }
+  };
+
   // 预订成功触发
   const handleConfirmBooking = (index: number) => {
     setBookingSuccessMap(prev => ({
       ...prev,
       [index]: true
     }));
+    sendPMFeedback(index, 'positive_booking');
   };
 
   // 截图并导出避世契约
@@ -450,6 +472,7 @@ export const AIPortalPage = () => {
         link.download = `星耀AI_天命出行契约_No${index}.png`;
         link.href = imgUrl;
         link.click();
+        sendPMFeedback(index, 'positive_capture');
       } catch (err) {
         console.error('Capture ticket image error:', err);
         alert('编织契约卷轴图失败，请尝试直接手机截图。');
