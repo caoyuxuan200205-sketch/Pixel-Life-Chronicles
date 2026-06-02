@@ -642,6 +642,7 @@ ${baziInfo ? `【八字信息】${JSON.stringify(baziInfo)}` : ''}
           'Authorization': `Bearer ${apiKey}`,
         },
         responseType: 'stream',
+        timeout: 6000 // 6s timeout to prevent Vercel 10s Hobby timeout limits
       });
 
       res.setHeader('Content-Type', 'text/event-stream');
@@ -667,6 +668,7 @@ ${baziInfo ? `【八字信息】${JSON.stringify(baziInfo)}` : ''}
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${apiKey}`,
         },
+        timeout: 6000 // 6s timeout
       });
 
       let content = response.data.choices?.[0]?.message?.content;
@@ -891,7 +893,8 @@ ${JSON.stringify(candidatePois, null, 2)}
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${apiKey}`
-          }
+          },
+          timeout: 6000 // 6s timeout to prevent Vercel 10s timeout limits, triggers fallback immediately
         });
 
         const content = response.data?.choices?.[0]?.message?.content;
@@ -1146,17 +1149,16 @@ app.post('/api/agent/meituan', async (req, res) => {
           response_format: { type: "json_object" }
         };
 
-        const aiResponse = await fetch(endpoint, {
-          method: 'POST',
+        const aiResponse = await axios.post(endpoint, payload, {
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${apiKey}`
           },
-          body: JSON.stringify(payload)
+          timeout: 6000
         });
 
-        if (aiResponse.ok) {
-          const aiData = await aiResponse.json();
+        if (aiResponse.status === 200) {
+          const aiData = aiResponse.data;
           const content = aiData?.choices?.[0]?.message?.content;
           if (content) {
             let cleanedContent = content.trim();
@@ -1290,21 +1292,20 @@ app.post('/api/agent/chat', async (req, res) => {
       temperature: 0.7
     };
 
-    const aiResponse = await fetch(endpoint, {
-      method: 'POST',
+    const aiResponse = await axios.post(endpoint, payload, {
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${apiKey}`
       },
-      body: JSON.stringify(payload)
+      timeout: 6000
     });
 
-    if (aiResponse.ok) {
-      const aiData = await aiResponse.json();
+    if (aiResponse.status === 200) {
+      const aiData = aiResponse.data;
       const reply = aiData?.choices?.[0]?.message?.content || '时空结界微弱，祭司未能完全接收您的脑波，请重新感应。';
       return res.json({ success: true, reply });
     } else {
-      throw new Error(`AI Gateway returned ${aiResponse.status}`);
+      throw new Error(`AI Gateway returned status ${aiResponse.status}`);
     }
   } catch (error: any) {
     console.error('Chat API handler error:', error);
