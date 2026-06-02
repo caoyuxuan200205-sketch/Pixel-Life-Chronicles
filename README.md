@@ -1,128 +1,180 @@
 # 👾 Pixel Life Chronicles | 像素生活志
 
-> **“在城市的折叠处，凝结你的命运印章。”**
+**Pixel Life Chronicles** 是一个基于 React + Vite 的城市探索 AIGC 原型项目，结合“塔罗 / 八字占卜”、高德地图导航与像素拼豆图纸生成，打造复古像素风的行走体验。
 
-![Version](https://img.shields.io/badge/version-1.0.0--beta-blue)
-![Tech](https://img.shields.io/badge/Tech-React%20%7C%20Node.js%20%7C%20AIGC-orange)
-![Style](https://img.shields.io/badge/Style-8--bit%20Retro%20Pixel-red)
+## 项目简介
 
-**Pixel Life Chronicles (像素生活志)** 是一款专为城市探索者设计的“玄学 + AIGC”驱动的像素风冒险应用。它将真实世界的商户发现与 8-bit RPG 体验完美结合，让每一次日常出行都变成一场充满仪式感的探险。
+该仓库采用 Monorepo 形式，包含：
+- `client/`：React + Vite 前端应用
+- `server/`：Node.js + Express 后端服务
+- `api/index.ts`：Vercel Serverless 入口，导出 `server/src/index.ts` 的 Express app
 
----
-
-## 🗺️ 用户旅程图 (User Journey Map)
-
-![User Journey Map](./docs/user-journey.png)
-
-一次周末随机探索的完整闭环体验：**探索 → 创造 → 实体化你的命运印章。**
+前端侧重于用户体验、AI 占卜流程、地图探索与相机印章；后端侧重于图像处理、拼豆图纸渲染与 Supabase/SaaS 数据访问。
 
 ---
 
-## 🌟 核心特性
-
-### 🔮 1. 命运导向的城市探索
-*   **AI 像素占卜**：集成**豆包 (Ark) 大模型**。根据用户实时情绪（如：电量告急、灵感枯竭）抽取塔罗牌，并结合城市真实商户（POI）生成独特的占卜判词。
-*   **动态契约**：只有完成“今日占卜”并开启命运契约后，探险（地图）与创作（相机）功能才会解锁。
-
-### 🗺️ 2. 应用内像素导航
-*   **高德地图深度集成**：内置高德地图 JS API v2.0，实现精准的步行路径规划。
-*   **8-bit 视觉定制**：通过自定义 Canvas 渲染，将地图路线转化为粗体、高对比度的像素风格路径，并在地图上显示个性化的像素英雄定位点。
-
-### 📸 3. AIGC 实景印章与拼豆图纸
-*   **实景转像素**：到达目的地后，调用相机拍摄实景，AI 算法即时将其重绘为 64x64/32x32 规格的像素插画。
-*   **拼豆 (Perler Beads) 图纸生成**：自动提取像素插画的色块网格，生成标准拼豆操作图纸，支持线下手工复现。
-
-### 🛒 4. 美团商业化闭环
-*   **实体化入口**：在生成图纸页面无缝对接美团生态：
-    *   **美团闪购**：一键下单拼豆材料包，30分钟送达。
-    *   **线下引流**：搜索并预订周边的拼豆店/手作工坊。
-
----
-
-## 🛠️ 技术栈
-
-### 前端 (Client)
-- **框架**: React 18 + Vite
-- **语言**: TypeScript
-- **动画**: Framer Motion (实现丝滑的 8-bit 界面切换)
-- **图标**: Lucide-React
-- **地图**: AMap JS API v2.0
-
-### 后端 (Server)
-- **框架**: Node.js + Express
-- **语言**: TypeScript (tsx 驱动)
-- **特性**: Monorepo 架构，预留 AI 请求代理与数据持久化接口
-
----
-
-## 📂 项目结构
+## 目录结构
 
 ```text
-/Pixel-Life-Chronicles
-  ├── client/              # 前端 React 应用
-  │    ├── src/
-  │    │    ├── pages/     # 包含首页、地图、相机、个人中心等
-  │    │    ├── services/  # AI 与外部 API 逻辑
-  │    │    └── store.ts   # 状态管理与本地存储
-  │    └── package.json
-  ├── server/              # 后端 Express 服务 (全栈重构中)
-  │    ├── src/
-  │    │    └── index.ts   # 后端入口
-  │    └── package.json
-  └── package.json         # 根目录 Monorepo 配置
+FreeWeek/
+├── api/
+│   └── index.ts
+├── client/
+│   ├── public/
+│   ├── src/
+│   │   ├── pages/
+│   │   ├── services/
+│   │   ├── lib/
+│   │   └── store.ts
+│   ├── package.json
+│   └── tsconfig.json
+├── docs/
+├── server/
+│   ├── data/
+│   ├── src/
+│   │   ├── baziHelper.ts
+│   │   └── index.ts
+│   ├── package.json
+│   └── tsconfig.json
+├── package.json
+└── vercel.json
 ```
 
 ---
 
-## 🚀 快速开始
+## 核心功能
 
-### 1. 克隆项目
-```bash
-git clone https://github.com/caoyuxuan200205-sketch/Pixel-Life-Chronicles.git
-```
+- AI 占卜：支持塔罗牌与八字命理结合情绪标签生成命运判词
+- 城市探索：展示 POI 推荐、情绪驱动的探索体验和可解锁地图功能
+- 像素视觉：复古 8-bit 风格 UI 与动画效果
+- 相机印章：记录地点、生成像素化图像与拼豆图纸数据
+- 后端图像处理：加载 Artkal 拼豆色板、渲染拼豆网格、生成图像
+- Vercel 集成：Serverless API 与静态前端路由共存
 
-### 2. 安装依赖
-在根目录下执行：
+---
+
+## 技术栈
+
+### 前端
+- React 19 + Vite
+- TypeScript
+- React Router Dom
+- Framer Motion
+- AMap JS API
+- Supabase 客户端
+
+### 后端
+- Node.js + Express
+- TypeScript
+- Supabase SDK
+- axios
+- sharp
+- pdf-lib
+
+---
+
+## 快速启动
+
+### 安装依赖
+
 ```bash
 npm install
 ```
 
-### 3. 启动开发环境
+### 启动开发环境
+
 ```bash
 npm run dev
 ```
-此命令将同时启动前端 (`localhost:5173`) 和后端 (`localhost:3001`)。
+
+该命令会并行启动：
+- 前端开发服务器（`client`）
+- 后端开发服务器（`server`）
 
 ---
 
-## 📝 开发与部署 (Development & Deployment)
+## 子项目脚本
 
-### 1. 环境变量配置
-在部署或本地运行时，请配置以下环境变量：
+### 根目录
+- `npm run dev`：并行启动前端与后端
+- `npm run client`：启动 `client` 开发服务器
+- `npm run server`：启动 `server` 开发服务器
 
-**后端 (server/.env 或 Vercel Dashboard):**
-- `DOUBAO_API_KEY`: 豆包 AI API 密钥。
-- `DOUBAO_MODEL_ID`: 豆包模型接入点 ID。
+### 客户端
+- `npm run dev`
+- `npm run build`
+- `npm run preview`
+- `npm run lint`
 
-**前端 (client/.env 或 Vercel Dashboard):**
-- `VITE_AMAP_KEY`: 高德地图 JS API Key。
-- `VITE_AMAP_SECURITY_JS_CODE`: 高德地图安全密钥。
-- `VITE_BACKEND_URL`: 后端服务地址（同域部署可留空）。
-
-### 2. 安全性 (Security)
-- **AI 代理**: 已实现后端代理逻辑，API Key 存储在服务器端，有效防止密钥泄露。
-*   **认证系统**: 基于 `LocalStorage` 的轻量级认证系统，支持大小写不敏感登录与异常处理。
-
-### 3. Vercel 部署
-项目已适配 Vercel 部署。`/api/*` 路径将自动路由至 `api/index.ts` 服务器函数。
+### 服务端
+- `npm run dev`
+- `npm run build`
+- `npm run start`
 
 ---
 
-## 🎨 设计美学
-*   **配色**: 采用美团黄 (`#FFD000`) 作为主色，配合深色背景与高对比度边框。
-*   **交互**: 深度使用 Framer Motion 实现 8-bit 复古交互感。
+## 环境变量
+
+### 前端 (`client/.env`)
+- `VITE_AMAP_KEY`
+- `VITE_AMAP_SECURITY_JS_CODE`
+- `VITE_BACKEND_URL`
+- `VITE_DOUBAO_API_KEY`
+- `VITE_DOUBAO_MODEL_ID`
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_ANON_KEY`
+
+### 后端 (`server/.env` 或 Vercel 环境变量)
+- `SUPABASE_URL` 或 `VITE_SUPABASE_URL`
+- `SUPABASE_ANON_KEY` 或 `VITE_SUPABASE_ANON_KEY`
+
+> `client/src/services/ai.ts` 会优先使用后端地址；如果未配置后端，支持直接在客户端保存豆包 API Key 与模型 ID。
 
 ---
 
-© 2026 Pixel Life Chronicles Team. Built for Hackathon.
+## 主要页面
+
+- `/`：AI Portal
+- `/explore`：探索页
+- `/plan`：命运结果页
+- `/map`：地图冒险页
+- `/camera`：相机印章页
+- `/collection`：收藏页
+- `/profile`：个人页
+- `/auth`：身份登录页
+
+---
+
+## Vercel 部署说明
+
+`vercel.json` 已配置：
+- `/api/(.*)` 重写为 `api/index.ts`
+- 非 API 请求重写为 `index.html`
+
+`api/index.ts` 导出 `server/src/index.ts` 的 Express app，适配 Vercel Serverless 部署。
+
+---
+
+## 推荐开发入口
+
+- `client/src/services/ai.ts`：AI 占卜与豆包 prompt 逻辑
+- `client/src/store.ts`：应用数据类型与本地存储
+- `server/src/index.ts`：后端图像处理与拼豆渲染
+- `server/data/artkal_m_series.json`：Artkal 拼豆色板数据
+- `client/src/pages/`：前端页面与路由
+
+---
+
+## 迭代建议
+
+1. 完善 `server` 的 AI / 图像生成与后端 API
+2. 完善 `/map`、`/camera` 和 `/plan` 页面交互
+3. 增强 Supabase 数据持久化与用户系统
+4. 完善 Vercel 部署与环境变量管理
+
+---
+
+## 版权
+
+© 2026 Pixel Life Chronicles
 

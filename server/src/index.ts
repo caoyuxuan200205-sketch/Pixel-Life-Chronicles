@@ -841,10 +841,6 @@ app.post('/api/auth/session', async (req, res) => {
 });
 
 
-// ==========================================
-// 👾 时空命格结界 - 多人协同规划 Agent 接口
-// ==========================================
-
 const LOCAL_TAROT_CARDS = [
   { name: 'The Lovers', emoji: '❤️', meaning: '吸引、爱、美与命运的交汇。' },
   { name: 'The Sun', emoji: '☀️', meaning: '生命的活力、光明、纯粹的快乐。' },
@@ -875,7 +871,10 @@ app.post('/api/agent/plan', async (req, res) => {
     });
 
     const { apiKey, baseUrl, modelId } = getAIConfig();
-    const candidatePois = pois.length > 0 ? pois.slice(0, 15) : [
+    
+    // 1. 随机打乱商户列表，赋予每次召唤绝顶的新鲜感与时空随机性
+    const shuffledPois = [...pois].sort(() => Math.random() - 0.5);
+    const candidatePois = shuffledPois.length > 0 ? shuffledPois.slice(0, 15) : [
       { id: 'poi_1', name: '猫空时光咖啡馆', type: '咖啡馆', rating: 4.8, distance: 350, location: [120.153, 30.258], address: '南山路22号' },
       { id: 'poi_2', name: '涌金门遗址公园', type: '公园/名胜', rating: 4.7, distance: 820, location: [120.155, 30.252], address: '西湖风景区内' },
       { id: 'poi_3', name: '像素盒子桌游密室', type: '娱乐空间', rating: 4.9, distance: 1200, location: [120.162, 30.261], address: '定安路108号' },
@@ -918,6 +917,18 @@ app.post('/api/agent/plan', async (req, res) => {
   ]
 }`;
 
+        // 构造高动态性的时空命运扰动变数，强迫大模型在语言表达上打破固定句式
+        const hexagrams = ['乾为天', '坤为地', '水雷屯', '山水蒙', '水天需', '天水讼', '地水师', '水地比', '风天小畜', '天泽履', '地天泰', '天地否', '天火同人', '火天大有', '地山谦', '雷地豫', '泽雷随', '山风蛊', '地泽临', '风地观', '火雷噬嗑', '山火贲', '山地剥', '地雷复', '天雷无妄', '山天大畜', '山雷颐', '泽风大过', '坎为水', '离为火', '泽山咸', '雷风恒', '天山遯', '雷天大壮', '火地晋', '地火明夷', '风火家人', '火泽睽', '水山蹇', '雷水解', '山泽损', '风雷益', '泽天夬', '天风姤', '泽地萃', '地风升', '泽水困', '巽为风', '兑为泽', '风水涣', '水泽节', '风泽中孚', '雷泽归妹', '雷火丰', '火山旅'];
+        const randomHexagram = hexagrams[Math.floor(Math.random() * hexagrams.length)];
+        const randomAngle = Math.floor(Math.random() * 360);
+        const randomSeed = Math.random().toString(36).substring(7);
+
+        const cosmicContext = `【本日天命时空星轨微小偏转扰动因子】：
+- 当前值日卦象：${randomHexagram}
+- 星轨偏转角：${randomAngle}°
+- 混沌天命数：${randomSeed}
+（🚨极其重要：每次召唤的“时空元气数”都在发生偏转！你必须以这一玄学动能为开运基调，打破陈规，结合这些随机玄学参数，每次都编织出全新的、风格迥异的出游轨迹，撰写视角独特、绝不重复的命运解盘词！）`;
+
         const endpoint = `${baseUrl}/chat/completions`;
         const payload = {
           model: modelId,
@@ -931,10 +942,12 @@ ${JSON.stringify(processedMembers, null, 2)}
 【候选商户】：
 ${JSON.stringify(candidatePois, null, 2)}
 
+${cosmicContext}
+
 请对上述成员与商户进行命轨编织，合理利用时间预算（${timeBudget} 小时），返回纯 JSON。`
             }
           ],
-          temperature: 0.6, // 降低温度以加快生成速度并确保格式100%精准
+          temperature: 0.85, // 提高温度以赋予大模型灵感，确保结果充满随机多样性与玄学奇遇
           max_tokens: 1500
         };
 
