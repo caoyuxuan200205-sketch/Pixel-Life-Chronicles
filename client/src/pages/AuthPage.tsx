@@ -74,6 +74,14 @@ export const AuthPage = () => {
           alert('契约达成！欢迎来到像素生活志。');
         }
         navigate('/', { replace: true });
+      } else if (!isLogin && result.user) {
+        // 注册成功但需要邮箱确认 (session 为 null)
+        track('user_register_pending_confirmation', { email: trimmedEmail });
+        alert('📜 契约已缔结！请前往你的邮箱点击确认链接，完成最终仪式后即可登录。');
+        setIsLogin(true);
+        setError('');
+      } else if (!isLogin) {
+        setError('注册请求已发送，但未收到有效响应，请稍后再试。');
       }
     } catch (err: any) {
       console.error('Auth full error:', err);

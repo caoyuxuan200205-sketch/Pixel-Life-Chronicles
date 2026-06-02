@@ -327,28 +327,25 @@ export const HomePage = () => {
       addLog('🛰️ 正在请求 api-inference.modelscope.cn 进行命运羁绊编织...');
 
       const baseUrl = import.meta.env.VITE_BACKEND_URL || window.location.origin;
-      const planRes = await fetch(`${baseUrl.replace(/\/$/, '')}/api/agent/plan`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          members,
-          pois: realPois,
-          timeBudget
-        })
-      });
-
-      if (!planRes.ok) {
-        let errorMsg = '召唤法阵未响应';
-        try {
-          const errJSON = await planRes.json();
-          if (errJSON && errJSON.error) {
-            errorMsg = errJSON.error;
+      const { fetchSSEJSON } = await import('../lib/fetchSSE');
+      const planData = await fetchSSEJSON(
+        `${baseUrl.replace(/\/$/, '')}/api/agent/plan`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            members,
+            pois: realPois,
+            timeBudget
+          })
+        },
+        (chunkText) => {
+          // 可选：实现跑马灯日志展示流式进度
+          if (chunkText.length > 20) {
+            addLog(`🔮 正在推演命轨片段: ${chunkText.slice(0, 15)}...`);
           }
-        } catch (_) {}
-        throw new Error(errorMsg);
-      }
-
-      const planData = await planRes.json();
+        }
+      );
       addLog('✅ Qwen 推理已就绪，已成功解析出 JSON 联合出行规划与命运解盘！');
       updateNode('agent', 'completed', (Date.now() - t0) / 1000);
 

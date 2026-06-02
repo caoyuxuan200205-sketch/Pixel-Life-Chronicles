@@ -205,69 +205,35 @@ async function callDoubaoAPI(
     method,
     baziInfo,
     card,
-    timeContext: getTimeContext(),
-    stream: !!onStream
+    timeContext: getTimeContext()
   };
 
   try {
-    const response = await fetch(`${BACKEND_URL}/api/ai/reading`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
-
-    if (!response.ok) throw new Error('API request failed');
-
-    if (onStream && response.body) {
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let fullContent = '';
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        const chunk = decoder.decode(value);
-        const lines = chunk.split('\n');
+    const { fetchSSEJSON } = await import('../lib/fetchSSE');
+    
+    let fullContent = '';
+    
+    return await fetchSSEJSON<AIReadingResult>(
+      `${BACKEND_URL}/api/ai/reading`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      },
+      (chunkText) => {
+        if (!onStream) return;
+        fullContent += chunkText;
         
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            const data = line.slice(6);
-            if (data === '[DONE]') break;
-            try {
-              const parsed = JSON.parse(data);
-              const delta = parsed.choices?.[0]?.delta?.content || '';
-              fullContent += delta;
-              
-              // 实时解析核心字段
-              const readingMatch = fullContent.match(/"reading":\s*"([^"]*)/);
-              const cardMatch = fullContent.match(/"cardName":\s*"([^"]*)"/);
-              const emojiMatch = fullContent.match(/"emoji":\s*"([^"]*)"/);
-              const poiMatch = fullContent.match(/"poiId":\s*"([^"]*)"/);
-
-              // 构造一个临时的 JSON 状态传回给 UI
-              if (readingMatch || cardMatch) {
-                // 我们通过 onStream 传回一个带状态的对象字符串或直接传回内容
-                // 这里为了简单，我们只传回 reading 内容，但可以增加其他字段的探测
-                onStream(readingMatch ? readingMatch[1] : '');
-              }
-            } catch (e) { }
-          }
+        // 实时解析核心字段
+        const readingMatch = fullContent.match(/"reading":\s*"([^"]*)/);
+        if (readingMatch) {
+          onStream(readingMatch[1]);
         }
       }
-
-      // 最后尝试完整解析 JSON
-      const jsonMatch = fullContent.match(/({[\s\S]*})/);
-      if (jsonMatch) {
-        return JSON.parse(jsonMatch[1]);
-      }
-      throw new Error('Failed to parse final JSON from stream');
-    } else {
-      return await response.json();
-    }
-  } catch (e) {
-    console.warn('AI 接口调用失败:', e);
-    throw e;
+    );
+  } catch (err: any) {
+    console.error('API Error:', err);
+    throw err;
   }
 }
 

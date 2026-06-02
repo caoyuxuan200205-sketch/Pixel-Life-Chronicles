@@ -321,32 +321,36 @@ export const AIPortalPage = () => {
       // 过滤系统欢迎词，打包真实上下文
       const chatHistory = updatedHistory.map(m => ({ role: m.role, content: m.content }));
       
-      const response = await fetch(`${baseUrl.replace(/\/$/, '')}/api/agent/chat`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          messages: chatHistory,
-          luckyElement,
-          city: currentUser?.baziInfo?.birthPlace || '杭州',
-          username: currentUser?.username || '探索者'
-        })
-      });
+      const { fetchSSEJSON } = await import('../lib/fetchSSE');
+      
+      // Initialize an empty response so we can stream into it
+      setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
+      
+      const resData = await fetchSSEJSON(
+        `${baseUrl.replace(/\/$/, '')}/api/agent/chat`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            messages: chatHistory,
+            luckyElement,
+            city: currentUser?.baziInfo?.birthPlace || '杭州',
+            username: currentUser?.username || '探索者'
+          })
+        },
+        (chunkText) => {
+          setMessages(prev => {
+            const newMsgs = [...prev];
+            const lastMsg = newMsgs[newMsgs.length - 1];
+            if (lastMsg.role === 'assistant') {
+              lastMsg.content += chunkText;
+            }
+            return newMsgs;
+          });
+        }
+      );
 
-      if (!response.ok) {
-        let errorMsg = '对话召集令未获响应';
-        try {
-          const errJSON = await response.json();
-          if (errJSON && errJSON.error) {
-            errorMsg = errJSON.error;
-          }
-        } catch (_) {}
-        throw new Error(errorMsg);
-      }
-
-      const resData = await response.json();
-      if (resData.success && resData.reply) {
-        setMessages(prev => [...prev, { role: 'assistant', content: resData.reply }]);
-      } else {
+      if (!resData.success || !resData.reply) {
         throw new Error(resData.error || '解析出游契约答复失败');
       }
     } catch (err: any) {

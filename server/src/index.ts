@@ -566,6 +566,97 @@ app.post('/api/bead/export/pdf', async (req, res) => {
 // ==========================================
 // AI 逻辑迁移至后端 (保护 API Key)
 // ==========================================
+
+// 通用流式 AI 代理：调用上游 LLM 的 stream 模式，转发 SSE 给客户端
+// 通过持续发送数据保持 Vercel 连接存活，突破 10s 超时限制
+async function streamingAIProxy(
+  res: any,
+  endpoint: string,
+  payload: any,
+  apiKey: string,
+  postProcess?: (fullContent: string) => any
+) {
+  // 设置 SSE 头
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('X-Accel-Buffering', 'no');
+
+  // 心跳定时器：每 3 秒发送一次保活 ping
+  const heartbeat = setInterval(() => {
+    try { res.write('data: {"type":"ping"}\n\n'); } catch (_) {}
+  }, 3000);
+
+  let fullContent = '';
+
+  try {
+    const response = await axios.post(endpoint, { ...payload, stream: true }, {
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      responseType: 'stream',
+      timeout: 120000
+    });
+
+    await new Promise<void>((resolve, reject) => {
+      response.data.on('data', (chunk: Buffer) => {
+        const text = chunk.toString();
+        const lines = text.split('\n');
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const data = line.slice(6).trim();
+            if (data === '[DONE]') continue;
+            try {
+              const parsed = JSON.parse(data);
+              const delta = parsed.choices?.[0]?.delta?.content || '';
+              if (delta) {
+                fullContent += delta;
+                // 转发进度 chunk 给客户端
+                res.write(`data: ${JSON.stringify({ type: 'chunk', content: delta })}\n\n`);
+              }
+            } catch (_) {}
+          }
+        }
+      });
+
+      response.data.on('end', () => resolve());
+      response.data.on('error', (err: any) => reject(err));
+    });
+
+    clearInterval(heartbeat);
+
+    // 后处理：解析完整 JSON 并发送最终结果
+    let result: any;
+    if (postProcess) {
+      result = postProcess(fullContent);
+    } else {
+      const jsonMatch = fullContent.match(/({[\s\S]*})/);
+      if (jsonMatch) {
+        result = JSON.parse(jsonMatch[1]);
+      } else {
+        throw new Error('未能从 AI 响应中解析出 JSON');
+      }
+    }
+
+    res.write(`data: ${JSON.stringify({ type: 'result', data: result })}\n\n`);
+    res.write('data: [DONE]\n\n');
+    res.end();
+  } catch (error: any) {
+    clearInterval(heartbeat);
+    console.error('Streaming AI proxy error:', error.message);
+    try {
+      res.write(`data: ${JSON.stringify({ type: 'error', message: error.message || 'AI 调用失败' })}\n\n`);
+      res.end();
+    } catch (_) {
+      if (!res.headersSent) {
+        res.status(500).json({ error: error.message });
+      }
+    }
+  }
+}
+
+
 const getAIConfig = () => {
   const qwenApiKey = process.env.QWEN_API_KEY;
   if (qwenApiKey && qwenApiKey !== 'YOUR_QWEN_API_KEY_HERE' && qwenApiKey.trim() !== '') {
@@ -606,7 +697,7 @@ const buildSystemPrompt = (method: string) => {
 
 app.post('/api/ai/reading', async (req, res) => {
   try {
-    const { mood, pois, method, baziInfo, timeContext, stream = false, card } = req.body;
+    const { mood, pois, method, baziInfo, timeContext, card } = req.body;
     const { apiKey, baseUrl, modelId } = getAIConfig();
 
     if (!apiKey || !modelId) {
@@ -629,57 +720,11 @@ ${baziInfo ? `【八字信息】${JSON.stringify(baziInfo)}` : ''}
 请返回 JSON 占卜结果。` 
         },
       ],
-
       temperature: 0.8,
-      stream, // 支持流式开关
+      max_tokens: 500
     };
 
-    if (stream) {
-      // 流式响应处理
-      const response = await axios.post(endpoint, payload, {
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`,
-        },
-        responseType: 'stream',
-        timeout: 180000 // 180s timeout to support slow/complex AI generations
-      });
-
-      res.setHeader('Content-Type', 'text/event-stream');
-      res.setHeader('Cache-Control', 'no-cache');
-      res.setHeader('Connection', 'keep-alive');
-
-      response.data.on('data', (chunk: Buffer) => {
-        res.write(chunk);
-      });
-
-      response.data.on('end', () => {
-        res.end();
-      });
-
-      response.data.on('error', (err: any) => {
-        console.error('Stream error:', err);
-        res.end();
-      });
-    } else {
-      // 普通 JSON 响应
-      const response = await axios.post(endpoint, payload, {
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`,
-        },
-        timeout: 180000 // 180s timeout
-      });
-
-      let content = response.data.choices?.[0]?.message?.content;
-      if (content) {
-        const jsonMatch = content.match(/({[\s\S]*})/);
-        if (jsonMatch) content = jsonMatch[1];
-        res.json(JSON.parse(content));
-      } else {
-        throw new Error('Empty AI response');
-      }
-    }
+    await streamingAIProxy(res, endpoint, payload, apiKey);
   } catch (error: any) {
     console.error('AI Proxy Error:', error.message);
     if (!res.headersSent) {
@@ -873,7 +918,8 @@ app.post('/api/agent/plan', async (req, res) => {
   ]
 }`;
 
-        const response = await axios.post(`${baseUrl}/chat/completions`, {
+        const endpoint = `${baseUrl}/chat/completions`;
+        const payload = {
           model: modelId,
           messages: [
             { role: 'system', content: systemPrompt },
@@ -888,97 +934,96 @@ ${JSON.stringify(candidatePois, null, 2)}
 请对上述成员与商户进行命轨编织，合理利用时间预算（${timeBudget} 小时），返回纯 JSON。`
             }
           ],
-          temperature: 0.6 // 降低温度以加快生成速度并确保格式100%精准
-        }, {
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${apiKey}`
-          },
-          timeout: 180000 // 180s timeout to support slow/complex AI plan generation
-        });
+          temperature: 0.6, // 降低温度以加快生成速度并确保格式100%精准
+          max_tokens: 1500
+        };
 
-        const content = response.data?.choices?.[0]?.message?.content;
-        if (content) {
-          const jsonMatch = content.match(/({[\s\S]*})/);
+        const postProcess = (fullContent: string) => {
+          let planData: any = null;
+          const jsonMatch = fullContent.match(/({[\s\S]*})/);
           if (jsonMatch) {
             planData = JSON.parse(jsonMatch[1]);
           }
-        }
+          if (!planData) {
+            throw new Error('AI时空命格编织未能生成有效方案，请检查您的 QWEN_API_KEY 配置并重试。');
+          }
+
+          const planId = `plan_${Date.now()}`;
+          return {
+            id: planId,
+            members: processedMembers,
+            timeBudget,
+            divinationSynthesis: planData.divinationSynthesis,
+            itinerary: planData.itinerary.map((event: any, idx: number) => {
+              const poiEntity = pois.find((p: any) => p.id === event.poiId) || 
+                                candidatePois[idx % candidatePois.length];
+              
+              let bookingStatus = undefined;
+              if (event.suggestedBooking && event.suggestedBooking.type !== 'none') {
+                bookingStatus = {
+                  type: event.suggestedBooking.type,
+                  name: event.suggestedBooking.name,
+                  status: 'pending',
+                  detail: event.suggestedBooking.detail
+                };
+              } else if (event.bookingStatus) {
+                bookingStatus = event.bookingStatus;
+              }
+
+              return {
+                id: event.id || `event_${planId}_${idx}`,
+                poi: poiEntity,
+                timeSlot: event.timeSlot,
+                activityName: event.activityName,
+                mysticReasoning: event.mysticReasoning,
+                bookingStatus
+              };
+            }),
+            individualReadings: planData.individualReadings.map((reading: any) => {
+              const member = processedMembers.find((m: any) => m.id === reading.memberId);
+              
+              let tarotCard = undefined;
+              if (reading.tarotCardName) {
+                tarotCard = {
+                  name: reading.tarotCardName,
+                  emoji: reading.tarotCardEmoji || '🔮',
+                  meaning: '命运的神秘感应。'
+                };
+              } else if (reading.tarotCard) {
+                tarotCard = reading.tarotCard;
+              } else if (member && member.divinationMethod === 'tarot') {
+                const cardIdx = member.tarotCardIndex !== undefined ? member.tarotCardIndex : 0;
+                tarotCard = LOCAL_TAROT_CARDS[cardIdx % LOCAL_TAROT_CARDS.length];
+              }
+
+              return {
+                memberId: reading.memberId,
+                readingText: reading.readingText,
+                tarotCard,
+                baziChart: member?.baziChart || reading.baziChart
+              };
+            }),
+            createdAt: new Date().toISOString()
+          };
+        };
+
+        await streamingAIProxy(res, endpoint, payload, apiKey, postProcess);
       } catch (err: any) {
         console.error('Qwen Agent plan API call failed:', err);
-        throw new Error(`时空编织大模型响应失败: ${err.message || '网络连接超时'}`);
+        if (!res.headersSent) {
+          res.status(500).json({ error: `时空编织大模型响应失败: ${err.message || '网络连接超时'}` });
+        }
+      }
+    } else {
+      if (!res.headersSent) {
+        res.status(500).json({ error: 'AI 服务未配置' });
       }
     }
-
-    if (!planData) {
-      throw new Error('AI时空命格编织未能生成有效方案，请检查您的 QWEN_API_KEY 配置并重试。');
-    }
-
-    // 3. 对预订项初始化 pending 状态，并在返回前进行结构调整
-    const planId = `plan_${Date.now()}`;
-    const finalizedPlan = {
-      id: planId,
-      members: processedMembers,
-      timeBudget,
-      divinationSynthesis: planData.divinationSynthesis,
-      itinerary: planData.itinerary.map((event: any, idx: number) => {
-        // 如果是从 AI 返回的，POI 实体需要在这里组装好
-        const poiEntity = pois.find((p: any) => p.id === event.poiId) || 
-                          candidatePois[idx % candidatePois.length];
-        
-        // 提取建议 of booking
-        let bookingStatus = undefined;
-        if (event.suggestedBooking && event.suggestedBooking.type !== 'none') {
-          bookingStatus = {
-            type: event.suggestedBooking.type,
-            name: event.suggestedBooking.name,
-            status: 'pending',
-            detail: event.suggestedBooking.detail
-          };
-        } else if (event.bookingStatus) {
-          bookingStatus = event.bookingStatus;
-        }
-
-        return {
-          id: event.id || `event_${planId}_${idx}`,
-          poi: poiEntity,
-          timeSlot: event.timeSlot,
-          activityName: event.activityName,
-          mysticReasoning: event.mysticReasoning,
-          bookingStatus
-        };
-      }),
-      individualReadings: planData.individualReadings.map((reading: any) => {
-        const member = processedMembers.find((m: any) => m.id === reading.memberId);
-        
-        let tarotCard = undefined;
-        if (reading.tarotCardName) {
-          tarotCard = {
-            name: reading.tarotCardName,
-            emoji: reading.tarotCardEmoji || '🔮',
-            meaning: '命运的神秘感应。'
-          };
-        } else if (reading.tarotCard) {
-          tarotCard = reading.tarotCard;
-        } else if (member && member.divinationMethod === 'tarot') {
-          const cardIdx = member.tarotCardIndex !== undefined ? member.tarotCardIndex : 0;
-          tarotCard = LOCAL_TAROT_CARDS[cardIdx % LOCAL_TAROT_CARDS.length];
-        }
-
-        return {
-          memberId: reading.memberId,
-          readingText: reading.readingText,
-          tarotCard,
-          baziChart: member?.baziChart || reading.baziChart
-        };
-      }),
-      createdAt: new Date().toISOString()
-    };
-
-    res.json(finalizedPlan);
   } catch (error: any) {
     console.error('Plan creation failed:', error);
-    res.status(500).json({ error: error.message });
+    if (!res.headersSent) {
+      res.status(500).json({ error: error.message });
+    }
   }
 });
 
@@ -1063,43 +1108,35 @@ app.post('/api/agent/meituan', async (req, res) => {
         { role: 'user', content: userMessage }
       ],
       temperature: 0.7,
-      response_format: { type: "json_object" }
+      response_format: { type: "json_object" },
+      max_tokens: 800
     };
 
-    const aiResponse = await axios.post(endpoint, payload, {
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
-      },
-      timeout: 180000 // 180s timeout to support slow AI generation
-    });
-
-    if (aiResponse.status === 200) {
-      const aiData = aiResponse.data;
-      const content = aiData?.choices?.[0]?.message?.content;
-      if (content) {
-        let cleanedContent = content.trim();
-        if (cleanedContent.startsWith('```json')) {
-          cleanedContent = cleanedContent.replace(/^```json\s*/, '').replace(/\s*```$/, '');
-        } else if (cleanedContent.startsWith('```')) {
-          cleanedContent = cleanedContent.replace(/^```\s*/, '').replace(/\s*```$/, '');
-        }
-        const aiResult = JSON.parse(cleanedContent);
-        console.log("Successfully generated real AI travel items from Qwen!");
-        return res.json({
-          success: true,
-          source: 'real_qwen_ai',
-          aiResult,
-          luckyElement,
-          city,
-          query
-        });
+    const postProcess = (fullContent: string) => {
+      let cleanedContent = fullContent.trim();
+      if (cleanedContent.startsWith('```json')) {
+        cleanedContent = cleanedContent.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+      } else if (cleanedContent.startsWith('```')) {
+        cleanedContent = cleanedContent.replace(/^```\s*/, '').replace(/\s*```$/, '');
       }
-    }
-    throw new Error(`AI大模型响应错误: 状态码 ${aiResponse.status}`);
+      const aiResult = JSON.parse(cleanedContent);
+      console.log("Successfully generated real AI travel items from Qwen!");
+      return {
+        success: true,
+        source: 'real_qwen_ai',
+        aiResult,
+        luckyElement,
+        city,
+        query
+      };
+    };
+
+    await streamingAIProxy(res, endpoint, payload, apiKey, postProcess);
   } catch (error: any) {
     console.error('Meituan AI generation error:', error);
-    res.status(500).json({ error: `AI周边游契约生成失败: ${error.message || '内部服务异常'}` });
+    if (!res.headersSent) {
+      res.status(500).json({ error: `AI周边游契约生成失败: ${error.message || '内部服务异常'}` });
+    }
   }
 });
 
@@ -1157,27 +1194,21 @@ app.post('/api/agent/chat', async (req, res) => {
         { role: 'system', content: systemPrompt },
         ...messages
       ],
-      temperature: 0.7
+      temperature: 0.7,
+      max_tokens: 1000
     };
 
-    const aiResponse = await axios.post(endpoint, payload, {
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
-      },
-      timeout: 180000 // 180s timeout
-    });
+    const postProcess = (fullContent: string) => {
+      const reply = fullContent || '时空结界微弱，祭司未能完全接收您的脑波，请重新感应。';
+      return { success: true, reply };
+    };
 
-    if (aiResponse.status === 200) {
-      const aiData = aiResponse.data;
-      const reply = aiData?.choices?.[0]?.message?.content || '时空结界微弱，祭司未能完全接收您的脑波，请重新感应。';
-      return res.json({ success: true, reply });
-    } else {
-      throw new Error(`AI Gateway returned status ${aiResponse.status}`);
-    }
+    await streamingAIProxy(res, endpoint, payload, apiKey, postProcess);
   } catch (error: any) {
     console.error('Chat API handler error:', error);
-    res.status(500).json({ error: error.message || '内部服务异常' });
+    if (!res.headersSent) {
+      res.status(500).json({ error: error.message || '内部服务异常' });
+    }
   }
 });
 
