@@ -51,6 +51,16 @@ export const ProfilePage = () => {
   const [newPartnerTime, setNewPartnerTime] = useState('12:00');
   const [newPartnerPlace, setNewPartnerPlace] = useState('杭州');
 
+  // States for editing a partner
+  const [showEditPartnerModal, setShowEditPartnerModal] = useState(false);
+  const [editPartnerId, setEditPartnerId] = useState('');
+  const [editPartnerName, setEditPartnerName] = useState('');
+  const [editPartnerRelation, setEditPartnerRelation] = useState<'family' | 'friend' | 'partner' | 'other'>('friend');
+  const [editPartnerMethod, setEditPartnerMethod] = useState<'tarot' | 'bazi'>('bazi');
+  const [editPartnerDate, setEditPartnerDate] = useState('1998-06-15');
+  const [editPartnerTime, setEditPartnerTime] = useState('12:00');
+  const [editPartnerPlace, setEditPartnerPlace] = useState('杭州');
+
   const handleSaveMyBazi = () => {
     if (!user) return;
     const updatedUser: User = {
@@ -104,6 +114,34 @@ export const ProfilePage = () => {
     saveBoundMembers(updated);
     setBoundMembers(updated);
     triggerToast('🗑️ 已解除旅伴契约。');
+  };
+
+  const handleSavePartner = () => {
+    if (!editPartnerName.trim()) {
+      alert('请输入伙伴名字');
+      return;
+    }
+    const updated = boundMembers.map(m => {
+      if (m.id === editPartnerId) {
+        return {
+          ...m,
+          name: editPartnerName.trim(),
+          divinationMethod: editPartnerMethod,
+          relationTag: editPartnerRelation,
+          baziInfo: editPartnerMethod === 'bazi' ? {
+            birthDate: editPartnerDate,
+            birthTime: editPartnerTime,
+            birthPlace: editPartnerPlace,
+            queryType: m.baziInfo?.queryType || 'travel'
+          } : undefined
+        };
+      }
+      return m;
+    });
+    saveBoundMembers(updated);
+    setBoundMembers(updated);
+    setShowEditPartnerModal(false);
+    triggerToast('📝 旅伴契约已更新！');
   };
 
   // 导出逻辑
@@ -423,13 +461,31 @@ export const ProfilePage = () => {
                       </div>
                     </div>
 
-                    <button 
-                      onClick={() => handleDeletePartner(member.id)} 
-                      style={{ background: 'transparent', border: 'none', color: '#cc5555', cursor: 'pointer', padding: '4px', fontSize: '0.8rem' }}
-                      title="解除契约"
-                    >
-                      🗑️
-                    </button>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <button 
+                        onClick={() => {
+                          setEditPartnerId(member.id);
+                          setEditPartnerName(member.name);
+                          setEditPartnerRelation(member.relationTag);
+                          setEditPartnerMethod(member.divinationMethod);
+                          setEditPartnerDate(member.baziInfo?.birthDate || '1998-06-15');
+                          setEditPartnerTime(member.baziInfo?.birthTime || '12:00');
+                          setEditPartnerPlace(member.baziInfo?.birthPlace || '杭州');
+                          setShowEditPartnerModal(true);
+                        }} 
+                        style={{ background: 'transparent', border: 'none', color: 'var(--primary)', cursor: 'pointer', padding: '4px', fontSize: '0.8rem' }}
+                        title="修改契约"
+                      >
+                        📝
+                      </button>
+                      <button 
+                        onClick={() => handleDeletePartner(member.id)} 
+                        style={{ background: 'transparent', border: 'none', color: '#cc5555', cursor: 'pointer', padding: '4px', fontSize: '0.8rem' }}
+                        title="解除契约"
+                      >
+                        🗑️
+                      </button>
+                    </div>
                   </div>
                 );
               })
@@ -967,6 +1023,145 @@ export const ProfilePage = () => {
               <div style={{ display: 'flex', gap: '12px', marginTop: '24px' }}>
                 <button onClick={() => setShowAddPartnerModal(false)} className="btn btn-ghost" style={{ flex: 1 }}>取消</button>
                 <button onClick={handleAddPartner} className="btn btn-primary" style={{ flex: 1 }}>缔结契约</button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+
+        {/* 编辑旅伴契约弹窗 */}
+        {showEditPartnerModal && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="modal-overlay" onClick={() => setShowEditPartnerModal(false)}>
+            <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} className="pixel-panel modal-content" style={{ padding: '24px' }} onClick={e => e.stopPropagation()}>
+              <h3 className="font-mystic" style={{ marginBottom: '20px', textAlign: 'center', color: 'var(--primary)' }}>修改旅伴契约</h3>
+              
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '4px' }}>旅伴大名</label>
+                  <input
+                    type="text"
+                    placeholder="请输入旅伴称呼"
+                    value={editPartnerName}
+                    onChange={(e) => setEditPartnerName(e.target.value)}
+                    style={{
+                      width: '100%',
+                      background: '#1a1714',
+                      border: '1px solid var(--pixel-border-color)',
+                      color: '#fff',
+                      padding: '8px',
+                      fontSize: '0.8rem',
+                      outline: 'none'
+                    }}
+                  />
+                </div>
+
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <div style={{ flex: 1 }}>
+                    <label style={{ display: 'block', fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '4px' }}>关系标签</label>
+                    <select
+                      value={editPartnerRelation}
+                      onChange={(e) => setEditPartnerRelation(e.target.value as any)}
+                      style={{
+                        width: '100%',
+                        background: '#1a1714',
+                        border: '1px solid var(--pixel-border-color)',
+                        color: '#fff',
+                        padding: '8px',
+                        fontSize: '0.8rem',
+                        outline: 'none'
+                      }}
+                    >
+                      <option value="family">👪 家人</option>
+                      <option value="friend">🤝 朋友</option>
+                      <option value="partner">❤️ 伴侣</option>
+                      <option value="other">✨ 其他</option>
+                    </select>
+                  </div>
+
+                  <div style={{ flex: 1 }}>
+                    <label style={{ display: 'block', fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '4px' }}>占卜偏好</label>
+                    <select
+                      value={editPartnerMethod}
+                      onChange={(e) => setEditPartnerMethod(e.target.value as any)}
+                      style={{
+                        width: '100%',
+                        background: '#1a1714',
+                        border: '1px solid var(--pixel-border-color)',
+                        color: '#fff',
+                        padding: '8px',
+                        fontSize: '0.8rem',
+                        outline: 'none'
+                      }}
+                    >
+                      <option value="bazi">☯️ 东方八字</option>
+                      <option value="tarot">🃏 西方塔罗</option>
+                    </select>
+                  </div>
+                </div>
+
+                {editPartnerMethod === 'bazi' && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '4px' }}>出生公历日期</label>
+                      <input
+                        type="date"
+                        value={editPartnerDate}
+                        onChange={(e) => setEditPartnerDate(e.target.value)}
+                        style={{
+                          width: '100%',
+                          background: '#1a1714',
+                          border: '1px solid var(--pixel-border-color)',
+                          color: '#fff',
+                          padding: '8px',
+                          fontSize: '0.8rem',
+                          outline: 'none'
+                        }}
+                      />
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '10px' }}>
+                      <div style={{ flex: 1.2 }}>
+                        <label style={{ display: 'block', fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '4px' }}>出生时辰</label>
+                        <input
+                          type="time"
+                          value={editPartnerTime}
+                          onChange={(e) => setEditPartnerTime(e.target.value)}
+                          style={{
+                            width: '100%',
+                            background: '#1a1714',
+                            border: '1px solid var(--pixel-border-color)',
+                            color: '#fff',
+                            padding: '8px',
+                            fontSize: '0.8rem',
+                            outline: 'none'
+                          }}
+                        />
+                      </div>
+                      <div style={{ flex: 1.8 }}>
+                        <label style={{ display: 'block', fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '4px' }}>出生地点</label>
+                        <input
+                          type="text"
+                          placeholder="省/市"
+                          value={editPartnerPlace}
+                          onChange={(e) => setEditPartnerPlace(e.target.value)}
+                          style={{
+                            width: '100%',
+                            background: '#1a1714',
+                            border: '1px solid var(--pixel-border-color)',
+                            color: '#fff',
+                            padding: '8px',
+                            fontSize: '0.8rem',
+                            outline: 'none'
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div style={{ display: 'flex', gap: '12px', marginTop: '24px' }}>
+                <button onClick={() => setShowEditPartnerModal(false)} className="btn btn-ghost" style={{ flex: 1 }}>取消</button>
+                <button onClick={handleSavePartner} className="btn btn-primary" style={{ flex: 1 }}>保存</button>
               </div>
             </motion.div>
           </motion.div>
