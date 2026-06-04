@@ -713,42 +713,193 @@ export const HomePage = () => {
                     <span>命定感应：洗牌并抽取命运之牌</span>
                   </div>
                   
-                  {(!member.tarotCardIndexes || member.tarotCardIndexes.length === 0) ? (
-                    // 未抽牌状态：展示洗牌叠
+                  {(() => {
+                    const tarotCardIndexes = member.tarotCardIndexes || [];
+                    const requiredCount = member.tarotDrawRule === 'three' ? 3 : 1;
+                    const hasCompletedDraw = tarotCardIndexes.length === requiredCount;
+                    return !hasCompletedDraw;
+                  })() ? (
+                    // 未完成抽牌状态：展示仪式感槽位与横向滑动选择牌堆
                     <div 
                       className="pixel-panel"
                       style={{ 
-                        padding: '20px', 
-                        background: 'rgba(0,0,0,0.3)', 
-                        border: '1.5px dashed var(--pixel-border-color)',
+                        padding: '16px', 
+                        background: 'rgba(0,0,0,0.4)', 
+                        border: '1.5px dashed var(--primary)',
                         display: 'flex',
                         flexDirection: 'column',
                         alignItems: 'center',
-                        gap: '12px'
+                        gap: '16px',
+                        width: '100%'
                       }}
                     >
-                      <div style={{ fontSize: '2.5rem', filter: 'drop-shadow(0 0 8px rgba(226,181,83,0.3))', animation: 'float 3s ease-in-out infinite' }}>🃏</div>
-                      <div style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', textAlign: 'center', lineHeight: '1.4' }}>
-                        命运之轮已就绪。点击下方按钮进行洗牌，并由命运指引为您抽取 {member.tarotDrawRule === 'three' ? '3' : '1'} 张奥秘牌。
+                      {/* 1. 时空槽位展示 */}
+                      <div style={{ display: 'flex', gap: '14px', justifyContent: 'center', margin: '8px 0' }}>
+                        {Array.from({ length: member.tarotDrawRule === 'three' ? 3 : 1 }).map((_, slotIdx) => {
+                          const tarotCardIndexes = member.tarotCardIndexes || [];
+                          const isFilled = tarotCardIndexes.length > slotIdx;
+                          const cardIdx = isFilled ? tarotCardIndexes[slotIdx] : null;
+                          const label = member.tarotDrawRule === 'three'
+                            ? ['过去', '现在', '未来'][slotIdx]
+                            : '今日命轨';
+                          
+                          return (
+                            <div 
+                              key={slotIdx}
+                              style={{
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'center',
+                                gap: '6px'
+                              }}
+                            >
+                              <div
+                                style={{
+                                  width: '75px',
+                                  height: '120px',
+                                  border: isFilled ? '2px solid var(--primary)' : '1.5px dashed rgba(255,255,255,0.15)',
+                                  background: isFilled 
+                                    ? 'radial-gradient(circle, #2a221b 0%, #15110e 100%)' 
+                                    : 'rgba(0,0,0,0.2)',
+                                  boxShadow: isFilled ? '0 0 10px rgba(226,181,83,0.3)' : 'none',
+                                  display: 'flex',
+                                  flexDirection: 'column',
+                                  justifyContent: 'center',
+                                  alignItems: 'center',
+                                  position: 'relative',
+                                  transition: 'all 0.3s'
+                                }}
+                              >
+                                {isFilled ? (
+                                  <>
+                                    <span style={{ fontSize: '1.2rem' }}>🔮</span>
+                                    <span style={{ fontSize: '0.45rem', color: 'var(--primary)', marginTop: '4px', fontWeight: 'bold' }}>
+                                      #{String(cardIdx! + 1).padStart(2, '0')}
+                                    </span>
+                                  </>
+                                ) : (
+                                  <span style={{ fontSize: '0.5rem', color: 'rgba(255,255,255,0.2)' }}>未选择</span>
+                                )}
+                              </div>
+                              <span style={{ fontSize: '0.55rem', color: isFilled ? 'var(--primary)' : 'var(--text-muted)' }}>
+                                {label}
+                              </span>
+                            </div>
+                          );
+                        })}
                       </div>
-                      <button
-                        className="btn btn-primary"
-                        onClick={() => {
-                          const count = member.tarotDrawRule === 'three' ? 3 : 1;
-                          const indexes: number[] = [];
-                          while (indexes.length < count) {
-                            const idx = Math.floor(Math.random() * TAROT_CARDS.length);
-                            if (!indexes.includes(idx)) {
-                              indexes.push(idx);
-                            }
-                          }
-                          // 兼容旧字段 tarotCardIndex，设为第一张牌索引
-                          updateMember(member.id, { tarotCardIndexes: indexes, tarotCardIndex: indexes[0] });
+
+                      {/* 2. 仪式指引文案 */}
+                      <div style={{ textAlign: 'center' }}>
+                        <div style={{ fontSize: '0.65rem', color: 'var(--primary)', fontWeight: 'bold', marginBottom: '4px' }}>
+                          {(member.tarotCardIndexes || []).length === 0 ? (
+                            '🔮 命运之轮转动，请用心挑选第一张牌'
+                          ) : (member.tarotCardIndexes || []).length < (member.tarotDrawRule === 'three' ? 3 : 1) ? (
+                            `已锁定 ${(member.tarotCardIndexes || []).length} 张牌，请继续挑选下一张`
+                          ) : (
+                            '✨ 命定仪式已完成'
+                          )}
+                        </div>
+                        <div style={{ fontSize: '0.55rem', color: 'var(--text-muted)' }}>
+                          在下方牌堆中左右滑动，点击卡牌进行抽取
+                        </div>
+                      </div>
+
+                      {/* 3. 左右滑动牌堆 */}
+                      <div 
+                        style={{
+                          width: '100%',
+                          overflowX: 'auto',
+                          padding: '10px 4px',
+                          display: 'flex',
+                          gap: '8px',
+                          scrollbarWidth: 'thin',
+                          scrollbarColor: 'var(--primary) rgba(0,0,0,0.2)'
                         }}
-                        style={{ padding: '8px 18px', fontSize: '0.75rem', fontWeight: 'bold' }}
                       >
-                        🔮 开启洗牌并抽牌
-                      </button>
+                        {Array.from({ length: 78 }).map((_, idx) => {
+                          const tarotCardIndexes = member.tarotCardIndexes || [];
+                          const isSelected = tarotCardIndexes.includes(idx);
+                          
+                          return (
+                            <motion.div
+                              key={idx}
+                              whileHover={isSelected ? {} : { y: -6, scale: 1.05 }}
+                              onClick={() => {
+                                if (isSelected) return;
+                                const newIndexes = [...tarotCardIndexes, idx];
+                                updateMember(member.id, { 
+                                  tarotCardIndexes: newIndexes, 
+                                  tarotCardIndex: newIndexes[0] 
+                                });
+                              }}
+                              style={{
+                                flexShrink: 0,
+                                width: '65px',
+                                height: '105px',
+                                background: isSelected 
+                                  ? 'rgba(255,255,255,0.03)'
+                                  : 'radial-gradient(circle, #221b15 0%, #0f0b08 100%)',
+                                border: isSelected 
+                                  ? '1.5px solid rgba(255,255,255,0.1)'
+                                  : '1.5px solid var(--primary)',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                justifyContent: 'space-between',
+                                alignItems: 'center',
+                                padding: '6px 3px',
+                                cursor: isSelected ? 'default' : 'pointer',
+                                opacity: isSelected ? 0.3 : 1,
+                                transition: 'all 0.2s',
+                                boxShadow: isSelected ? 'none' : '0 4px 8px rgba(0,0,0,0.5)',
+                                position: 'relative'
+                              }}
+                            >
+                              <div style={{ 
+                                alignSelf: 'flex-start',
+                                fontSize: '0.45rem', 
+                                color: 'var(--primary)', 
+                                opacity: 0.7, 
+                                fontWeight: 'bold' 
+                              }}>
+                                {String(idx + 1).padStart(2, '0')}
+                              </div>
+                              <div style={{ fontSize: '1rem', opacity: 0.8 }}>
+                                {isSelected ? '🔒' : '✨'}
+                              </div>
+                              <div style={{ 
+                                fontSize: '0.4rem', 
+                                color: 'var(--text-muted)',
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.05em'
+                              }}>
+                                {isSelected ? 'selected' : 'tarot'}
+                              </div>
+                            </motion.div>
+                          );
+                        })}
+                      </div>
+
+                      {/* 4. 辅助重置按钮 */}
+                      {(member.tarotCardIndexes || []).length > 0 && (
+                        <button
+                          onClick={() => {
+                            updateMember(member.id, { tarotCardIndexes: undefined, tarotCardIndex: undefined });
+                          }}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            color: 'var(--text-muted)',
+                            textDecoration: 'underline',
+                            fontSize: '0.65rem',
+                            cursor: 'pointer',
+                            padding: '4px 8px',
+                            fontFamily: 'var(--font-main)'
+                          }}
+                        >
+                          重新选择
+                        </button>
+                      )}
                     </div>
                   ) : (
                     // 已抽牌状态：展示抽出的牌面
