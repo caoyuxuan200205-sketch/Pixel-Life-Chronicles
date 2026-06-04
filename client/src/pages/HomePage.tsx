@@ -10,7 +10,8 @@ import {
   getBoundMembers,
   type POIData,
   type GroupMember,
-  type BoundMember
+  type BoundMember,
+  TAROT_CARDS
 } from '../store';
 import { MOOD_TAGS } from '../services/ai';
 
