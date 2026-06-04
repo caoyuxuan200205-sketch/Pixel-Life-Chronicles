@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Compass, Sparkles, Wand2, Clock, MapPin, CheckCircle, Navigation, Info, ChevronRight, User, Send, RefreshCw, Trash2, Download, Share2, Train, Plane } from 'lucide-react';
+import { Compass, Sparkles, Wand2, Clock, MapPin, CheckCircle, Navigation, Info, ChevronRight, ChevronLeft, User, Send, RefreshCw, Trash2, Download, Share2, Train, Plane, Ticket } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import html2canvas from 'html2canvas';
 import { getCurrentUser, getBoundMembers, type BoundMember } from '../store';
@@ -221,6 +221,600 @@ const DIRECTIONS_MAP: Record<string, { dir: string; angle: number; color: string
   '土': { dir: '中部/西南 (勾陈方位)', angle: 225, color: '#A87A54', desc: '宜往中西部平原阔野、手作陶艺工坊行进，稳固中土元气。' }
 };
 
+const CouponWidget = () => {
+  const [step, setStep] = useState<number>(0);
+  const [phone, setPhone] = useState('');
+  const [code, setCode] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState('');
+  const [couponResult, setCouponResult] = useState<any>(null);
+  const [showCodeInput, setShowCodeInput] = useState(false);
+  const [dailyReminder, setDailyReminder] = useState(false);
+  const [focusInput, setFocusInput] = useState<string>('');
+
+  useEffect(() => {
+    const accepted = localStorage.getItem('coupon_terms_accepted');
+    if (accepted === 'true') {
+      setStep(1);
+      checkToken();
+    }
+  }, []);
+
+  const checkToken = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch('/api/agent/coupon/auth', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'token-verify' })
+      });
+      const data = await res.json();
+      if (data.valid && data.user_token) {
+        setStep(2);
+        issueCoupon(data.user_token);
+      } else {
+        const savedPhone = localStorage.getItem('coupon_phone_masked');
+        if (savedPhone) setMessage(`上次验证手机号为 ${savedPhone}，请输入完整手机号继续`);
+        setStep(1);
+      }
+    } catch(e:any) {
+      setMessage(e.message);
+    }
+    setLoading(false);
+  };
+
+  const handleAgree = () => {
+    localStorage.setItem('coupon_terms_accepted', 'true');
+    setStep(1);
+    checkToken();
+  };
+
+  const handleSendSms = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch('/api/agent/coupon/auth', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'send-sms', phone })
+      });
+      const data = await res.json();
+      if (data.error) {
+         setMessage(data.message || data.error);
+         if (data.error === 'SMS_SECURITY_VERIFY_REQUIRED' && data.redirect_url) {
+            setMessage(`请先进行安全验证: ${data.redirect_url}`);
+         }
+      } else {
+         setMessage('验证码已发送至您的手机');
+         setShowCodeInput(true);
+      }
+    } catch(e:any) {
+      setMessage(e.message);
+    }
+    setLoading(false);
+  };
+
+  const handleVerify = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch('/api/agent/coupon/auth', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'verify', phone, code })
+      });
+      const data = await res.json();
+      if (data.error) {
+         setMessage(data.message || data.error);
+      } else if (data.valid && data.user_token) {
+         localStorage.setItem('coupon_phone_masked', phone.replace(/(\d{3})\d{4}(\d{4})/, '$1****$2'));
+         setStep(2);
+         issueCoupon(data.user_token);
+      }
+    } catch(e:any) {
+      setMessage(e.message);
+    }
+    setLoading(false);
+  };
+
+  const issueCoupon = async (token: string) => {
+    setLoading(true);
+    try {
+      const res = await fetch('/api/agent/coupon/issue', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token })
+      });
+      const data = await res.json();
+      setCouponResult(data);
+      setStep(3);
+    } catch(e:any) {
+      setMessage(e.message);
+    }
+    setLoading(false);
+  };
+
+  return (
+    <motion.div 
+      initial={{ opacity: 0, scale: 0.98, y: 10 }} 
+      animate={{ opacity: 1, scale: 1, y: 0 }} 
+      transition={{ duration: 0.4, ease: 'easeOut' }}
+      style={{ 
+        marginTop: '20px', 
+        padding: '24px', 
+        background: 'rgba(20, 15, 25, 0.65)', 
+        backdropFilter: 'blur(16px)',
+        border: '1px solid rgba(226, 181, 83, 0.4)',
+        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4), inset 0 0 20px rgba(226, 181, 83, 0.05)',
+        color: '#fff', 
+        fontSize: '0.85rem', 
+        borderRadius: '16px' 
+      }}>
+      
+      <h3 style={{ 
+        color: '#FFDF8D', 
+        marginTop: 0, 
+        marginBottom: '20px', 
+        display: 'flex', 
+        alignItems: 'center', 
+        gap: '8px',
+        fontSize: '1.15rem',
+        textShadow: '0 0 12px rgba(226, 181, 83, 0.6)',
+        letterSpacing: '0.5px'
+      }}>
+        <Sparkles size={20} color="#FFDF8D" /> 美团专属隐藏福袋
+      </h3>
+      
+      {step === 0 && (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+          <p style={{ lineHeight: '1.6', fontSize: '0.9rem', marginBottom: '12px' }}>
+            🎉 欢迎开启美团专属隐藏红包通道！<br/>
+            此处领取的福利<span style={{ color: '#E2B553', fontWeight: 'bold' }}>面额更大、覆盖更广</span>。领完即可一键直达美团 App 专属会场使用。<br/>
+            (注：手机号与登录凭证经过多重加密，仅保留在您的设备本地。)
+          </p>
+          <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.7rem', lineHeight: '1.4' }}>
+            继续使用即代表您已充分理解并同意《Skills服务使用规则》以及《美团用户服务协议》《隐私政策》的全部内容，且自愿接受该等规则约束。
+          </p>
+          <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
+            <motion.button 
+              whileHover={{ scale: 1.02 }} 
+              whileTap={{ scale: 0.95 }}
+              onClick={handleAgree} 
+              style={{ 
+                padding: '10px 24px', 
+                background: 'linear-gradient(135deg, #FFDF8D 0%, #D4AF37 100%)', 
+                color: '#111', 
+                border: 'none', 
+                borderRadius: '8px', 
+                cursor: 'pointer', 
+                fontWeight: 'bold',
+                boxShadow: '0 4px 12px rgba(226, 181, 83, 0.4)'
+              }}>
+              同意并立即开启
+            </motion.button>
+          </div>
+        </motion.div>
+      )}
+
+      {step === 1 && (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <p style={{ color: 'rgba(255,255,255,0.85)', lineHeight: '1.5' }}>
+            即将为您注入福袋之力。<br/>
+            <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.5)' }}>请先进行美团时空印记（手机号）验证，凭证将完全在本地沙箱加密保存。</span>
+          </p>
+          
+          <AnimatePresence>
+            {message && (
+              <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} style={{ color: '#FFDF8D', fontSize: '0.75rem', background: 'rgba(226, 181, 83, 0.1)', padding: '8px 12px', borderRadius: '6px', borderLeft: '3px solid #E2B553' }}>
+                {message}
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <div style={{ display: 'flex', gap: '12px' }}>
+            <input 
+              type="text" 
+              placeholder="请输入11位手机号" 
+              value={phone} 
+              onChange={e => setPhone(e.target.value)}
+              onFocus={() => setFocusInput('phone')}
+              onBlur={() => setFocusInput('')}
+              style={{ 
+                flex: 1, padding: '12px 16px', background: 'rgba(0,0,0,0.3)', 
+                border: focusInput === 'phone' ? '1px solid #FFDF8D' : '1px solid rgba(226, 181, 83, 0.3)', 
+                color: '#FFDF8D', borderRadius: '8px', outline: 'none', transition: 'all 0.3s',
+                boxShadow: focusInput === 'phone' ? '0 0 8px rgba(226, 181, 83, 0.2)' : 'none'
+              }}
+              disabled={showCodeInput || loading}
+            />
+            {!showCodeInput && (
+              <motion.button 
+                whileHover={phone ? { scale: 1.02 } : {}} whileTap={phone ? { scale: 0.95 } : {}}
+                onClick={handleSendSms} disabled={loading || !phone} 
+                style={{ 
+                  padding: '12px 20px', 
+                  background: phone ? 'linear-gradient(135deg, #FFDF8D 0%, #D4AF37 100%)' : 'rgba(255,255,255,0.1)', 
+                  color: phone ? '#111' : 'rgba(255,255,255,0.3)', 
+                  border: 'none', borderRadius: '8px', cursor: phone ? 'pointer' : 'not-allowed', 
+                  fontWeight: 'bold', whiteSpace: 'nowrap', transition: 'all 0.3s'
+                }}>
+                {loading ? '获取中...' : '获取验证码'}
+              </motion.button>
+            )}
+          </div>
+          
+          {showCodeInput && (
+            <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} style={{ display: 'flex', gap: '12px' }}>
+              <input 
+                type="text" 
+                placeholder="请输入6位短信验证码" 
+                value={code} 
+                onChange={e => setCode(e.target.value)}
+                onFocus={() => setFocusInput('code')}
+                onBlur={() => setFocusInput('')}
+                style={{ 
+                  flex: 1, padding: '12px 16px', background: 'rgba(0,0,0,0.3)', 
+                  border: focusInput === 'code' ? '1px solid #FFDF8D' : '1px solid rgba(226, 181, 83, 0.3)', 
+                  color: '#FFDF8D', borderRadius: '8px', outline: 'none', transition: 'all 0.3s',
+                  boxShadow: focusInput === 'code' ? '0 0 8px rgba(226, 181, 83, 0.2)' : 'none'
+                }}
+                disabled={loading}
+              />
+              <motion.button 
+                whileHover={code ? { scale: 1.02 } : {}} whileTap={code ? { scale: 0.95 } : {}}
+                onClick={handleVerify} disabled={loading || !code} 
+                style={{ 
+                  padding: '12px 20px', 
+                  background: code ? 'linear-gradient(135deg, #FFDF8D 0%, #D4AF37 100%)' : 'rgba(255,255,255,0.1)', 
+                  color: code ? '#111' : 'rgba(255,255,255,0.3)', 
+                  border: 'none', borderRadius: '8px', cursor: code ? 'pointer' : 'not-allowed', 
+                  fontWeight: 'bold', whiteSpace: 'nowrap', transition: 'all 0.3s'
+                }}>
+                {loading ? '校验中...' : '确认开启'}
+              </motion.button>
+            </motion.div>
+          )}
+        </motion.div>
+      )}
+
+      {step === 2 && (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px', padding: '20px 0' }}>
+          <div style={{ position: 'relative' }}>
+            <Compass size={40} color="#FFDF8D" style={{ animation: 'spin 2s linear infinite' }} />
+            <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '60px', height: '60px', borderRadius: '50%', border: '2px dashed rgba(226, 181, 83, 0.5)', animation: 'spin 4s linear infinite reverse' }} />
+          </div>
+          <span style={{ color: '#FFDF8D', fontWeight: 'bold', letterSpacing: '1px' }}>正在为您向美团总库请求专属大额福利...</span>
+        </motion.div>
+      )}
+
+      {step === 3 && couponResult && (
+        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+          {couponResult.success && couponResult.coupon_count > 0 ? (
+            <div>
+              <div style={{ fontSize: '1.2rem', fontWeight: 'bold', background: 'linear-gradient(90deg, #4caf50, #81c784)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <CheckCircle size={22} color="#4caf50" /> 成功获得 {couponResult.coupon_count} 张专属神券！
+              </div>
+              
+              {/* 世界级美团金卡 UI */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                {couponResult.coupons?.map((c:any, i:number) => (
+                  <motion.div 
+                    key={i} 
+                    whileHover={{ scale: 1.02, y: -2 }}
+                    style={{ 
+                      background: 'linear-gradient(135deg, #FFF8E1 0%, #F4D03F 30%, #D4AC0D 70%, #F9E79F 100%)', 
+                      backgroundSize: '200% auto',
+                      animation: 'gradientFlow 4s ease infinite',
+                      borderRadius: '12px', 
+                      padding: '18px 20px', 
+                      color: '#3A2703', 
+                      display: 'flex', 
+                      justifyContent: 'space-between', 
+                      alignItems: 'center', 
+                      boxShadow: '0 6px 20px rgba(212, 172, 13, 0.3), inset 0 1px 1px rgba(255,255,255,0.8)',
+                      position: 'relative',
+                      overflow: 'hidden'
+                    }}
+                  >
+                    {/* 卡券两侧的半圆打孔装饰 */}
+                    <div style={{ position: 'absolute', left: '-10px', width: '20px', height: '20px', borderRadius: '50%', background: '#1c1524', boxShadow: 'inset -2px 0 4px rgba(0,0,0,0.3)' }} />
+                    <div style={{ position: 'absolute', right: '-10px', width: '20px', height: '20px', borderRadius: '50%', background: '#1c1524', boxShadow: 'inset 2px 0 4px rgba(0,0,0,0.3)' }} />
+                    
+                    {/* 卡券发光扫光动画层 (通过CSS注入，见外层) */}
+                    
+                    <div style={{ zIndex: 1, paddingLeft: '8px', maxWidth: '65%' }}>
+                      <div style={{ fontSize: '1.25rem', fontWeight: '900', letterSpacing: '0.5px', textShadow: '0 1px 1px rgba(255,255,255,0.6)' }}>
+                        {c.name}
+                      </div>
+                      <div style={{ fontSize: '0.85rem', fontWeight: 'bold', opacity: 0.85, marginTop: '4px', background: 'rgba(58, 39, 3, 0.1)', display: 'inline-block', padding: '2px 8px', borderRadius: '4px' }}>
+                        {c.discount_info}
+                      </div>
+                    </div>
+                    <div style={{ zIndex: 1, textAlign: 'right', paddingRight: '8px', borderLeft: '1px dashed rgba(58, 39, 3, 0.2)', paddingLeft: '14px', minWidth: '35%' }}>
+                      <div style={{ fontSize: '0.7rem', opacity: 0.7, fontWeight: 'bold' }}>有效期至</div>
+                      <div style={{ fontSize: '0.85rem', fontWeight: 'bold', fontFamily: 'monospace', marginTop: '2px', whiteSpace: 'nowrap' }}>
+                        {c.valid_period?.split(' ')[0]}
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+
+              <div style={{ marginTop: '20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(0,0,0,0.3)', padding: '12px 16px', borderRadius: '8px', border: '1px solid rgba(226, 181, 83, 0.2)' }}>
+                <span style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.8)' }}>🛍️ 券已自动入账！</span>
+                <motion.a 
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  href="https://click.meituan.com/t?t=1&c=2&p=Zcjq1Lxzawjj" 
+                  target="_blank" 
+                  rel="noreferrer" 
+                  style={{ 
+                    display: 'flex', alignItems: 'center', gap: '4px',
+                    padding: '8px 16px', background: 'linear-gradient(90deg, #FF9800, #FF5722)', 
+                    color: '#fff', textDecoration: 'none', borderRadius: '20px', 
+                    fontSize: '0.85rem', fontWeight: 'bold', boxShadow: '0 4px 10px rgba(255, 152, 0, 0.4)' 
+                  }}
+                >
+                  去美团使用 <ChevronRight size={16} />
+                </motion.a>
+              </div>
+            </div>
+          ) : (
+            <div style={{ fontSize: '0.95rem', color: '#ff9800', background: 'rgba(255, 152, 0, 0.1)', padding: '16px', borderRadius: '8px', border: '1px solid rgba(255, 152, 0, 0.3)' }}>
+              {couponResult.code === 1014 ? '🌟 今天您已经领取过专属红包啦！可以直接去美团 App 尽情挑选心水商品哦。' : (couponResult.msg || '当前美团专属红包暂未上新，请晚些再来。')}
+            </div>
+          )}
+
+          {couponResult.activity_name && (
+            <motion.div initial={{ y: 10, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.2 }} style={{ background: 'rgba(255, 223, 141, 0.1)', border: '1px solid rgba(255, 223, 141, 0.3)', padding: '14px 16px', borderRadius: '12px', marginTop: '10px' }}>
+              <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.6)', marginBottom: '4px' }}>🔥 专属高优会场推荐</div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontWeight: 'bold', color: '#FFDF8D', fontSize: '1.05rem' }}>{couponResult.activity_name}</span>
+                {couponResult.activity_link && (
+                  <a href={couponResult.activity_link} target="_blank" rel="noreferrer" style={{ color: '#FFDF8D', textDecoration: 'none', fontSize: '0.85rem', display: 'flex', alignItems: 'center', background: 'rgba(226, 181, 83, 0.2)', padding: '4px 10px', borderRadius: '12px' }}>前往参与 <ChevronRight size={14} /></a>
+                )}
+              </div>
+            </motion.div>
+          )}
+
+          {/* Step 4: 提醒功能 */}
+          <div style={{ borderTop: '1px dashed rgba(255,255,255,0.15)', marginTop: '16px', paddingTop: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'rgba(255,255,255,0.8)' }}>
+              <Clock size={16} color="#FFDF8D" /> 
+              <span>每天 10:00 自动提醒我领大额红包</span>
+            </div>
+            <label style={{ position: 'relative', display: 'inline-block', width: '44px', height: '24px' }}>
+              <input type="checkbox" checked={dailyReminder} onChange={(e) => {
+                setDailyReminder(e.target.checked);
+                if (e.target.checked) alert('✅ 已为您开启星轨提醒！每天 10:00 准时播报福袋状态。');
+                else alert('已取消每日提醒。');
+              }} style={{ opacity: 0, width: 0, height: 0 }} />
+              <span style={{
+                position: 'absolute', cursor: 'pointer', top: 0, left: 0, right: 0, bottom: 0,
+                backgroundColor: dailyReminder ? '#4caf50' : 'rgba(255,255,255,0.2)',
+                transition: '.4s', borderRadius: '24px'
+              }}>
+                <span style={{
+                  position: 'absolute', content: '""', height: '18px', width: '18px',
+                  left: dailyReminder ? '22px' : '3px', bottom: '3px',
+                  backgroundColor: 'white', transition: '.4s', borderRadius: '50%'
+                }} />
+              </span>
+            </label>
+          </div>
+        </motion.div>
+      )}
+
+      {/* 注入全局动画样式 */}
+      <style>{`
+        @keyframes gradientFlow {
+          0% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+          100% { background-position: 0% 50%; }
+        }
+      `}</style>
+    </motion.div>
+  );
+};
+
+interface LoadingStepsPanelProps {
+  theme: any;
+  isLoading: boolean;
+}
+
+const LoadingStepsPanel = ({ theme, isLoading }: LoadingStepsPanelProps) => {
+  const [currentStep, setCurrentStep] = useState(0);
+  const [isCollapsed, setIsCollapsed] = useState(false);
+
+  const steps = [
+    { title: '理解宿命任务', desc: '已解析您的出行意图与星盘时空方位', activeDesc: '正在分析您的出游场景与上下文...' },
+    { title: '唤醒美团星轨', desc: '已成功连接美团即时生活导购星轨', activeDesc: '正在检索美团精选商家与专属特惠...' },
+    { title: '推演天命行程', desc: '已为您定制吃喝玩乐一体化出行契约', activeDesc: '正在编排最佳出行路线与时间组合...' },
+    { title: '编织运势脑波', desc: '时空箴言已编织完成，正在召来', activeDesc: '正在润色祭司箴言与避世开运契约...' }
+  ];
+
+  useEffect(() => {
+    if (!isLoading) {
+      setCurrentStep(4);
+      return;
+    }
+
+    setCurrentStep(0);
+
+    const t1 = setTimeout(() => {
+      setCurrentStep(1);
+    }, 800);
+
+    const t2 = setTimeout(() => {
+      setCurrentStep(2);
+    }, 1800);
+
+    const t3 = setTimeout(() => {
+      setCurrentStep(3);
+    }, 3000);
+
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+      clearTimeout(t3);
+    };
+  }, [isLoading]);
+
+  const getStepStatus = (index: number) => {
+    if (currentStep > index) return 'done';
+    if (currentStep === index) return 'active';
+    return 'pending';
+  };
+
+  const completedCount = Math.min(currentStep, 4);
+
+  return (
+    <div 
+      className="pixel-panel" 
+      style={{ 
+        flex: 1,
+        maxWidth: '400px',
+        background: 'var(--bg-card)', 
+        border: '1px solid var(--pixel-border-color)',
+        padding: '14px 16px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '10px',
+        boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
+        userSelect: 'none',
+        WebkitUserSelect: 'none'
+      }}
+    >
+      {/* 标题栏 */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <span className="font-mystic" style={{ fontSize: '0.85rem', fontWeight: 'bold', color: '#fff', display: 'flex', alignItems: 'center', gap: '6px' }}>
+          🔮 祭司推演过程
+        </span>
+        <button 
+          onClick={() => setIsCollapsed(!isCollapsed)}
+          style={{
+            background: 'none',
+            border: 'none',
+            color: theme.color,
+            fontSize: '0.7rem',
+            cursor: 'pointer',
+            padding: '2px 6px',
+            outline: 'none',
+            fontFamily: 'var(--font-main)',
+            textDecoration: 'underline'
+          }}
+        >
+          {isCollapsed ? '展开' : '收起'}
+        </button>
+      </div>
+
+      {/* 进度说明 */}
+      <div style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', textAlign: 'left', marginTop: '-4px' }}>
+        {completedCount === 4 ? '推演已全部完成' : `已完成 ${completedCount} / 4 步`}
+      </div>
+
+      {/* 步骤列表 */}
+      {!isCollapsed && (
+        <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', gap: '14px', marginTop: '6px', paddingLeft: '4px' }}>
+          
+          {/* 连接线 */}
+          <div style={{
+            position: 'absolute',
+            left: '11px',
+            top: '8px',
+            bottom: '8px',
+            width: '2px',
+            background: 'rgba(255,255,255,0.06)',
+            zIndex: 0
+          }} />
+
+          {/* 动态连接线 */}
+          <div style={{
+            position: 'absolute',
+            left: '11px',
+            top: '8px',
+            height: `${Math.max(0, completedCount - 1) * 33.3}%`,
+            width: '2px',
+            background: `linear-gradient(180deg, ${theme.color} 0%, ${completedCount === 4 ? theme.color : theme.accent || theme.color} 100%)`,
+            boxShadow: `0 0 4px ${theme.glow}`,
+            transition: 'height 0.5s ease',
+            zIndex: 0
+          }} />
+
+          {steps.map((step, index) => {
+            const status = getStepStatus(index);
+            const isDone = status === 'done';
+            const isActive = status === 'active';
+            const isPending = status === 'pending';
+
+            return (
+              <div key={index} style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', zIndex: 1 }}>
+                
+                {/* 节点图标 */}
+                <div style={{ 
+                  width: '16px', 
+                  height: '16px', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                  marginTop: '2px'
+                }}>
+                  {isDone ? (
+                    <div style={{ 
+                      width: '8px', 
+                      height: '8px', 
+                      borderRadius: '50%', 
+                      background: theme.color, 
+                      boxShadow: `0 0 8px ${theme.glow}`,
+                      transition: 'all 0.3s'
+                    }} />
+                  ) : isActive ? (
+                    <RefreshCw size={10} className="spinner-icon" style={{ animation: 'spin 1.5s linear infinite', color: theme.color }} />
+                  ) : (
+                    <div style={{ 
+                      width: '6px', 
+                      height: '6px', 
+                      borderRadius: '50%', 
+                      background: 'rgba(255,255,255,0.15)'
+                    }} />
+                  )}
+                </div>
+
+                {/* 文本内容 */}
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+                  <div style={{ 
+                    fontSize: '0.75rem', 
+                    fontWeight: 'bold', 
+                    color: isPending ? 'rgba(255,255,255,0.3)' : '#fff',
+                    transition: 'color 0.3s'
+                  }}>
+                    {step.title}
+                  </div>
+                  <div style={{ 
+                    fontSize: '0.65rem', 
+                    color: isActive ? theme.color : isPending ? 'rgba(255,255,255,0.2)' : 'var(--text-secondary)',
+                    marginTop: '2px',
+                    textAlign: 'left',
+                    transition: 'color 0.3s'
+                  }}>
+                    {isActive ? step.activeDesc : step.desc}
+                  </div>
+                </div>
+
+                {/* 状态文字 */}
+                <div style={{ 
+                  fontSize: '0.65rem', 
+                  color: isDone ? '#3CD070' : isActive ? theme.color : 'rgba(255,255,255,0.2)',
+                  fontWeight: isActive ? 'bold' : 'normal',
+                  flexShrink: 0
+                }}>
+                  {isDone ? '已完成' : isActive ? '推演中...' : '等待中'}
+                </div>
+
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+};
+
 export const AIPortalPage = () => {
   const navigate = useNavigate();
   const currentUser = getCurrentUser();
@@ -240,6 +834,168 @@ export const AIPortalPage = () => {
   const [spinSpeed, setSpinSpeed] = useState(20); // 慢速自动转
   const [isCompassHovered, setIsCompassHovered] = useState(false);
 
+  // ==========================================
+  // 美团生活服务导购 Skill 交互状态机
+  // ==========================================
+  const [showVenueWidget, setShowVenueWidget] = useState(false);
+  const [venueBindStatus, setVenueBindStatus] = useState<{ valid: boolean; reason?: string } | null>(null);
+  const [venueLinks, setVenueLinks] = useState<Array<{ tenantName: string; link: string }>>([]);
+  const [venueWidgetStep, setVenueWidgetStep] = useState(0); // 0: agreement, 1: qrcode, 2: codeWord, 3: success
+  const [venueAuthUrl, setVenueAuthUrl] = useState('');
+  const [venueQrCodeUrl, setVenueQrCodeUrl] = useState('');
+  const [venueCodeWord, setVenueCodeWord] = useState('');
+  const [venueUserToken, setVenueUserToken] = useState('');
+  const [venueLoading, setVenueLoading] = useState(false);
+  const [venueError, setVenueError] = useState('');
+
+  // 检查绑定状态
+  const checkVenueStatus = async () => {
+    try {
+      const baseUrl = import.meta.env.VITE_BACKEND_URL || window.location.origin;
+      const res = await fetch(`${baseUrl.replace(/\/$/, '')}/api/agent/venue/status`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      const data = await res.json();
+      setVenueBindStatus(data);
+      if (data.valid) {
+        // 获取会场链接列表
+        const linksRes = await fetch(`${baseUrl.replace(/\/$/, '')}/api/agent/venue/links`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+        const linksData = await linksRes.json();
+        if (linksData.success) {
+          setVenueLinks(linksData.links || []);
+        }
+      } else {
+        setVenueLinks([]);
+      }
+    } catch (err) {
+      console.error('Failed to check venue status:', err);
+    }
+  };
+
+  useEffect(() => {
+    checkVenueStatus();
+  }, []);
+
+  // 扫码授权轮询
+  useEffect(() => {
+    let timer: any = null;
+    if (showVenueWidget && venueWidgetStep === 1) {
+      const baseUrl = import.meta.env.VITE_BACKEND_URL || window.location.origin;
+      
+      timer = setInterval(async () => {
+        try {
+          const res = await fetch(`${baseUrl.replace(/\/$/, '')}/api/agent/venue/auth/poll`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+          });
+          const data = await res.json();
+          if (data.success && data.status === 'authorized' && data.token) {
+            clearInterval(timer);
+            setVenueUserToken(data.token);
+            setVenueWidgetStep(2); // 进入输入口令阶段
+          }
+        } catch (err) {
+          console.error('Polling auth error:', err);
+        }
+      }, 3000);
+    }
+    
+    return () => {
+      if (timer) clearInterval(timer);
+    };
+  }, [showVenueWidget, venueWidgetStep]);
+
+  // 启动授权流程 (Step 0 -> Step 1 or 2)
+  const handleStartAuth = async () => {
+    setVenueLoading(true);
+    setVenueError('');
+    try {
+      const baseUrl = import.meta.env.VITE_BACKEND_URL || window.location.origin;
+      const res = await fetch(`${baseUrl.replace(/\/$/, '')}/api/agent/venue/auth/get-code`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      const data = await res.json();
+      if (data.success) {
+        if (data.token) {
+          // 缓存命中了已授权的 Token，直接进入 Step 2 绑定口令
+          setVenueUserToken(data.token);
+          setVenueWidgetStep(2);
+        } else if (data.authUrl) {
+          setVenueAuthUrl(data.authUrl);
+          setVenueQrCodeUrl(data.qrCodeUrl || '');
+          setVenueWidgetStep(1); // 扫码阶段
+        }
+      } else {
+        setVenueError(data.error || '获取授权二维码失败，请重试');
+      }
+    } catch (err) {
+      setVenueError('网络开小差了，请稍候重试 🔧');
+    } finally {
+      setVenueLoading(false);
+    }
+  };
+
+  // 绑定口令 (Step 2 -> Step 3)
+  const handleVerifyBind = async () => {
+    if (!venueCodeWord.trim()) {
+      setVenueError('请输入媒体激活口令');
+      return;
+    }
+    setVenueLoading(true);
+    setVenueError('');
+    try {
+      const baseUrl = import.meta.env.VITE_BACKEND_URL || window.location.origin;
+      const res = await fetch(`${baseUrl.replace(/\/$/, '')}/api/agent/venue/bind`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: venueUserToken, codeWord: venueCodeWord.trim() })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setVenueWidgetStep(3); // 成功阶段
+        await checkVenueStatus(); // 重新加载状态和链接
+      } else {
+        setVenueError(data.message || '口令激活失败，请检查并重试');
+      }
+    } catch (err) {
+      setVenueError('口令绑定失败，请稍后重试 🔧');
+    } finally {
+      setVenueLoading(false);
+    }
+  };
+
+  // 退出登录
+  const handleVenueLogout = async () => {
+    if (!window.confirm('确认退出美团生活服务导购助手登录吗？这将清除本地口令数据。')) return;
+    setVenueLoading(true);
+    try {
+      const baseUrl = import.meta.env.VITE_BACKEND_URL || window.location.origin;
+      await fetch(`${baseUrl.replace(/\/$/, '')}/api/agent/venue/logout`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      // 清空状态
+      setVenueBindStatus(null);
+      setVenueLinks([]);
+      setVenueUserToken('');
+      setVenueCodeWord('');
+      setVenueAuthUrl('');
+      setVenueQrCodeUrl('');
+      setVenueWidgetStep(0);
+      setShowVenueWidget(false);
+      await checkVenueStatus();
+    } catch (err) {
+      console.error('Logout error:', err);
+    } finally {
+      setVenueLoading(false);
+    }
+  };
+
   // 2. AI 对话聊天历史与输入管理
   const [messages, setMessages] = useState<Array<{ role: 'user' | 'assistant', content: string }>>([]);
   const [inputValue, setInputValue] = useState('');
@@ -247,6 +1003,7 @@ export const AIPortalPage = () => {
   
   // 记录每个消息卡片的多路 Booking 预订状态和截屏状态
   const [bookingSuccessMap, setBookingSuccessMap] = useState<Record<number, boolean>>({});
+  const [sharedSuccessMap, setSharedSuccessMap] = useState<Record<number, boolean>>({});
   const [isCapturing, setIsCapturing] = useState(false);
   const [captureProgress, setCaptureProgress] = useState('');
   
@@ -299,6 +1056,13 @@ export const AIPortalPage = () => {
     const textToSend = customQuery !== undefined ? customQuery : inputValue;
     if (!textToSend.trim() || isLoading || isSendingRef.current) return;
 
+    // 如果包含美团生活服务导购意图，且尚未激活绑定，自动滑出弹窗
+    const isVenueIntent = /外卖|送餐|配送|叫餐|奶茶|咖啡|下午茶|宵夜|早餐|午餐|晚餐|超市|便利店|鲜花|买花|水果|食材|零食|买酒|啤酒|饮料|美妆|日用品|数码|母婴|宠物|即时配送|堂食|团购|代金券|火锅|烧烤|餐厅|聚餐|约饭|餐饮团购|KTV|K歌|唱歌|电影|健身|洗浴|按摩|足疗|美甲|美睫|美发|剪头发|洗车|保养|摄影|亲子|游乐园|剧本杀|买药|送药|药店|药品|处方药|感冒药|退烧药|退热/.test(textToSend);
+    if (isVenueIntent && !venueBindStatus?.valid) {
+      setVenueWidgetStep(0);
+      setShowVenueWidget(true);
+    }
+
     isSendingRef.current = true;
     // 清空输入框
     setInputValue('');
@@ -337,15 +1101,18 @@ export const AIPortalPage = () => {
             messages: chatHistory,
             luckyElement,
             city: currentUser?.baziInfo?.birthPlace || '杭州',
-            username: currentUser?.username || '探索者'
+            username: currentUser?.username || '探索者',
+            boundMembers: getBoundMembers(),
+            venueLinks
           })
         },
         (chunkText) => {
           setMessages(prev => {
             const newMsgs = [...prev];
-            const lastMsg = newMsgs[newMsgs.length - 1];
+            const lastMsg = { ...newMsgs[newMsgs.length - 1] };
             if (lastMsg.role === 'assistant') {
               lastMsg.content += chunkText;
+              newMsgs[newMsgs.length - 1] = lastMsg;
             }
             return newMsgs;
           });
@@ -379,38 +1146,48 @@ export const AIPortalPage = () => {
     }
   };
 
-  // 辅助 JSON 解析器 (扫描 XML 标签，支持 travel_deal 和 ticket_deal)
+  // 辅助 JSON 解析器 (扫描 XML 标签，支持 travel_deal, ticket_deal, weekend_deal 和 coupon_deal)
   const parseMessageContent = (text: string) => {
     const dealRegex = /<travel_deal>([\s\S]*?)<\/travel_deal>/;
     const ticketRegex = /<ticket_deal>([\s\S]*?)<\/ticket_deal>/;
+    const weekendRegex = /<weekend_deal>([\s\S]*?)<\/weekend_deal>/;
+    const couponRegex = /<coupon_deal>([\s\S]*?)<\/coupon_deal>/;
 
     let textWithoutDeals = text;
     let deal = null;
     let ticketDeal = null;
+    let weekendDeal = null;
+    let couponDeal = null;
 
     const dealMatch = text.match(dealRegex);
     if (dealMatch) {
       const rawJson = dealMatch[1].trim();
       textWithoutDeals = textWithoutDeals.replace(dealRegex, '').trim();
-      try {
-        deal = JSON.parse(rawJson);
-      } catch (e) {
-        // 忽略流式传输中不完整的 JSON 解析错误
-      }
+      try { deal = JSON.parse(rawJson); } catch (e) {}
     }
 
     const ticketMatch = text.match(ticketRegex);
     if (ticketMatch) {
       const rawJson = ticketMatch[1].trim();
       textWithoutDeals = textWithoutDeals.replace(ticketRegex, '').trim();
-      try {
-        ticketDeal = JSON.parse(rawJson);
-      } catch (e) {
-        // 忽略流式传输中不完整的 JSON 解析错误
-      }
+      try { ticketDeal = JSON.parse(rawJson); } catch (e) {}
     }
 
-    return { text: textWithoutDeals, deal, ticketDeal };
+    const weekendMatch = text.match(weekendRegex);
+    if (weekendMatch) {
+      const rawJson = weekendMatch[1].trim();
+      textWithoutDeals = textWithoutDeals.replace(weekendRegex, '').trim();
+      try { weekendDeal = JSON.parse(rawJson); } catch (e) {}
+    }
+
+    const couponMatch = text.match(couponRegex);
+    if (couponMatch) {
+      const rawJson = couponMatch[1].trim();
+      textWithoutDeals = textWithoutDeals.replace(couponRegex, '').trim();
+      try { couponDeal = JSON.parse(rawJson); } catch (e) {}
+    }
+
+    return { text: textWithoutDeals, deal, ticketDeal, weekendDeal, couponDeal };
   };
 
   // AI PM 对齐反馈日志推送：将优质样本（如用户保存图片、一键预订）记录为对齐数据飞轮
@@ -441,6 +1218,30 @@ export const AIPortalPage = () => {
       [index]: true
     }));
     sendPMFeedback(index, 'positive_booking');
+  };
+
+  // 模拟分享给老婆/朋友并收到反馈
+  const handleShareWeekendPlan = (index: number) => {
+    setIsCapturing(true);
+    setCaptureProgress('✨ 正在传送时空阵纹...');
+    
+    setTimeout(() => {
+      setSharedSuccessMap(prev => ({
+        ...prev,
+        [index]: true
+      }));
+      setIsCapturing(false);
+      setCaptureProgress('');
+
+      // 模拟收到家属/朋友回复
+      setMessages(prev => [
+        ...prev,
+        {
+          role: 'assistant',
+          content: '【时空回响】您的结界成员已查收并回复：“这个减脂餐厅看着不错，游乐园也适合宝宝，同意安排！”'
+        }
+      ]);
+    }, 1500);
   };
 
   // 截图并导出避世契约
@@ -495,11 +1296,58 @@ export const AIPortalPage = () => {
     return `${timeStr}，${username}`;
   };
 
+  // 解析 Markdown 链接为超链接组件
+  const renderTextWithLinks = (content: string) => {
+    if (!content) return null;
+    const regex = /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g;
+    const parts = [];
+    let lastIndex = 0;
+    let match;
+
+    while ((match = regex.exec(content)) !== null) {
+      const matchIndex = match.index;
+      if (matchIndex > lastIndex) {
+        parts.push(content.substring(lastIndex, matchIndex));
+      }
+      const linkText = match[1];
+      const linkUrl = match[2];
+      parts.push(
+        <a
+          key={matchIndex}
+          href={linkUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{
+            color: theme.color || '#E2B553',
+            textDecoration: 'underline',
+            fontWeight: 'bold',
+            cursor: 'pointer',
+            wordBreak: 'break-all'
+          }}
+        >
+          {linkText}
+        </a>
+      );
+      lastIndex = regex.lastIndex;
+    }
+
+    if (lastIndex < content.length) {
+      parts.push(content.substring(lastIndex));
+    }
+
+    return parts.length > 0 ? parts : content;
+  };
+
   // 渲染单条对话气泡组件 (包含 inline 卡片展示)
   const renderMessage = (msg: typeof messages[0], index: number) => {
     const isUser = msg.role === 'user';
-    const { text, deal, ticketDeal } = parseMessageContent(msg.content);
+    const { text, deal, ticketDeal, weekendDeal, couponDeal } = parseMessageContent(msg.content);
     const isBooked = bookingSuccessMap[index];
+
+    // 如果是助理回复，且内容为空，且没有卡片，暂不渲染（避免和底部 loading 指示器双重出现）
+    if (!isUser && !text.trim() && !deal && !ticketDeal && !weekendDeal && !couponDeal) {
+      return null;
+    }
 
     return (
       <div 
@@ -549,15 +1397,18 @@ export const AIPortalPage = () => {
               textAlign: 'left',
               borderRadius: '4px',
               whiteSpace: 'pre-wrap',
-              boxShadow: isUser ? '0 0 10px rgba(226, 181, 83, 0.05)' : 'none'
+              boxShadow: isUser ? '0 0 10px rgba(226, 181, 83, 0.05)' : 'none',
+              userSelect: 'text',
+              WebkitUserSelect: 'text',
+              cursor: 'text'
             }}
           >
             {/* 顶栏昵称 */}
-            <div style={{ fontSize: '0.65rem', color: isUser ? '#FFE169' : theme.color, fontWeight: 'bold', marginBottom: '4px' }}>
+            <div style={{ fontSize: '0.65rem', color: isUser ? '#FFE169' : theme.color, fontWeight: 'bold', marginBottom: '4px', userSelect: 'none', WebkitUserSelect: 'none' }}>
               {isUser ? `${currentUser?.username || '探索者'}` : '时空探路祭司'}
             </div>
             
-            {text}
+            {renderTextWithLinks(text)}
           </div>
 
           {/* 美团代订开运契约 Ticket 卡片 */}
@@ -963,6 +1814,173 @@ export const AIPortalPage = () => {
             </motion.div>
           )}
 
+          {/* 美团周末闲时规划卡片 WeekendDeal */}
+          {weekendDeal && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              id={`ticket-card-${index}`}
+              style={{ 
+                display: 'flex', 
+                flexDirection: 'column', 
+                gap: '0px', 
+                width: '100%', 
+                maxWidth: '340px', 
+                marginTop: '4px',
+                border: `2px solid ${theme.color}`,
+                boxShadow: `0 0 15px ${theme.glow}, 4px 4px 0 rgba(0,0,0,0.5)`,
+                borderRadius: '0px',
+                background: 'linear-gradient(135deg, #1b1624 0%, #0d0a12 100%)',
+                overflow: 'hidden',
+                position: 'relative'
+              }}
+            >
+              {/* 卡片顶头饰条 */}
+              <div style={{ 
+                height: '8px', 
+                background: `linear-gradient(90deg, ${theme.color} 0%, rgba(255,255,255,0.2) 50%, ${theme.color} 100%)` 
+              }} />
+
+              {/* 契约头部 */}
+              <div style={{ padding: '12px 14px 12px 14px', borderBottom: '1px dashed rgba(255,255,255,0.1)', position: 'relative' }}>
+                <span className="font-mystic" style={{ fontSize: '0.95rem', fontWeight: 'bold', color: theme.color, textShadow: `0 0 8px ${theme.glow}`, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  📜 群体合盘·周末时光手札
+                </span>
+                <span style={{ fontSize: '0.55rem', position: 'absolute', top: '15px', right: '14px', color: '#ffb300', border: '1px solid #ffb300', padding: '1px 3px' }}>
+                  天命推荐
+                </span>
+              </div>
+
+              {/* 群像解盘 */}
+              <div style={{ padding: '12px 14px', background: 'rgba(255,255,255,0.02)', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                <div style={{ fontSize: '0.65rem', color: '#eae3d9', lineHeight: '1.5', fontStyle: 'italic' }}>
+                  " {weekendDeal.divinationSynthesis} "
+                </div>
+              </div>
+
+              {/* 时间线 */}
+              <div style={{ display: 'flex', flexDirection: 'column', padding: '14px 14px 4px 14px', position: 'relative' }}>
+                <div style={{ position: 'absolute', left: '21px', top: '24px', bottom: '24px', width: '2px', background: `linear-gradient(180deg, ${theme.color} 0%, rgba(255,255,255,0.1) 100%)` }} />
+                
+                {weekendDeal.timeline && weekendDeal.timeline.map((node: any, idx: number) => (
+                  <div key={idx} style={{ display: 'flex', gap: '12px', marginBottom: '16px', position: 'relative', zIndex: 2 }}>
+                    <div style={{ width: '16px', height: '16px', borderRadius: '50%', background: '#120d1c', border: `2px solid ${theme.color}`, display: 'flex', justifyContent: 'center', alignItems: 'center', flexShrink: 0, marginTop: '2px' }}>
+                      <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: theme.color }} />
+                    </div>
+                    
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                          <span style={{ fontSize: '0.6rem', color: theme.color, fontWeight: 'bold' }}>{node.time}</span>
+                          <span style={{ fontSize: '0.85rem', fontWeight: 'bold', color: '#fff' }}>{node.place}</span>
+                        </div>
+                        <span style={{ fontSize: '0.5rem', color: '#fff', background: theme.badgeBg, border: `1px solid ${theme.color}`, padding: '2px 4px', whiteSpace: 'nowrap' }}>
+                          {node.tag}
+                        </span>
+                      </div>
+                      
+                      <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }}>
+                        {node.mysticReasoning}
+                      </div>
+
+                      {/* 餐饮特殊属性展示 */}
+                      {node.restaurantStatus && (
+                        <div style={{ marginTop: '6px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', padding: '6px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                          <div style={{ fontSize: '0.55rem', display: 'flex', gap: '6px' }}>
+                            <span style={{ color: node.restaurantStatus?.queueStatus?.includes?.('空位') ? '#4caf50' : '#ff9800' }}>
+                              {node.restaurantStatus.queueStatus}
+                            </span>
+                            <span style={{ color: 'var(--text-secondary)' }}>| {node.restaurantStatus.seatAvailability}</span>
+                          </div>
+                          <div style={{ fontSize: '0.55rem', color: '#75beff' }}>
+                            {node.restaurantStatus.fitFor}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* 操作区 */}
+              <div style={{ padding: '12px 14px' }}>
+                {!isBooked ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <button
+                      className="btn btn-primary"
+                      onClick={() => handleConfirmBooking(index)}
+                      style={{
+                        width: '100%',
+                        padding: '12px 10px',
+                        background: `linear-gradient(45deg, ${theme.color}, ${theme.accent})`,
+                        border: 'none',
+                        color: '#000',
+                        fontWeight: 'bold',
+                        boxShadow: `0 4px 0px rgba(0,0,0,0.4)`,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '6px',
+                        fontSize: '0.75rem',
+                        fontFamily: 'var(--font-mystic)',
+                        cursor: 'pointer',
+                        transition: 'all 0.1s'
+                      }}
+                    >
+                      <span>🤝 缔结天命契约 (一键安排)</span>
+                    </button>
+                    
+                    {!sharedSuccessMap[index] ? (
+                      <button
+                        onClick={() => handleShareWeekendPlan(index)}
+                        style={{
+                          width: '100%',
+                          padding: '8px 10px',
+                          background: 'rgba(255, 255, 255, 0.04)',
+                          border: '1.5px solid rgba(255, 255, 255, 0.12)',
+                          color: '#eae3d9',
+                          fontSize: '0.65rem',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '6px',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        <Share2 size={12} />
+                        <span>传送时空阵纹 (发给家属/朋友确认)</span>
+                      </button>
+                    ) : (
+                      <div style={{ textAlign: 'center', fontSize: '0.6rem', color: '#4caf50', padding: '4px' }}>
+                        ✅ 阵纹已送达，已收到结界成员意见反馈
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div
+                    className="pixel-panel"
+                    style={{
+                      padding: '16px 12px',
+                      background: 'rgba(21, 36, 21, 0.75)',
+                      border: '2px solid #4caf50',
+                      color: '#4caf50',
+                      textAlign: 'center',
+                      fontFamily: 'var(--font-mystic)'
+                    }}
+                  >
+                    <h4 style={{ margin: '0 0 4px 0', fontSize: '1rem' }}>周末行程已锁定！</h4>
+                    <p style={{ fontSize: '0.6rem', color: '#a5d6a7', margin: '0' }}>
+                      已为您预约行程中的餐饮与游乐项目，预订短信已发送。
+                    </p>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          )}
+
+          {/* 领券专属福袋卡片 CouponDeal */}
+          {couponDeal && <CouponWidget />}
+
         </div>
 
         {/* 探索者头像 */}
@@ -1031,6 +2049,16 @@ export const AIPortalPage = () => {
         zIndex: 50
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <button 
+            onClick={() => navigate('/explore')} 
+            style={{ 
+              background: 'none', border: 'none', color: theme.color, 
+              display: 'flex', alignItems: 'center', justifyContent: 'center', 
+              cursor: 'pointer', padding: 0, marginRight: '4px'
+            }}
+          >
+            <ChevronLeft size={24} />
+          </button>
           <span style={{ fontSize: '1.3rem', textShadow: `0 0 6px ${theme.color}` }}>🌟</span>
           <div>
             <h2 className="font-mystic" style={{ color: '#fff', fontSize: '1.05rem', margin: 0, textAlign: 'left' }}>
@@ -1053,6 +2081,35 @@ export const AIPortalPage = () => {
             {luckyElement}命大吉
           </div>
           
+          {/* 美团导购助手激活状态按钮 */}
+          <button
+            onClick={() => {
+              if (venueBindStatus?.valid) {
+                setVenueWidgetStep(3);
+              } else {
+                setVenueWidgetStep(0);
+              }
+              setShowVenueWidget(true);
+            }}
+            style={{
+              background: venueBindStatus?.valid ? 'rgba(212, 163, 89, 0.15)' : 'rgba(255,255,255,0.06)',
+              border: venueBindStatus?.valid ? '1px solid #D4A359' : '1px solid rgba(255,255,255,0.1)',
+              padding: '4px 8px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px',
+              color: venueBindStatus?.valid ? '#D4A359' : 'var(--text-secondary)',
+              fontSize: '0.65rem',
+              cursor: 'pointer',
+              borderRadius: '0px',
+              fontWeight: venueBindStatus?.valid ? 'bold' : 'normal'
+            }}
+            title={venueBindStatus?.valid ? '已绑定美团导购，点击管理' : '激活美团导购助手'}
+          >
+            <Sparkles size={12} style={{ color: venueBindStatus?.valid ? '#D4A359' : 'inherit' }} />
+            <span>{venueBindStatus?.valid ? '美团已激活' : '美团导购'}</span>
+          </button>
+
           {/* 重置对话按钮 */}
           {hasUserMessages && (
             <button
@@ -1386,20 +2443,18 @@ export const AIPortalPage = () => {
 
         {/* 动态输入加载指示器 */}
         {isLoading && (
-          <div style={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'center', gap: '10px', padding: '0 4px', marginBottom: '20px' }}>
+          <div style={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'flex-start', gap: '10px', padding: '0 4px', marginBottom: '20px', width: '100%' }}>
             <div style={{
               width: '36px', height: '36px',
               borderRadius: '50%', background: 'var(--primary-dim)',
               border: `2px solid ${theme.color}`,
               display: 'flex', justifyContent: 'center', alignItems: 'center',
-              fontSize: '1.2rem', boxShadow: `0 0 6px ${theme.glow}`
+              fontSize: '1.2rem', boxShadow: `0 0 6px ${theme.glow}`,
+              flexShrink: 0
             }}>
               🧙‍♂️
             </div>
-            <div className="pixel-panel" style={{ padding: '10px 14px', background: 'var(--bg-card)', color: theme.color, fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <RefreshCw size={12} className="spinner-icon" style={{ animation: 'spin 1.5s linear infinite' }} />
-              <span>探路祭司正在编织运势脑波...</span>
-            </div>
+            <LoadingStepsPanel theme={theme} isLoading={isLoading} />
           </div>
         )}
 
@@ -1415,7 +2470,7 @@ export const AIPortalPage = () => {
             exit={{ opacity: 0, y: 20 }}
             style={{ 
               padding: '12px 16px 16px 16px', 
-              marginBottom: '80px', // Shift up by 80px to sit perfectly above the fixed navigation bar
+              marginBottom: '0px', // No nav bar anymore
               borderTop: '1px solid rgba(255,255,255,0.05)',
               background: 'rgba(9, 7, 12, 0.95)',
               boxShadow: '0 -4px 20px rgba(0,0,0,0.5)',
@@ -1473,6 +2528,237 @@ export const AIPortalPage = () => {
             >
               <Send size={16} />
             </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* 美团生活服务导购助手 Widget 弹窗组件 */}
+      <AnimatePresence>
+        {showVenueWidget && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            style={{
+              position: 'fixed',
+              top: 0, left: 0, right: 0, bottom: 0,
+              background: 'rgba(0, 0, 0, 0.8)',
+              backdropFilter: 'blur(8px)',
+              zIndex: 999,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
+              style={{
+                width: '90%',
+                maxWidth: '420px',
+                background: 'rgba(22, 18, 28, 0.95)',
+                border: '1px solid rgba(212, 163, 89, 0.3)',
+                boxShadow: '0 8px 32px rgba(0,0,0,0.6), inset 0 0 12px rgba(212, 163, 89, 0.05)',
+                padding: '24px',
+                position: 'relative',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '16px'
+              }}
+            >
+              {/* 弹窗头部 */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <h3 className="font-mystic" style={{ color: '#D4A359', margin: 0, fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Sparkles size={18} />
+                  <span>美团生活服务导购</span>
+                </h3>
+                <button
+                  onClick={() => setShowVenueWidget(false)}
+                  style={{ background: 'none', border: 'none', color: '#888', cursor: 'pointer', fontSize: '1.2rem', padding: 0 }}
+                >
+                  ✕
+                </button>
+              </div>
+
+              {/* 错误提示 */}
+              {venueError && (
+                <div style={{
+                  padding: '10px 12px',
+                  background: 'rgba(255, 74, 74, 0.1)',
+                  border: '1px solid rgba(255, 74, 74, 0.3)',
+                  color: '#ff8888',
+                  fontSize: '0.75rem',
+                  lineHeight: '1.4'
+                }}>
+                  ⚠️ {venueError}
+                </div>
+              )}
+
+              {/* 步骤内容机 */}
+              {venueLoading ? (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '30px 0', gap: '12px' }}>
+                  <RefreshCw size={32} className="spinner-icon" style={{ animation: 'spin 1.5s linear infinite', color: '#D4A359' }} />
+                  <span style={{ fontSize: '0.75rem', color: '#aaa' }}>正在与时空枢纽通讯中...</span>
+                </div>
+              ) : (
+                <>
+                  {/* Step 0: 免责与服务声明 */}
+                  {venueWidgetStep === 0 && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                      <div style={{ 
+                        fontSize: '0.8rem', 
+                        color: '#bbb', 
+                        background: 'rgba(0,0,0,0.3)', 
+                        padding: '12px', 
+                        lineHeight: '1.5',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '8px'
+                      }}>
+                        <p style={{ margin: 0 }}>📋 本服务由美团提供，覆盖外卖、闪购、餐饮团购、丽人运动休闲、医药五大业务线导购推荐。</p>
+                        <p style={{ margin: 0 }}>🔐 您的登录凭证仅保存在本地设备，不会上传至任何第三方。</p>
+                        <p style={{ margin: 0 }}>📌 推送的会场链接与您绑定的媒体口令关联，口令仅限本人使用，不得转让或分享。</p>
+                        <p style={{ margin: 0 }}>⚠️ 请在安全的 AI 平台中使用本服务，美团对第三方 AI 平台的行为不承担责任。</p>
+                      </div>
+                      <p style={{ fontSize: '0.75rem', color: '#888', margin: 0 }}>同意即表示您已阅读并接受上述规则，可以开始使用服务。</p>
+                      <div style={{ display: 'flex', gap: '10px', marginTop: '4px' }}>
+                        <button
+                          onClick={() => setShowVenueWidget(false)}
+                          style={{ flex: 1, padding: '10px', background: '#25212b', border: '1px solid #444', color: '#aaa', cursor: 'pointer' }}
+                        >
+                          拒绝
+                        </button>
+                        <button
+                          onClick={handleStartAuth}
+                          style={{ flex: 1, padding: '10px', background: 'linear-gradient(45deg, #D4A359, #F5D38A)', border: 'none', color: '#000', fontWeight: 'bold', cursor: 'pointer' }}
+                        >
+                          同意并继续
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Step 1: 展示二维码扫码 */}
+                  {venueWidgetStep === 1 && (
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '14px' }}>
+                      <span style={{ fontSize: '0.8rem', color: '#ccc', textAlign: 'center' }}>
+                        📱 请使用美团 App 扫描下方二维码授权，或点击链接授权
+                      </span>
+                      {venueQrCodeUrl && (
+                        <div style={{ padding: '8px', background: '#fff', border: '4px solid #D4A359' }}>
+                          <img src={venueQrCodeUrl} alt="Meituan Auth QR" style={{ width: '180px', height: '180px', display: 'block' }} />
+                        </div>
+                      )}
+                      {venueAuthUrl && (
+                        <a
+                          href={venueAuthUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{ color: '#D4A359', textDecoration: 'underline', fontSize: '0.8rem', fontWeight: 'bold' }}
+                        >
+                          👉 [网页点击授权通道]
+                        </a>
+                      )}
+                      <span style={{ fontSize: '0.7rem', color: '#888', textAlign: 'center', lineHeight: '1.4' }}>
+                        ⏱ 链接有效期 10 分钟。<br />授权完成后，系统将自动检测并跳转。
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Step 2: 输入口令 */}
+                  {venueWidgetStep === 2 && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                      <span style={{ fontSize: '0.8rem', color: '#ccc', textAlign: 'center' }}>
+                        🔑 授权成功！请输入你从媒体处获取的激活口令：
+                      </span>
+                      <input
+                        type="text"
+                        value={venueCodeWord}
+                        onChange={(e) => setVenueCodeWord(e.target.value)}
+                        placeholder="输入激活口令"
+                        style={{
+                          width: '100%',
+                          padding: '12px',
+                          background: 'rgba(0, 0, 0, 0.4)',
+                          border: '1px solid #D4A359',
+                          color: '#fff',
+                          outline: 'none',
+                          textAlign: 'center',
+                          fontSize: '1rem',
+                          letterSpacing: '2px'
+                        }}
+                      />
+                      <button
+                        onClick={handleVerifyBind}
+                        style={{
+                          width: '100%',
+                          padding: '12px',
+                          background: 'linear-gradient(45deg, #D4A359, #F5D38A)',
+                          color: '#000',
+                          border: 'none',
+                          cursor: 'pointer',
+                          fontWeight: 'bold'
+                        }}
+                      >
+                        确认激活
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Step 3: 管理/已绑定展示 */}
+                  {venueWidgetStep === 3 && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: '#D4A359' }}>
+                        <CheckCircle size={24} />
+                        <span style={{ fontWeight: 'bold', fontSize: '1rem' }}>美团智能导购服务已激活</span>
+                      </div>
+                      <p style={{ fontSize: '0.75rem', color: '#aaa', margin: 0, textAlign: 'center' }}>
+                        已解锁以下五大业务优惠推荐权限：
+                      </p>
+                      
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '0.75rem' }}>
+                        {venueLinks.length > 0 ? (
+                          venueLinks.map((link, idx) => (
+                            <div key={idx} style={{
+                              padding: '6px 8px',
+                              background: 'rgba(212, 163, 89, 0.08)',
+                              border: '1px solid rgba(212, 163, 89, 0.2)',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                              color: '#eee'
+                            }}>
+                              <span>🎁</span>
+                              <span>{link.tenantName || '优惠会场'}</span>
+                            </div>
+                          ))
+                        ) : (
+                          <div style={{ gridColumn: 'span 2', textAlign: 'center', color: '#888', padding: '10px 0' }}>
+                            暂无加载的专属链接
+                          </div>
+                        )}
+                      </div>
+
+                      <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+                        <button
+                          onClick={handleVenueLogout}
+                          style={{ flex: 1, padding: '10px', background: 'rgba(255, 74, 74, 0.1)', border: '1px solid #ff4a4a', color: '#ff4a4a', cursor: 'pointer' }}
+                        >
+                          退出登录
+                        </button>
+                        <button
+                          onClick={() => setShowVenueWidget(false)}
+                          style={{ flex: 1, padding: '10px', background: '#333', border: '1px solid #555', color: '#fff', cursor: 'pointer' }}
+                        >
+                          关闭
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>

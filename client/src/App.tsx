@@ -131,7 +131,7 @@ const NavBar = () => {
 
 const AppContent = () => {
   const location = useLocation();
-  const hideNavBar = location.pathname === '/auth';
+  const hideNavBar = location.pathname === '/auth' || location.pathname === '/';
   
   return (
     <div className="app-shell">

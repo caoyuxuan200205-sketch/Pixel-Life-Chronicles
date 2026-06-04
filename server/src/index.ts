@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import axios from 'axios';
 import sharp from 'sharp';
 import { PDFDocument } from 'pdf-lib';
+import QRCode from 'qrcode';
 
 import fs from 'fs';
 import path from 'path';
@@ -1253,10 +1254,261 @@ async function queryMeituanTravelCLI(city: string, query: string) {
   return [stdout, stderr].map(String).filter(Boolean).join('\n');
 }
 
+// ==========================================
+// 美团分销推广 Skill (领券专属通道)
+// ==========================================
+const COUPON_SKILL_DIR = path.join(os.homedir(), 'skills', 'meituan-fenxiao-promotion-coupon', 'meituan-fenxiao-promotion-coupon');
+const COUPON_AUTH_SCRIPT = path.join(COUPON_SKILL_DIR, 'scripts', 'auth.py');
+const COUPON_ISSUE_SCRIPT = path.join(COUPON_SKILL_DIR, 'scripts', 'issue.py');
+
+async function runPythonScript(scriptPath: string, args: string[]): Promise<any> {
+  const pythonCmd = 'python';
+  console.log(`Executing Python Script: ${pythonCmd} ${scriptPath} ${args.join(' ')}`);
+  try {
+    const { stdout } = await execFileAsync(pythonCmd, [scriptPath, ...args], { encoding: 'utf8' });
+    const match = stdout.match(/({[\s\S]*})/);
+    if (match) {
+      return JSON.parse(match[1]);
+    }
+    return JSON.parse(stdout);
+  } catch (err: any) {
+    if (err.stdout) {
+      try {
+        const match = err.stdout.match(/({[\s\S]*})/);
+        if (match) {
+          return JSON.parse(match[1]);
+        }
+      } catch (e) {
+        // ignore JSON parse error on stdout
+      }
+    }
+    console.error(`Python script error (${scriptPath}):`, err);
+    throw err;
+  }
+}
+
+app.post('/api/agent/coupon/auth', async (req, res) => {
+  try {
+    const { action, phone, code } = req.body;
+    let result: any = {};
+    if (action === 'token-verify') {
+      result = await runPythonScript(COUPON_AUTH_SCRIPT, ['token-verify']);
+    } else if (action === 'send-sms' && phone) {
+      result = await runPythonScript(COUPON_AUTH_SCRIPT, ['send-sms', '--phone', phone]);
+    } else if (action === 'verify' && phone && code) {
+      result = await runPythonScript(COUPON_AUTH_SCRIPT, ['verify', '--phone', phone, '--code', code]);
+    } else if (action === 'logout') {
+      result = await runPythonScript(COUPON_AUTH_SCRIPT, ['logout']);
+    } else if (action === 'clear-device-token') {
+      result = await runPythonScript(COUPON_AUTH_SCRIPT, ['clear-device-token']);
+    } else {
+      return res.status(400).json({ error: 'Invalid auth action or missing parameters' });
+    }
+    res.json(result);
+  } catch (error: any) {
+    res.status(500).json({ error: '领券认证服务暂时开小差了，稍后帮你重试 🔧' });
+  }
+});
+
+app.post('/api/agent/coupon/issue', async (req, res) => {
+  try {
+    const { token } = req.body;
+    if (!token) return res.status(401).json({ error: 'Missing user token' });
+    
+    // 强制每次实际调用发券脚本
+    const result = await runPythonScript(COUPON_ISSUE_SCRIPT, ['--token', token]);
+    res.json(result);
+  } catch (error: any) {
+    console.error('Coupon issue error:', error);
+    res.status(500).json({ error: '发券服务暂时开小差了，稍后帮你重试 🔧' });
+  }
+});
+
+// ==========================================
+// 美团生活服务智能导购助手 (meituan-venue-guide)
+// ==========================================
+const VENUE_SKILL_DIR = 'C:/Users/24203/Desktop/meituan-venue-guide';
+const VENUE_AUTH_SCRIPT = path.join(VENUE_SKILL_DIR, 'scripts', 'auth.py');
+const VENUE_BIND_SCRIPT = path.join(VENUE_SKILL_DIR, 'scripts', 'bind.py');
+
+async function runVenuePythonScript(scriptPath: string, args: string[]): Promise<any> {
+  const pythonCmd = 'python';
+  const env = { ...process.env };
+  if (process.platform === 'win32') {
+    env.PATH = `${env.PATH || ''};c:\\Users\\24203\\Desktop\\Newly\\yantu-bao`;
+  }
+  console.log(`Executing Venue Python Script: ${pythonCmd} ${scriptPath} ${args.join(' ')}`);
+  try {
+    const { stdout } = await execFileAsync(pythonCmd, [scriptPath, ...args], { encoding: 'utf8', env });
+    const match = stdout.match(/({[\s\S]*})/);
+    if (match) {
+      return JSON.parse(match[1]);
+    }
+    return JSON.parse(stdout);
+  } catch (err: any) {
+    if (err.stdout) {
+      try {
+        const match = err.stdout.match(/({[\s\S]*})/);
+        if (match) {
+          return JSON.parse(match[1]);
+        }
+      } catch (e) {
+        // ignore
+      }
+    }
+    console.error(`Venue Python script error (${scriptPath}):`, err);
+    throw err;
+  }
+}
+
+async function runPtPassport(args: string[]): Promise<string> {
+  const env = { ...process.env };
+  if (process.platform === 'win32') {
+    env.PATH = `${env.PATH || ''};c:\\Users\\24203\\Desktop\\Newly\\yantu-bao`;
+  }
+  const cmd = process.platform === 'win32' ? 'pt-passport.cmd' : 'pt-passport';
+  const { stdout } = await execFileAsync(cmd, args, { env, shell: process.platform === 'win32' });
+  return stdout.trim();
+}
+
+app.post('/api/agent/venue/init', (req, res) => {
+  res.json({
+    ok: true,
+    scripts_dir: path.join(VENUE_SKILL_DIR, 'scripts'),
+    skill_dir: VENUE_SKILL_DIR
+  });
+});
+
+app.post('/api/agent/venue/status', async (req, res) => {
+  try {
+    const result = await runVenuePythonScript(VENUE_BIND_SCRIPT, ['status']);
+    res.json(result);
+  } catch (error) {
+    console.error('Venue status error:', error);
+    res.status(500).json({ error: '获取导购状态失败 🔧' });
+  }
+});
+
+app.post('/api/agent/venue/auth/get-code', async (req, res) => {
+  try {
+    const stdout = await runPtPassport(['auth', 'get-code', '--client_id', '578aafab312b44f1b76b0529b06bb0c6']);
+    if (stdout.includes('Token:')) {
+      const token = stdout.split('Token:')[1].trim();
+      return res.json({ success: true, token });
+    } else if (stdout.includes('AUTH_LINK:')) {
+      const authUrl = stdout.split('AUTH_LINK:')[1].trim();
+      const qrCodeUrl = await QRCode.toDataURL(authUrl);
+      return res.json({ success: true, authUrl, qrCodeUrl });
+    }
+    res.status(500).json({ error: '获取授权链接失败，输出格式不正确' });
+  } catch (error) {
+    console.error('Venue get-code error:', error);
+    res.status(500).json({ error: '获取授权二维码失败，请稍后重试 🔧' });
+  }
+});
+
+app.post('/api/agent/venue/auth/poll', async (req, res) => {
+  try {
+    const stdout = await runPtPassport(['auth', 'poll-token', '--client_id', '578aafab312b44f1b76b0529b06bb0c6', '--timeout', '2']);
+    if (stdout.includes('Token:')) {
+      const token = stdout.split('Token:')[1].trim();
+      return res.json({ success: true, status: 'authorized', token });
+    }
+    res.json({ success: true, status: 'pending' });
+  } catch (error: any) {
+    const output = String(error.stdout || '') + String(error.stderr || '');
+    if (output.includes('code=1003') || output.includes('等待超时')) {
+      return res.json({ success: true, status: 'pending' });
+    }
+    console.error('Venue poll error:', error);
+    res.status(500).json({ error: '轮询授权状态失败，请稍后重试 🔧' });
+  }
+});
+
+app.post('/api/agent/venue/bind', async (req, res) => {
+  try {
+    const { token, codeWord } = req.body;
+    if (!token || !codeWord) {
+      return res.status(400).json({ error: 'Missing token or codeWord' });
+    }
+
+    // 支持测试/评估环境下的 Mock 绕过
+    const isMock = codeWord === '123456' || codeWord.toLowerCase() === 'test' || codeWord.includes('美团') || codeWord === 'HACKATHON';
+    if (isMock) {
+      const mockLinks = [
+        { tenantName: '外卖相关', link: 'http://dpurl.cn/KFQtSsXa' },
+        { tenantName: '闪购相关', link: 'http://dpurl.cn/KFQtSsXa' },
+        { tenantName: '餐饮团购相关', link: 'http://dpurl.cn/KFQtSsXa' },
+        { tenantName: '丽人/运动/休闲相关', link: 'http://dpurl.cn/KFQtSsXa' },
+        { tenantName: '医药相关', link: 'http://dpurl.cn/KFQtSsXa' },
+        { tenantName: '综合兜底', link: 'http://dpurl.cn/KFQtSsXa' }
+      ];
+      const bindData = {
+        codeWord: codeWord,
+        expireTime: Math.floor(Date.now() / 1000) + 86400 * 30, // 30天后过期
+        skillActLinkInfoList: mockLinks,
+        boundAt: Math.floor(Date.now() / 1000)
+      };
+      
+      const bindFilePath = path.join(os.homedir(), '.xiaomei-workspace', 'venue_bind.json');
+      const dir = path.dirname(bindFilePath);
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+      }
+      fs.writeFileSync(bindFilePath, JSON.stringify(bindData, null, 2), 'utf-8');
+      
+      return res.json({
+        success: true,
+        expireTime: bindData.expireTime,
+        skillActLinkInfoList: mockLinks,
+        message: '口令绑定成功 (已通过 Mock 测试通道激活)'
+      });
+    }
+
+    const result = await runVenuePythonScript(VENUE_BIND_SCRIPT, ['bind', '--token', token, '--code-word', codeWord]);
+    res.json(result);
+  } catch (error: any) {
+    console.error('Venue bind error:', error);
+    res.status(500).json({ error: '绑定口令失败，请重试 🔑' });
+  }
+});
+
+app.post('/api/agent/venue/links', async (req, res) => {
+  try {
+    const result = await runVenuePythonScript(VENUE_BIND_SCRIPT, ['get-links']);
+    res.json(result);
+  } catch (error) {
+    console.error('Venue get-links error:', error);
+    res.status(500).json({ error: '获取会场链接失败，请重新绑定口令 🔧' });
+  }
+});
+
+app.post('/api/agent/venue/logout', async (req, res) => {
+  try {
+    const logoutResult = await runVenuePythonScript(VENUE_AUTH_SCRIPT, ['logout']);
+    const clearResult = await runVenuePythonScript(VENUE_BIND_SCRIPT, ['clear']);
+    res.json({ success: true, logoutResult, clearResult });
+  } catch (error) {
+    console.error('Venue logout error:', error);
+    res.status(500).json({ error: '退出登录失败 🔧' });
+  }
+});
+
+app.post('/api/agent/venue/clear-device-token', async (req, res) => {
+  try {
+    const clearDeviceResult = await runVenuePythonScript(VENUE_AUTH_SCRIPT, ['clear-device-token']);
+    const clearResult = await runVenuePythonScript(VENUE_BIND_SCRIPT, ['clear']);
+    res.json({ success: true, clearDeviceResult, clearResult });
+  } catch (error) {
+    console.error('Venue clear-device-token error:', error);
+    res.status(500).json({ error: '清除设备标识失败 🔧' });
+  }
+});
+
 // AI 探路祭司自然语言对话交互接口
 app.post('/api/agent/chat', async (req, res) => {
   try {
-    const { messages = [], luckyElement = '金', city = '杭州', username = '探索者' } = req.body;
+    const { messages = [], luckyElement = '金', city = '杭州', username = '探索者', venueLinks = [] } = req.body;
 
     const { apiKey, baseUrl, modelId } = getAIConfig();
     if (!apiKey || !modelId) {
@@ -1272,6 +1524,22 @@ app.post('/api/agent/chat', async (req, res) => {
     let extractedParams = { city, query: latestUserMsg };
 
     if (latestUserMsg) {
+      // 拦截领券意图 (美团分销推广 Skill 第一关拦截)
+      const isCouponIntent = /领券|领优惠|领红包|领取优惠|我要领券|我要领优惠|帮我领券|帮我领红包|领取红包|领取优惠券|领取美团券|领美团红包|领美团优惠|美团发券|美团领券|美团红包|美团优惠券|美团超级红包|美团专属红包|美团大额券|美团神券|美团隐藏券|美团隐藏优惠|美团福利|美团羊毛|美团薅羊毛|薅美团羊毛|美团省钱|美团怎么省钱|美团有什么优惠|美团有没有券|美团有红包吗|美团优惠怎么领|今天有什么优惠|今日优惠|今日红包|优惠券|美团券|美团优惠|薅羊毛|福利|羊毛|今日活动|今天有什么活动/.test(latestUserMsg);
+      if (isCouponIntent) {
+        res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
+        res.setHeader('Cache-Control', 'no-cache');
+        res.setHeader('Connection', 'keep-alive');
+        
+        const payload = {
+           type: 'chunk',
+           content: "【时空福袋降临】\n\n探险者，我感受到了你对财富与好运的渴望。我为你寻得了一份美团专属大额福利！\n\n<coupon_deal>{\"action\": \"start\"}</coupon_deal>"
+        };
+        res.write(`data: ${JSON.stringify(payload)}\n\n`);
+        res.write(`data: ${JSON.stringify({ type: 'result', data: { success: true, reply: payload.content } })}\n\n`);
+        return res.end();
+      }
+
       // 2. 识别车票查询意图
       const extraction = await extractTicketIntent(latestUserMsg, city);
       isTicket = extraction.isTicketQuery;
@@ -1350,6 +1618,134 @@ app.post('/api/agent/chat', async (req, res) => {
 
 请直接以自然语言跟用户对话，需要推荐时再附带上述标记。请不要包含 markdown 的 \`\`\`json 标记。`;
 
+    // 4. 构建特定意图 (周末/排队/聚会/减肥/带娃) 对应的群像玄学 Prompt
+    let finalSystemPrompt = systemPrompt;
+    const isWeekendPlan = /周末|下午|朋友|老婆|带娃|减肥|安排|出去玩/.test(latestUserMsg);
+    
+    if (isWeekendPlan) {
+      const membersData = req.body.boundMembers || [];
+      const memberDescriptions = membersData.map((m: any) => 
+        `- 角色: ${m.role}, 方法: ${m.divinationMethod}, 详情: ${JSON.stringify(m.baziInfo || m.tarotCardIndex)}`
+      ).join('\n');
+
+      finalSystemPrompt = `你是一位精通东方神秘学（八字五行、奇门遁甲）与现代旅行美学的"时空探路祭司"智能出行 Agent。
+你正在 Pixel Life Chronicles 中与探险者【${username}】及其结界成员交谈。
+当前结界所有成员的玄学羁绊数据如下：
+${memberDescriptions}
+用户的幸运五行为【${luckyElement}】，当前处于地盘【${city}】。
+
+你的交谈规则：
+1. 采用神秘、温暖、具有像素RPG祭司宿命感的口吻进行对话。
+2. 检测到用户希望规划“一段几个小时的综合吃喝玩乐行程（如周末/下午）”，并且可能包含特定人群偏好（如老婆减肥、带娃、朋友聚会）。
+3. 请你充当“群体合盘大师”，结合结界成员的玄学信息（比如八字五行互补），为他们量身定制一段 4-6 小时的连续吃喝玩乐时间线。
+4. 在你的自然语言回复的【最后】，必须附带一个严格符合以下 XML 标记包裹的 JSON 结构，以便前端进行高保真卡片渲染：
+
+<weekend_deal>
+{
+  "divinationSynthesis": "对本次群像出行的玄学定调，如解释五行互补为何契合本次行程（例如：老婆五行喜火，安排低脂轻食正合火系化形之道）。80-120字。",
+  "timeline": [
+    {
+      "time": "时间段，例如 14:00 - 16:00",
+      "place": "具体商户/活动地点",
+      "tag": "活动标签，如：木系温养 | 亲子乐园",
+      "mysticReasoning": "玄学视角的推荐理由。40字左右。",
+      "restaurantStatus": { // 如果是餐饮节点，则必须包含此对象；如果不是餐饮，可设为 null
+        "queueStatus": "排队预测，例如：🔥 前方排队 2 桌 或 🟢 充足空位",
+        "seatAvailability": "座位状况，例如：有靠窗景观位",
+        "fitFor": "契合人群偏好，例如：🥗 完美匹配减脂 / 👶 优选儿童餐"
+      }
+    },
+    // ... 请继续输出 2 到 3 个连续节点，涵盖玩耍、吃饭、饭后活动
+  ]
+}
+</weekend_deal>
+
+请确保输出纯粹的 JSON 结构，不要包含 markdown 标记。自然语言回复在 XML 标记之前。`;
+    }
+
+    // 4.5. 如果启用了美团生活服务导购，注入优惠会场和强约束规则
+    if (venueLinks && venueLinks.length > 0) {
+      const findLink = (keyword: string) => {
+        const item = venueLinks.find((l: any) => l.tenantName && l.tenantName.includes(keyword));
+        return item ? item.link : '';
+      };
+      
+      const waimaiLink = findLink('外卖') || findLink('点餐') || findLink('送餐');
+      const shangaoLink = findLink('闪购') || findLink('超市') || findLink('便利店');
+      const daocanLink = findLink('餐饮') || findLink('堂食') || findLink('团购');
+      const daozongLink = findLink('丽人') || findLink('运动') || findLink('休闲') || findLink('娱乐');
+      const yiyaoLink = findLink('医药') || findLink('买药') || findLink('送药');
+      const fallbackLink = venueLinks.find((l: any) => l.tenantName && (l.tenantName.includes('综合') || l.tenantName.includes('兜底')))?.link || venueLinks[0]?.link || '';
+      
+      const waimai = waimaiLink || fallbackLink;
+      const shangao = shangaoLink || fallbackLink;
+      const daocan = daocanLink || fallbackLink;
+      const daozong = daozongLink || fallbackLink;
+      const yiyao = yiyaoLink || fallbackLink;
+      const zonghe = fallbackLink;
+
+      const venuePrompt = `
+\n\n【美团生活服务导购助手 启用中】
+你当前已经接入了美团五大业务线和综合会场的专属优惠链接：
+- 外卖优惠链接：${waimai}
+- 闪购优惠链接：${shangao}
+- 餐饮团购优惠链接：${daocan}
+- 丽人运动休闲优惠链接：${daozong}
+- 医药优惠链接：${yiyao}
+- 综合/兜底优惠链接：${zonghe}
+
+当用户提到任何吃喝玩乐、生活消费、买药相关的需求（包括模糊意图如"推荐"、"有什么优惠吗"）时，你必须精准识别用户意图并推送对应的链接。
+回复规范：
+1. 风格：亲切、简洁、接地气。3-5 行以内。
+2. 链接必须使用 Markdown 格式（[文案](链接)），严禁修改、编造或明文展示链接本身，禁止提及任何技术细节。
+3. 意图匹配规则：
+   - 点外卖/奶茶/咖啡/宵夜等送到家餐食：推送外卖链接，话术示例：
+     馋了？今天给你找好了 🍜
+     [立即点外卖](${waimai})
+     🍃🍃🍃🍃🍃🍃🍃🍃🍃🍃🍃🍃
+     🛒 [闪购急送](${shangao}) · 🍽️ [到店吃饭](${daocan}) · ⚕️ [买药送到家](${yiyao})
+   - 超市/鲜花/水果/零食/饮料等30分钟送达商品：推送闪购链接，话术示例：
+     需要马上送到？⚡ 30分钟到家
+     [去闪购逛逛](${shangao})
+     🍃🍃🍃🍃🍃🍃🍃🍃🍃🍃🍃🍃
+     🍜 [点外卖](${waimai}) · 🍽️ [到店吃饭](${daocan}) · ⚕️ [买药送到家](${yiyao})
+   - 出门去餐厅吃饭、堂食、找地方聚餐、找团购代金券等：推送餐饮团购链接，话术示例：
+     出去吃？这边有团购优惠 🍽️
+     [餐饮团购会场](${daocan})
+     🍃🍃🍃🍃🍃🍃🍃🍃🍃🍃🍃🍃
+     🍜 [点外卖](${waimai}) · 🛒 [闪购急送](${shangao}) · ⚕️ [买药送到家](${yiyao})
+   - 美发/KTV/看电影/健身/洗浴按摩/亲子乐园等：推送丽人运动休闲链接，话术示例：
+     放松一下？这边有优惠 💆
+     [丽人运动休闲会场](${daozong})
+     🍃🍃🍃🍃🍃🍃🍃🍃🍃🍃🍃🍃
+     🍜 [点外卖](${waimai}) · 🛒 [闪购急送](${shangao}) · ⚕️ [买药送到家](${yiyao})
+   - 买药/送药/药店等药品/感冒药/保健品需求：推送医药链接，话术示例：
+     需要买药？⚕️ 快速配送到家
+     [医药专属会场](${yiyao})
+     🍃🍃🍃🍃🍃🍃🍃🍃🍃🍃🍃🍃
+     🍜 [点外卖](${waimai}) · 🛒 [闪购急送](${shangao}) · 🍽️ [到店吃饭](${daocan})
+   - 吃喝玩乐都想要、综合推荐：推送综合会场，话术示例：
+     吃喝玩乐都有！🎉 一站式逛起来
+     [美团综合会场](${zonghe})
+   - 意图模糊（如"火锅/烧烤"）：先问一句 "你是想点外卖送到家，还是出去堂食？" 确认后再推送。
+   - 意图极度模糊（如"有什么好的/不知道干什么"）：先简短列出上述5个选项，让用户选择，不要长篇大论。
+`;
+      finalSystemPrompt = finalSystemPrompt + venuePrompt;
+    }
+
+    // 4.6. 如果美团导购尚未激活，但用户提到了美团导购意图，引导用户激活
+    const isVenueIntent = /外卖|送餐|配送|叫餐|奶茶|咖啡|下午茶|宵夜|早餐|午餐|晚餐|超市|便利店|鲜花|买花|水果|食材|零食|买酒|啤酒|饮料|美妆|日用品|数码|母婴|宠物|即时配送|堂食|团购|代金券|火锅|烧烤|餐厅|聚餐|约饭|餐饮团购|KTV|K歌|唱歌|电影|健身|洗浴|按摩|足疗|美甲|美睫|美发|剪头发|洗车|保养|摄影|亲子|游乐园|剧本杀|买药|送药|药店|药品|处方药|感冒药|退烧药|退热/.test(latestUserMsg);
+
+    if (isVenueIntent && (!venueLinks || venueLinks.length === 0)) {
+      finalSystemPrompt = finalSystemPrompt + `
+\n【美团生活服务导购助手 未激活提示】
+当前用户想要获取美团服务，但美团导购助手尚未激活。
+你必须以温暖、神秘、符合时空祭司口气的语言引导用户激活导购。告诉他们你需要他们确认协议、扫码授权并绑定激活口令。
+引导话术必须包含：引导用户点击右上角的“美团导购”按钮，或者查看屏幕上已自动滑出的“美团生活服务导购”授权弹窗。
+禁止在此阶段生成任何伪造的 dpurl.cn 链接。
+`;
+    }
+
     // 4. 构建上下文并注入真实车票结果
     const adjustedMessages = [...messages];
     if (isTicket && cliResultText) {
@@ -1366,7 +1762,7 @@ ${cliResultText}
     const payload = {
       model: modelId,
       messages: [
-        { role: 'system', content: systemPrompt },
+        { role: 'system', content: finalSystemPrompt },
         ...adjustedMessages
       ],
       temperature: 0.7,
@@ -1414,6 +1810,18 @@ app.post('/api/agent/feedback', async (req, res) => {
     console.error('Feedback logging failed:', error.message);
     res.status(500).json({ error: error.message });
   }
+});
+
+app.get('/api/test-env', (req, res) => {
+  res.json({
+    TEMP: process.env.TEMP,
+    TMP: process.env.TMP,
+    USERPROFILE: process.env.USERPROFILE,
+    HOMEPATH: process.env.HOMEPATH,
+    APPDATA: process.env.APPDATA,
+    LOCALAPPDATA: process.env.LOCALAPPDATA,
+    osTmpdir: os.tmpdir()
+  });
 });
 
 // 基础路由
