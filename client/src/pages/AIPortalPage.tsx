@@ -823,6 +823,12 @@ export const AIPortalPage = () => {
   const getMeituanSearchUrl = (keyword: string) => {
     // 过滤掉 emoji 字符，如 🏨 或 🏕️
     const cleanKeyword = keyword.replace(/[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDC00-\uDFFF]/g, '').trim();
+    // 检测是否为移动端环境
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    if (isMobile) {
+      // 优先通过 URL Scheme (imeituan://) 直接拉起美团 App 的全局搜索页
+      return `imeituan://www.meituan.com/search?q=${encodeURIComponent(cleanKeyword)}`;
+    }
     return `https://i.meituan.com/s/${encodeURIComponent(cleanKeyword)}`;
   };
 
