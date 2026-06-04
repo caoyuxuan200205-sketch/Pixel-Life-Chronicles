@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Compass, Sparkles, Wand2, Clock, MapPin, CheckCircle, Navigation, Info, ChevronRight, ChevronLeft, User, Send, RefreshCw, Trash2, Download, Share2, Train, Plane, Ticket } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -1302,24 +1302,53 @@ export const AIPortalPage = () => {
     return `${timeStr}，${username}`;
   };
 
-  // 解析 Markdown 链接为超链接组件
+  // 解析 Markdown 链接和粗体语法为 React 组件
   const renderTextWithLinks = (content: string) => {
     if (!content) return null;
-    const regex = /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g;
-    const parts = [];
+    const linkRegex = /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g;
+    const parts: React.ReactNode[] = [];
     let lastIndex = 0;
     let match;
 
-    while ((match = regex.exec(content)) !== null) {
+    const parseBold = (str: string, baseKey: number) => {
+      const boldRegex = /\*\*([^*]+)\*\*/g;
+      const boldParts: React.ReactNode[] = [];
+      let lastIdx = 0;
+      let boldMatch;
+
+      while ((boldMatch = boldRegex.exec(str)) !== null) {
+        if (boldMatch.index > lastIdx) {
+          boldParts.push(str.substring(lastIdx, boldMatch.index));
+        }
+        boldParts.push(
+          <strong 
+            key={`bold-${baseKey}-${boldMatch.index}`} 
+            style={{ fontWeight: 'bold', color: '#FFE169' }}
+          >
+            {boldMatch[1]}
+          </strong>
+        );
+        lastIdx = boldRegex.lastIndex;
+      }
+
+      if (lastIdx < str.length) {
+        boldParts.push(str.substring(lastIdx));
+      }
+      return boldParts;
+    };
+
+    let keyCounter = 0;
+    while ((match = linkRegex.exec(content)) !== null) {
       const matchIndex = match.index;
       if (matchIndex > lastIndex) {
-        parts.push(content.substring(lastIndex, matchIndex));
+        const textSegment = content.substring(lastIndex, matchIndex);
+        parts.push(...parseBold(textSegment, keyCounter++));
       }
       const linkText = match[1];
       const linkUrl = match[2];
       parts.push(
         <a
-          key={matchIndex}
+          key={`link-${matchIndex}`}
           href={linkUrl}
           target="_blank"
           rel="noopener noreferrer"
@@ -1334,14 +1363,15 @@ export const AIPortalPage = () => {
           {linkText}
         </a>
       );
-      lastIndex = regex.lastIndex;
+      lastIndex = linkRegex.lastIndex;
     }
 
     if (lastIndex < content.length) {
-      parts.push(content.substring(lastIndex));
+      const textSegment = content.substring(lastIndex);
+      parts.push(...parseBold(textSegment, keyCounter++));
     }
 
-    return parts.length > 0 ? parts : content;
+    return parts;
   };
 
   // 渲染单条对话气泡组件 (包含 inline 卡片展示)
@@ -1350,24 +1380,40 @@ export const AIPortalPage = () => {
     const { text, deal, ticketDeal, weekendDeal, couponDeal } = parseMessageContent(msg.content);
     const isBooked = bookingSuccessMap[index];
 
-    // 如果是助理回复，且内容为空，且没有卡片，暂不渲染（避免和底部 loading 指示器双重出现）
+    const isResponseToUser = !isUser && index > 0 && messages[index - 1]?.role === 'user';
+    const isLatestAssistant = isResponseToUser && index === messages.length - 1;
+
+    // 辅助渲染步骤面板，将其固定展示在回答（气泡）上方（取消头像并与气泡对齐）
+    const renderSteps = () => {
+      if (!isLatestAssistant) return null;
+      return (
+        <div key={`steps-${index}`} style={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'flex-start', padding: '0 4px', marginBottom: '20px', width: '100%' }}>
+          <div style={{ marginLeft: '46px', width: '100%', maxWidth: '320px' }}>
+            <LoadingStepsPanel theme={theme} isLoading={isLoading} />
+          </div>
+        </div>
+      );
+    };
+
+    // 如果是助理回复，且内容为空，且没有卡片，暂不渲染气泡（但要渲染上方的推演过程面板）
     if (!isUser && !text.trim() && !deal && !ticketDeal && !weekendDeal && !couponDeal) {
-      return null;
+      return renderSteps();
     }
 
     return (
-      <div 
-        key={index} 
-        style={{ 
-          display: 'flex', 
-          justifyContent: isUser ? 'flex-end' : 'flex-start',
-          alignItems: 'flex-start',
-          gap: '10px',
-          width: '100%',
-          marginBottom: '20px',
-          padding: '0 4px'
-        }}
-      >
+      <React.Fragment key={index}>
+        {renderSteps()}
+        <div 
+          style={{ 
+            display: 'flex', 
+            justifyContent: isUser ? 'flex-end' : 'flex-start',
+            alignItems: 'flex-start',
+            gap: '10px',
+            width: '100%',
+            marginBottom: '20px',
+            padding: '0 4px'
+          }}
+        >
         {/* 探路祭司头像 */}
         {!isUser && (
           <div style={{
@@ -1388,7 +1434,7 @@ export const AIPortalPage = () => {
         )}
 
         {/* 气泡及契约 */}
-        <div style={{ display: 'flex', flexDirection: 'column', maxWidth: '80%', gap: '10px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', width: '100%', maxWidth: '320px', gap: '10px' }}>
           
           {/* 文字内容 */}
           <div 
@@ -1831,7 +1877,7 @@ export const AIPortalPage = () => {
                 flexDirection: 'column', 
                 gap: '0px', 
                 width: '100%', 
-                maxWidth: '340px', 
+                maxWidth: '320px', 
                 marginTop: '4px',
                 border: `2px solid ${theme.color}`,
                 boxShadow: `0 0 15px ${theme.glow}, 4px 4px 0 rgba(0,0,0,0.5)`,
@@ -2008,7 +2054,8 @@ export const AIPortalPage = () => {
           </div>
         )}
 
-      </div>
+        </div>
+      </React.Fragment>
     );
   };
 
@@ -2160,7 +2207,7 @@ export const AIPortalPage = () => {
             flexDirection: 'column', 
             alignItems: 'center', 
             justifyContent: 'flex-start', 
-            padding: '20px 0 30px 0',
+            padding: '80px 0 30px 0',
             width: '100%',
             height: '100%',
             minHeight: '420px'
@@ -2183,8 +2230,8 @@ export const AIPortalPage = () => {
               {/* 星轨发光环 */}
               <div style={{
                 position: 'absolute',
-                width: '150px',
-                height: '150px',
+                width: '190px',
+                height: '190px',
                 borderRadius: '50%',
                 border: '1px dashed rgba(226, 181, 83, 0.25)',
                 boxShadow: `0 0 20px ${theme.glow}`,
@@ -2196,8 +2243,8 @@ export const AIPortalPage = () => {
                 animate={{ rotate: 360 }}
                 transition={{ repeat: Infinity, duration: spinSpeed, ease: 'linear' }}
                 style={{
-                  width: '120px',
-                  height: '120px',
+                  width: '150px',
+                  height: '150px',
                   borderRadius: '50%',
                   background: 'radial-gradient(circle, #1f1a29 0%, #0d0a14 100%)',
                   border: `3px double ${theme.color}`,
@@ -2213,22 +2260,22 @@ export const AIPortalPage = () => {
                   position: 'absolute',
                   width: '100%',
                   height: '100%',
-                  fontSize: '0.45rem',
+                  fontSize: '0.55rem',
                   fontFamily: 'var(--font-mystic)',
                   color: 'var(--text-muted)',
                   opacity: 0.5
                 }}>
-                  <span style={{ position: 'absolute', top: '4px', left: '50%', transform: 'translateX(-50%)' }}>子</span>
-                  <span style={{ position: 'absolute', bottom: '4px', left: '50%', transform: 'translateX(-50%)' }}>午</span>
-                  <span style={{ position: 'absolute', left: '4px', top: '50%', transform: 'translateY(-50%)' }}>卯</span>
-                  <span style={{ position: 'absolute', right: '4px', top: '50%', transform: 'translateY(-50%)' }}>酉</span>
+                  <span style={{ position: 'absolute', top: '6px', left: '50%', transform: 'translateX(-50%)' }}>子</span>
+                  <span style={{ position: 'absolute', bottom: '6px', left: '50%', transform: 'translateX(-50%)' }}>午</span>
+                  <span style={{ position: 'absolute', left: '6px', top: '50%', transform: 'translateY(-50%)' }}>卯</span>
+                  <span style={{ position: 'absolute', right: '6px', top: '50%', transform: 'translateY(-50%)' }}>酉</span>
                 </div>
 
                 {/* 磁针 */}
                 <div style={{
                   position: 'absolute',
-                  width: '6px',
-                  height: '80px',
+                  width: '8px',
+                  height: '105px',
                   transform: `rotate(${currentDir.angle}deg)`,
                   display: 'flex',
                   flexDirection: 'column',
@@ -2237,27 +2284,27 @@ export const AIPortalPage = () => {
                 }}>
                   <div style={{
                     width: 0, height: 0,
-                    borderLeft: '3.5px solid transparent',
-                    borderRight: '3.5px solid transparent',
-                    borderBottom: `12px solid ${theme.color}`,
+                    borderLeft: '4.5px solid transparent',
+                    borderRight: '4.5px solid transparent',
+                    borderBottom: `15px solid ${theme.color}`,
                     filter: `drop-shadow(0 0 4px ${theme.color})`
                   }} />
                   <div style={{
-                    width: '4px', height: '4px',
+                    width: '5px', height: '5px',
                     borderRadius: '50%', background: '#fff',
                     border: '1px solid var(--pixel-border-color)',
                     position: 'absolute', top: '50%', transform: 'translateY(-50%)'
                   }} />
                   <div style={{
                     width: 0, height: 0,
-                    borderLeft: '3.5px solid transparent',
-                    borderRight: '3.5px solid transparent',
+                    borderLeft: '4.5px solid transparent',
+                    borderRight: '4.5px solid transparent',
                     borderTop: '12px solid rgba(255,255,255,0.1)'
                   }} />
                 </div>
 
                 {/* 居中五行字眼 */}
-                <div className="font-mystic" style={{ fontSize: '0.9rem', color: theme.color, fontWeight: 'bold', textShadow: `${theme.color} 0 0 10px`, zIndex: 5 }}>
+                <div className="font-mystic" style={{ fontSize: '1.2rem', color: theme.color, fontWeight: 'bold', textShadow: `${theme.color} 0 0 10px`, zIndex: 5 }}>
                   {luckyElement}
                 </div>
               </motion.div>
@@ -2447,22 +2494,7 @@ export const AIPortalPage = () => {
             ======================================================== */}
         {hasUserMessages && messages.map(renderMessage)}
 
-        {/* 动态输入加载指示器 */}
-        {isLoading && (
-          <div style={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'flex-start', gap: '10px', padding: '0 4px', marginBottom: '20px', width: '100%' }}>
-            <div style={{
-              width: '36px', height: '36px',
-              borderRadius: '50%', background: 'var(--primary-dim)',
-              border: `2px solid ${theme.color}`,
-              display: 'flex', justifyContent: 'center', alignItems: 'center',
-              fontSize: '1.2rem', boxShadow: `0 0 6px ${theme.glow}`,
-              flexShrink: 0
-            }}>
-              🧙‍♂️
-            </div>
-            <LoadingStepsPanel theme={theme} isLoading={isLoading} />
-          </div>
-        )}
+        {/* 动态输入加载指示器已被移至 renderMessage 气泡内部上方展示 */}
 
         <div ref={messagesEndRef} />
       </div>
