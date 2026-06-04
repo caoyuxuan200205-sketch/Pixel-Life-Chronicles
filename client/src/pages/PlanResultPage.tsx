@@ -483,95 +483,120 @@ export const PlanResultPage = () => {
               </div>
 
               {/* 塔罗 3D 翻牌组件 */}
-              {isTarot && reading.tarotCard ? (
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px' }}>
-                  <div 
-                    onClick={() => toggleCard(member.id)}
-                    style={{ 
-                      width: '130px', 
-                      height: '210px', 
-                      perspective: '1000px', 
-                      cursor: 'pointer',
-                      position: 'relative'
-                    }}
-                  >
-                    <motion.div
-                      animate={{ rotateY: flippedCards[member.id] ? 180 : 0 }}
-                      transition={{ duration: 0.6, ease: 'easeOut' }}
-                      style={{
-                        width: '100%',
-                        height: '100%',
-                        transformStyle: 'preserve-3d',
-                        position: 'relative'
-                      }}
-                    >
-                      {/* 牌背 (未翻开) */}
-                      <div style={{
-                        position: 'absolute',
-                        width: '100%',
-                        height: '100%',
-                        backfaceVisibility: 'hidden',
-                        background: 'radial-gradient(circle, #2a221b 0%, #15110e 100%)',
-                        border: '3px solid var(--primary)',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                        gap: '12px',
-                        boxShadow: '0 8px 16px rgba(0,0,0,0.5)'
-                      }}>
-                        <div style={{ fontSize: '2rem', opacity: 0.7 }}>🔮</div>
-                        <span style={{ fontSize: '0.55rem', color: 'var(--primary)', fontFamily: 'var(--font-mono)', letterSpacing: '0.1em' }}>CLICK TO FLIP</span>
-                      </div>
+              {isTarot && (reading.tarotCards || reading.tarotCard) ? (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px', width: '100%' }}>
+                  <div style={{ display: 'flex', gap: '14px', justifyContent: 'center', flexWrap: 'wrap', width: '100%' }}>
+                    {(reading.tarotCards || [reading.tarotCard]).map((card: any, cardPosIdx: number) => {
+                      if (!card) return null;
+                      const uniqueCardId = `${member.id}_${cardPosIdx}`;
+                      const isFlipped = flippedCards[uniqueCardId];
+                      const positionLabel = (reading.tarotCards && reading.tarotCards.length === 3)
+                        ? ['过去 (出发之意)', '现在 (行中之契)', '未来 (归途之兆)'][cardPosIdx]
+                        : '命定开运神谕';
 
-                      {/* 牌面 (已翻开) */}
-                      <div style={{
-                        position: 'absolute',
-                        width: '100%',
-                        height: '100%',
-                        backfaceVisibility: 'hidden',
-                        transform: 'rotateY(180deg)',
-                        background: 'linear-gradient(135deg, #1b1612 0%, #2a221b 100%)',
-                        border: '3px solid var(--primary)',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        padding: '16px 10px',
-                        boxShadow: '0 8px 16px rgba(0,0,0,0.5)'
-                      }}>
-                        <div style={{ fontSize: '0.6rem', color: 'var(--primary)', borderBottom: '1px solid var(--primary)', width: '100%', textAlign: 'center', paddingBottom: '4px', textTransform: 'uppercase' }}>
-                          THE COVENANT
-                        </div>
-                        
-                        <div style={{ textAlign: 'center' }}>
-                          <div style={{ fontSize: '3rem', margin: '10px 0' }}>{reading.tarotCard.emoji}</div>
-                          <div style={{ fontSize: '0.85rem', color: '#fff', fontWeight: 'bold' }} className="font-mystic">
-                            {reading.tarotCard.name}
+                      return (
+                        <div key={cardPosIdx} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                          <div 
+                            onClick={() => {
+                              setFlippedCards(prev => ({
+                                ...prev,
+                                [uniqueCardId]: !prev[uniqueCardId]
+                              }));
+                            }}
+                            style={{ 
+                              width: '110px', 
+                              height: '180px', 
+                              perspective: '1000px', 
+                              cursor: 'pointer',
+                              position: 'relative'
+                            }}
+                          >
+                            <motion.div
+                              animate={{ rotateY: isFlipped ? 180 : 0 }}
+                              transition={{ duration: 0.6, ease: 'easeOut' }}
+                              style={{
+                                width: '100%',
+                                height: '100%',
+                                transformStyle: 'preserve-3d',
+                                position: 'relative'
+                              }}
+                            >
+                              {/* 牌背 (未翻开) */}
+                              <div style={{
+                                position: 'absolute',
+                                width: '100%',
+                                height: '100%',
+                                backfaceVisibility: 'hidden',
+                                background: 'radial-gradient(circle, #2a221b 0%, #15110e 100%)',
+                                border: '2.5px solid var(--primary)',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                justifyContent: 'center',
+                                alignItems: 'center',
+                                gap: '8px',
+                                boxShadow: '0 6px 12px rgba(0,0,0,0.5)'
+                              }}>
+                                <div style={{ fontSize: '1.5rem', opacity: 0.7 }}>🔮</div>
+                                <span style={{ fontSize: '0.45rem', color: 'var(--primary)', fontFamily: 'var(--font-mono)', letterSpacing: '0.1em' }}>REVEAL</span>
+                              </div>
+
+                              {/* 牌面 (已翻开) */}
+                              <div style={{
+                                position: 'absolute',
+                                width: '100%',
+                                height: '100%',
+                                backfaceVisibility: 'hidden',
+                                transform: 'rotateY(180deg)',
+                                background: 'linear-gradient(135deg, #1b1612 0%, #2a221b 100%)',
+                                border: '2.5px solid var(--primary)',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                justifyContent: 'space-between',
+                                alignItems: 'center',
+                                padding: '12px 6px',
+                                boxShadow: '0 6px 12px rgba(0,0,0,0.5)'
+                              }}>
+                                <div style={{ fontSize: '0.5rem', color: 'var(--primary)', borderBottom: '1px solid var(--primary)', width: '100%', paddingBottom: '2px', textTransform: 'uppercase', fontWeight: 'bold', fontSize: '0.45rem', textAlign: 'center' }}>
+                                  {positionLabel}
+                                </div>
+                                
+                                <div style={{ textAlign: 'center' }}>
+                                  <div style={{ fontSize: '2.5rem', margin: '4px 0' }}>{card.emoji}</div>
+                                  <div style={{ fontSize: '0.75rem', color: '#fff', fontWeight: 'bold' }} className="font-mystic">
+                                    {card.name}
+                                  </div>
+                                </div>
+
+                                <div style={{ fontSize: '0.45rem', color: 'var(--text-muted)', textAlign: 'center', lineHeight: '1.2' }}>
+                                  {card.meaning}
+                                </div>
+                              </div>
+                            </motion.div>
                           </div>
+                          
+                          <span style={{ fontSize: '0.55rem', color: 'var(--text-muted)' }}>
+                            {isFlipped ? '已翻开' : '点击翻牌'}
+                          </span>
                         </div>
-
-                        <div style={{ fontSize: '0.5rem', color: 'var(--text-muted)', textAlign: 'center', lineHeight: '1.2' }}>
-                          {reading.tarotCard.meaning}
-                        </div>
-                      </div>
-                    </motion.div>
+                      );
+                    })}
                   </div>
 
-                  <p style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }}>
-                    {flippedCards[member.id] ? '💡 已揭示您的命定之牌' : '👉 点击命运之卡以进行契约翻面仪式'}
-                  </p>
-
                   {/* 解读文本 */}
-                  {flippedCards[member.id] && (
-                    <motion.div 
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
-                      style={{ background: 'rgba(0,0,0,0.3)', padding: '16px', fontSize: '0.75rem', lineHeight: '1.6', color: 'var(--text-primary)', borderLeft: '2px solid var(--primary)' }}
-                    >
-                      {reading.readingText}
-                    </motion.div>
-                  )}
+                  <div 
+                    style={{ 
+                      background: 'rgba(0,0,0,0.3)', 
+                      padding: '16px', 
+                      fontSize: '0.75rem', 
+                      lineHeight: '1.6', 
+                      color: 'var(--text-primary)', 
+                      borderLeft: '2px solid var(--primary)',
+                      width: '100%',
+                      textAlign: 'justify'
+                    }}
+                  >
+                    {reading.readingText}
+                  </div>
                 </div>
               ) : (
                 // 东方生辰八字排盘面板

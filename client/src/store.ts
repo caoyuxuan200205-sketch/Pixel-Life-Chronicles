@@ -62,6 +62,8 @@ export interface GroupMember {
   divinationMethod: 'tarot' | 'bazi';
   mood?: string;
   tarotCardIndex?: number;
+  tarotCardIndexes?: number[];
+  tarotDrawRule?: 'one' | 'three';
   baziInfo?: {
     birthDate: string;
     birthTime: string;
@@ -94,6 +96,7 @@ export interface JointPlanResult {
     memberId: string;
     readingText: string;
     tarotCard?: TarotCard;
+    tarotCards?: TarotCard[];
     baziChart?: {
       fourPillars: string[];
       elements: { name: string; value: number; color: string }[];

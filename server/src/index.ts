@@ -843,12 +843,84 @@ app.post('/api/auth/session', async (req, res) => {
 
 
 const LOCAL_TAROT_CARDS = [
-  { name: 'The Lovers', emoji: '❤️', meaning: '吸引、爱、美与命运的交汇。' },
-  { name: 'The Sun', emoji: '☀️', meaning: '生命的活力、光明、纯粹的快乐。' },
-  { name: 'Wheel Of Fortune', emoji: '🎡', meaning: '命运之轮转动，带来转机与巧合。' },
-  { name: 'The Star', emoji: '⭐', meaning: '希望、灵感与宇宙源源不断的能量。' },
-  { name: 'The Fool', emoji: '🃏', meaning: '自由、探索新的冒险旅程、踏入未知。' },
-  { name: 'The Magician', emoji: '🪄', meaning: '创造力、沟通、化理想为现实的魔力。' }
+  { name: 'The Magician', emoji: '🪄', meaning: 'Skill, diplomacy, address, subtlety' },
+  { name: 'The High Priestess', emoji: '🌙', meaning: 'Secrets, mystery, the future as yet unrevealed' },
+  { name: 'The Empress', emoji: '👑', meaning: 'Fruitfulness, action, initiative, length of days' },
+  { name: 'The Emperor', emoji: '🏛️', meaning: 'Stability, power, protection, realization' },
+  { name: 'The Hierophant', emoji: '📜', meaning: 'Marriage, alliance, captivity, servitude' },
+  { name: 'The Lovers', emoji: '❤️', meaning: 'Attraction, love, beauty, trials overcome.' },
+  { name: 'The Chariot', emoji: '🏎️', meaning: 'Succour, providence also war, triumph, presumption, vengeance, trouble.' },
+  { name: 'Fortitude', emoji: '🦁', meaning: 'Power, energy, action, courage, magnanimity' },
+  { name: 'The Hermit', emoji: '🏔️', meaning: 'Prudence, circumspection' },
+  { name: 'Wheel Of Fortune', emoji: '🎡', meaning: 'Destiny, fortune, success, elevation, luck, felicity.' },
+  { name: 'Justice', emoji: '⚖️', meaning: 'Equity, rightness, probity, executive' },
+  { name: 'The Hanged Man', emoji: '🙃', meaning: 'Wisdom, circumspection, discernment, trials, sacrifice, intuition, divination, prophecy.' },
+  { name: 'Death', emoji: '💀', meaning: 'End, mortality, destruction, corruption also, for a man, the loss of a benefactor for a woman, many contrarieties' },
+  { name: 'Temperance', emoji: '🍶', meaning: 'Economy, moderation, frugality, management, accommodation.' },
+  { name: 'The Devil', emoji: '😈', meaning: 'Ravage, violence, vehemence, extraordinary efforts, force, fatality' },
+  { name: 'The Tower', emoji: '💥', meaning: 'Misery, distress, indigence, adversity, calamity, disgrace, deception, ruin. It is a card in particular of unforeseen catastrophe.' },
+  { name: 'The Star', emoji: '⭐', meaning: 'Loss, theft, privation, abandonment' },
+  { name: 'The Moon', emoji: '🌕', meaning: 'Hidden enemies, danger, calumny, darkness, terror, deception, occult forces, error.' },
+  { name: 'The Sun', emoji: '☀️', meaning: 'Material happiness, fortunate marriage, contentment.' },
+  { name: 'The Last Judgment', emoji: '🎺', meaning: 'Change of position, renewal, outcome. Another account specifies total loss though lawsuit.' },
+  { name: 'The Fool', emoji: '🃏', meaning: 'Folly, mania, extravagance, intoxication, delirium, frenzy, bewrayment.' },
+  { name: 'The World', emoji: '🌍', meaning: 'Assured success, recompense, voyage, route, emigration, flight, change of place.' },
+  { name: 'Page of Wands', emoji: '🪄', meaning: 'Dark young man, faithful, a lover, an envoy, a postman. Beside a man, he will bear favourable testimony concerning him.' },
+  { name: 'Knight of Wands', emoji: '🪄', meaning: 'Departure, absence, flight, emigration. A dark young man, friendly. Change of residence.' },
+  { name: 'Queen of Wands', emoji: '🪄', meaning: 'A dark woman, countrywoman, friendly, chaste, loving, honourable.' },
+  { name: 'King of Wands', emoji: '🪄', meaning: 'Dark man, friendly, countryman, generally married, honest and conscientious.' },
+  { name: 'Ace of Wands', emoji: '🪄', meaning: 'Creation, invention, enterprise, the powers which result in these' },
+  { name: 'Two of Wands', emoji: '🪄', meaning: 'Between the alternative readings there is no marriage possible' },
+  { name: 'Three of Wands', emoji: '🪄', meaning: 'He symbolizes established strength, enterprise, effort, trade, commerce, discovery' },
+  { name: 'Four of Wands', emoji: '🪄', meaning: 'Country life, haven of refuge, repose, concord, harmony, prosperity, peace.' },
+  { name: 'Five of Wands', emoji: '🪄', meaning: 'Imitation, competition and struggle of the search after riches and fortune.' },
+  { name: 'Six of Wands', emoji: '🪄', meaning: 'Triumph, success, great news, conquest and advancement.' },
+  { name: 'Seven of Wands', emoji: '🪄', meaning: 'Valour, discussion, wordy strife, defensive stance.' },
+  { name: 'Eight of Wands', emoji: '🪄', meaning: 'Activity in undertakings, swiftness, rapid progress, speed.' },
+  { name: 'Nine of Wands', emoji: '🪄', meaning: 'Strength in opposition, prepared for onslaught, resilience.' },
+  { name: 'Ten of Wands', emoji: '🪄', meaning: 'Oppression, heavy burden, success with great responsibility, labor.' },
+  { name: 'Page of Cups', emoji: '🏆', meaning: 'Fair young man, service, artistic vision, new feelings.' },
+  { name: 'Knight of Cups', emoji: '🏆', meaning: 'Arrival, approach, proposal, invitation.' },
+  { name: 'Queen of Cups', emoji: '🏆', meaning: 'Good, fair woman, intuitive, loving heart.' },
+  { name: 'King of Cups', emoji: '🏆', meaning: 'Fair man, man of business, law, or divinity, emotional stability.' },
+  { name: 'Ace of Cups', emoji: '🏆', meaning: 'House of the true heart, joy, content, abundance, fertility.' },
+  { name: 'Two of Cups', emoji: '🏆', meaning: 'Love, passion, friendship, union, sympathy, concord.' },
+  { name: 'Three of Cups', emoji: '🏆', meaning: 'Conclusion in plenty, perfection, celebration, hospitality.' },
+  { name: 'Four of Cups', emoji: '🏆', meaning: 'Weariness, satiety, contemplation of new offers.' },
+  { name: 'Five of Cups', emoji: '🏆', meaning: 'Regret, loss, but with remaining hope.' },
+  { name: 'Six of Cups', emoji: '🏆', meaning: 'Memories, nostalgia, looking back on childhood.' },
+  { name: 'Seven of Cups', emoji: '🏆', meaning: 'Fairy favours, imagination, illusions, choices.' },
+  { name: 'Eight of Cups', emoji: '🏆', meaning: 'Decline of a matter, abandoning current path for higher goals.' },
+  { name: 'Nine of Cups', emoji: '🏆', meaning: 'Concord, contentment, physical well-being, wishes fulfilled.' },
+  { name: 'Ten of Cups', emoji: '🏆', meaning: 'Repose of the entire heart, family happiness.' },
+  { name: 'Page of Pentacles', emoji: '🪙', meaning: 'Application, study, scholarship, news of money.' },
+  { name: 'Knight of Pentacles', emoji: '🪙', meaning: 'Utility, responsibility, hard work, patience.' },
+  { name: 'Queen of Pentacles', emoji: '🪙', meaning: 'Opulence, generosity, security, connection to nature.' },
+  { name: 'King of Pentacles', emoji: '🪙', meaning: 'Valour, realizing intelligence, business success, stability.' },
+  { name: 'Ace of Pentacles', emoji: '🪙', meaning: 'Perfect contentment, felicity, material prosperity.' },
+  { name: 'Two of Pentacles', emoji: '🪙', meaning: 'Gaiety, recreation, balancing priorities, change.' },
+  { name: 'Three of Pentacles', emoji: '🪙', meaning: 'Trade, skilled labour, teamwork, recognition.' },
+  { name: 'Four of Pentacles', emoji: '🪙', meaning: 'Surety of possessions, cleaving to wealth, security.' },
+  { name: 'Five of Pentacles', emoji: '🪙', meaning: 'Material trouble, destitution, temporary hardship.' },
+  { name: 'Six of Pentacles', emoji: '🪙', meaning: 'Presents, gifts, charity, shared prosperity.' },
+  { name: 'Seven of Pentacles', emoji: '🪙', meaning: 'Harvest evaluation, patience after hard work.' },
+  { name: 'Eight of Pentacles', emoji: '🪙', meaning: 'Work, employment, craftsmanship, skill development.' },
+  { name: 'Nine of Pentacles', emoji: '🪙', meaning: 'Prudence, safety, success, material independence.' },
+  { name: 'Ten of Pentacles', emoji: '🪙', meaning: 'Riches, family legacy, long-term security.' },
+  { name: 'Page of Swords', emoji: '⚔️', meaning: 'Authority, spying, vigilance, quick mind.' },
+  { name: 'Knight of Swords', emoji: '⚔️', meaning: 'Bravery, capacity, wrath, rapid movement.' },
+  { name: 'Queen of Swords', emoji: '⚔️', meaning: 'Sadness, independence, sharp intellect, boundaries.' },
+  { name: 'King of Swords', emoji: '⚔️', meaning: 'Judgment, power, command, objective truth, law.' },
+  { name: 'Ace of Swords', emoji: '⚔️', meaning: 'Triumph, force, mental clarity, breakthrough.' },
+  { name: 'Two of Swords', emoji: '⚔️', meaning: 'Balance, truce, blocked emotions, stalemate.' },
+  { name: 'Three of Swords', emoji: '⚔️', meaning: 'Removal, separation, heartbreak, division.' },
+  { name: 'Four of Swords', emoji: '⚔️', meaning: 'Retreat, solitude, rest after battle, recovery.' },
+  { name: 'Five of Swords', emoji: '⚔️', meaning: 'Degradation, victory with conflict, defeat.' },
+  { name: 'Six of Swords', emoji: '⚔️', meaning: 'Journey by water, transition, leaving difficulties behind.' },
+  { name: 'Seven of Swords', emoji: '⚔️', meaning: 'Design, attempt, stealth, evasion, strategy.' },
+  { name: 'Eight of Swords', emoji: '⚔️', meaning: 'Crisis, power in trammels, self-limitation, trapped.' },
+  { name: 'Nine of Swords', emoji: '⚔️', meaning: 'Despair, worry, nightmare, mental anguish.' },
+  { name: 'Ten of Swords', emoji: '⚔️', meaning: 'Ruin, pain, final ending, new dawn.' }
 ];
 
 app.post('/api/agent/plan', async (req, res) => {
@@ -859,13 +931,23 @@ app.post('/api/agent/plan', async (req, res) => {
       return res.status(400).json({ error: '成员列表不能为空' });
     }
 
-    // 1. 在后端进行八字排盘数据补充，作为 AI 的深度上下文
+    // 1. 在后端进行八字排盘与塔罗牌面补充，作为 AI 的深度上下文
     const processedMembers = members.map((member: any) => {
       if (member.divinationMethod === 'bazi' && member.baziInfo) {
         const baziChart = calculateBazi(member.baziInfo.birthDate, member.baziInfo.birthTime);
         return {
           ...member,
           baziChart
+        };
+      }
+      if (member.divinationMethod === 'tarot') {
+        const indexes = member.tarotCardIndexes || (member.tarotCardIndex !== undefined ? [member.tarotCardIndex] : []);
+        const tarotCards = indexes.map((idx: number) => {
+          return LOCAL_TAROT_CARDS[idx % LOCAL_TAROT_CARDS.length];
+        });
+        return {
+          ...member,
+          tarotCards
         };
       }
       return member;
@@ -1002,23 +1084,34 @@ ${cosmicContext}
               const member = processedMembers.find((m: any) => m.id === reading.memberId);
               
               let tarotCard = undefined;
-              if (reading.tarotCardName) {
+              let tarotCards = undefined;
+              
+              if (member && member.divinationMethod === 'tarot') {
+                const indexes = member.tarotCardIndexes || (member.tarotCardIndex !== undefined ? [member.tarotCardIndex] : []);
+                tarotCards = indexes.map((idx: number) => {
+                  const card = LOCAL_TAROT_CARDS[idx % LOCAL_TAROT_CARDS.length];
+                  return {
+                    id: idx % LOCAL_TAROT_CARDS.length,
+                    ...card
+                  };
+                });
+                tarotCard = tarotCards[0];
+              } else if (reading.tarotCardName) {
                 tarotCard = {
+                  id: 0,
                   name: reading.tarotCardName,
                   emoji: reading.tarotCardEmoji || '🔮',
                   meaning: '命运的神秘感应。'
                 };
               } else if (reading.tarotCard) {
                 tarotCard = reading.tarotCard;
-              } else if (member && member.divinationMethod === 'tarot') {
-                const cardIdx = member.tarotCardIndex !== undefined ? member.tarotCardIndex : 0;
-                tarotCard = LOCAL_TAROT_CARDS[cardIdx % LOCAL_TAROT_CARDS.length];
               }
 
               return {
                 memberId: reading.memberId,
                 readingText: reading.readingText,
                 tarotCard,
+                tarotCards,
                 baziChart: member?.baziChart || reading.baziChart
               };
             }),
