@@ -2056,7 +2056,7 @@ export const AIPortalPage = () => {
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <button 
-            onClick={() => navigate('/explore')} 
+            onClick={() => navigate('/')} 
             style={{ 
               background: 'none', border: 'none', color: theme.color, 
               display: 'flex', alignItems: 'center', justifyContent: 'center', 

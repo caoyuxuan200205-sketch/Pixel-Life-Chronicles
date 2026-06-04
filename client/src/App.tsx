@@ -37,9 +37,9 @@ const NavBar = () => {
   const hasPlan = !!getLatestJointPlan();
   
   const navItems = [
-    { path: '/explore', label: '探索', icon: '🔭', restricted: false },
+    { path: '/', label: '探索', icon: '🔭', restricted: false },
     { path: '/map', label: '冒险', icon: '🗺️', restricted: !hasPlan },
-    { path: '/', label: '星耀AI', icon: '🌟', restricted: false, isCentral: true },
+    { path: '/ai', label: '星耀AI', icon: '🌟', restricted: false, isCentral: true },
     { path: '/plan', label: '命运', icon: '🔮', restricted: !hasPlan },
     { path: '/profile', label: '我的', icon: '🤠', restricted: false },
   ];
@@ -94,7 +94,6 @@ const NavBar = () => {
         }
 
         const isActive = location.pathname === item.path || 
-                        (item.path === '/explore' && location.pathname === '/explore') ||
                         (item.path === '/profile' && location.pathname === '/collection');
 
         return (
@@ -131,14 +130,14 @@ const NavBar = () => {
 
 const AppContent = () => {
   const location = useLocation();
-  const hideNavBar = location.pathname === '/auth' || location.pathname === '/';
+  const hideNavBar = location.pathname === '/auth' || location.pathname === '/ai';
   
   return (
     <div className="app-shell">
       <AnimatePresence mode="wait">
         <Routes location={location} key={location.pathname}>
-          <Route path="/" element={<AIPortalPage />} />
-          <Route path="/explore" element={<HomePage />} />
+          <Route path="/" element={<HomePage />} />
+          <Route path="/ai" element={<AIPortalPage />} />
           <Route path="/plan" element={<PlanResultPage />} />
           <Route path="/map" element={<MapPage />} />
           <Route path="/camera" element={<CameraPage />} />
