@@ -81,8 +81,8 @@ export function loadDoubaoConfig(): boolean {
 }
 
 export function isAIConfigured(): boolean {
-  // 现在优先使用后端，如果后端地址存在，则认为已配置
-  return !!BACKEND_URL || !!(DOUBAO_CONFIG.apiKey && DOUBAO_CONFIG.modelId);
+  // 优先使用后端。在单域名/同域部署下（如 Vercel 部署，BACKEND_URL 为空代表使用相对路径），后端 API 默认可用。
+  return true;
 }
 
 function getTimeContext(): string {
