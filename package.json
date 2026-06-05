@@ -29,6 +29,7 @@
     "pdf-lib": "^1.17.1",
     "qrcode": "^1.5.4",
     "sharp": "^0.33.4",
-    "uuid": "^10.0.0"
+    "uuid": "^10.0.0",
+    "@mtuser/pt-passport": "file:server/skills/meituan-venue-guide/scripts/mtuser-pt-passport-0.1.4.tgz"
   }
 }

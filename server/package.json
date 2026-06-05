@@ -2,6 +2,7 @@
   "name": "server",
   "version": "1.0.0",
   "description": "Pixel Life Chronicles - Backend API",
+  "type": "module",
   "main": "src/index.ts",
   "scripts": {
     "dev": "tsx watch src/index.ts",
@@ -22,7 +23,8 @@
     "pdf-lib": "^1.17.1",
     "qrcode": "^1.5.4",
     "sharp": "^0.34.4",
-    "uuid": "^10.0.0"
+    "uuid": "^10.0.0",
+    "@mtuser/pt-passport": "file:skills/meituan-venue-guide/scripts/mtuser-pt-passport-0.1.4.tgz"
   },
   "devDependencies": {
     "@types/cors": "^2.8.17",

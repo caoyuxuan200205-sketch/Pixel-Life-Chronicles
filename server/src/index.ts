@@ -13,9 +13,16 @@ import { calculateBazi } from './baziHelper.js';
 import { execFile } from 'child_process';
 import { promisify } from 'util';
 import os from 'os';
+import { fileURLToPath } from 'url';
+import { createRequire } from 'module';
 
 import { buildChatGraph } from './agents/chatGraph.js';
 import { streamGraphToSSE } from './lib/streaming.js';
+import { runPythonScript, runVenuePythonScript } from './lib/skillsService.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const require = createRequire(import.meta.url);
 
 const execFileAsync = promisify(execFile);
 const chatGraph = buildChatGraph();
@@ -1358,31 +1365,7 @@ const COUPON_SKILL_DIR = path.join(os.homedir(), 'skills', 'meituan-fenxiao-prom
 const COUPON_AUTH_SCRIPT = path.join(COUPON_SKILL_DIR, 'scripts', 'auth.py');
 const COUPON_ISSUE_SCRIPT = path.join(COUPON_SKILL_DIR, 'scripts', 'issue.py');
 
-async function runPythonScript(scriptPath: string, args: string[]): Promise<any> {
-  const pythonCmd = 'python';
-  console.log(`Executing Python Script: ${pythonCmd} ${scriptPath} ${args.join(' ')}`);
-  try {
-    const { stdout } = await execFileAsync(pythonCmd, [scriptPath, ...args], { encoding: 'utf8' });
-    const match = stdout.match(/({[\s\S]*})/);
-    if (match) {
-      return JSON.parse(match[1]);
-    }
-    return JSON.parse(stdout);
-  } catch (err: any) {
-    if (err.stdout) {
-      try {
-        const match = err.stdout.match(/({[\s\S]*})/);
-        if (match) {
-          return JSON.parse(match[1]);
-        }
-      } catch (e) {
-        // ignore JSON parse error on stdout
-      }
-    }
-    console.error(`Python script error (${scriptPath}):`, err);
-    throw err;
-  }
-}
+// runPythonScript is imported from './lib/skillsService.js'
 
 app.post('/api/agent/coupon/auth', async (req, res) => {
   try {
@@ -1428,43 +1411,11 @@ const VENUE_SKILL_DIR = path.join(__dirname, '..', 'skills', 'meituan-venue-guid
 const VENUE_AUTH_SCRIPT = path.join(VENUE_SKILL_DIR, 'scripts', 'auth.py');
 const VENUE_BIND_SCRIPT = path.join(VENUE_SKILL_DIR, 'scripts', 'bind.py');
 
-async function runVenuePythonScript(scriptPath: string, args: string[]): Promise<any> {
-  const pythonCmd = 'python';
-  const env = { ...process.env };
-  if (process.platform === 'win32') {
-    env.PATH = `${env.PATH || ''};c:\\Users\\24203\\Desktop\\Newly\\yantu-bao`;
-  }
-  console.log(`Executing Venue Python Script: ${pythonCmd} ${scriptPath} ${args.join(' ')}`);
-  try {
-    const { stdout } = await execFileAsync(pythonCmd, [scriptPath, ...args], { encoding: 'utf8', env });
-    const match = stdout.match(/({[\s\S]*})/);
-    if (match) {
-      return JSON.parse(match[1]);
-    }
-    return JSON.parse(stdout);
-  } catch (err: any) {
-    if (err.stdout) {
-      try {
-        const match = err.stdout.match(/({[\s\S]*})/);
-        if (match) {
-          return JSON.parse(match[1]);
-        }
-      } catch (e) {
-        // ignore
-      }
-    }
-    console.error(`Venue Python script error (${scriptPath}):`, err);
-    throw err;
-  }
-}
+// runVenuePythonScript is imported from './lib/skillsService.js'
 
 async function runPtPassport(args: string[]): Promise<string> {
-  const env = { ...process.env };
-  if (process.platform === 'win32') {
-    env.PATH = `${env.PATH || ''};c:\\Users\\24203\\Desktop\\Newly\\yantu-bao`;
-  }
-  const cmd = process.platform === 'win32' ? 'pt-passport.cmd' : 'pt-passport';
-  const { stdout } = await execFileAsync(cmd, args, { env, shell: process.platform === 'win32' });
+  const scriptPath = require.resolve('@mtuser/pt-passport');
+  const { stdout } = await execFileAsync('node', [scriptPath, ...args]);
   return stdout.trim();
 }
 
