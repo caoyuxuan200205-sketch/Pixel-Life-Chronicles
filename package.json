@@ -1,6 +1,7 @@
 {
   "name": "pixel-life-chronicles",
   "private": true,
+  "type": "module",
   "description": "Pixel Life Chronicles - AI-Native City Adventure Game",
   "workspaces": [
     "client",
