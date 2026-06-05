@@ -44,14 +44,7 @@ FreeWeek/
 
 ## 核心功能
 
-- **🕸️ LangGraph.js 多节点状态图智能代理 (StateGraph Agent Architecture)**：
-  - 后端 `/api/agent/chat` 接口采用 `Express.js` + `@langchain/langgraph` 重构，支持基于状态机（StateGraph）的多阶段工作流推理。
-  - **动态意图分流 (Router Node)**：由大模型担当智能路由器，根据用户最新消息对意图进行分类归入 `coupon` (领券), `ticket` (车票), `weekend` (周末规划), `venue` (导购), `chat` (日常闲聊) 等不同执行路径。
-  - **周末群像合盘时间线 (Weekend Node)**：当识别到周末出游或群像出游意向时，智能合盘当前结界内所有旅伴的八字五行和塔罗状态，量身定做 4-6 小时的综合游玩餐饮时间线，并直连真实商户预测排队桌数和特色轻食减脂/亲子服务。
-  - **美团特惠生活导购 (Venue Node)**：绑定本地化的 `meituan-venue-guide` 技能，通过解析 Markdown 链接并以 `imeituan://` 原生协议呼起手机美团 App 并直达专属优惠会场，实现无缝导购闭环。
-  - **商旅车票/机票直连 (Ticket Node & Tool)**：当查询出行票务时，触发 Tool 并拉取美团真实供给数据，流式输出带抢票直达链接的复古时空车票/机票卡。
-  - **静态意图直接响应 (Coupon Node)**：拦截并直达隐藏福利礼包券卡，支持非流式静态回复。
-  - **SSE 保底流式与单次运行优化**：在 streamEvents 事件流中自动通过 `on_chain_end` 捕获最终状态，避免 Graph 的双重调用（减少 50% 额外 LLM 延迟及 Token 消费）；针对非流式静态节点，实现 chunk 补偿写入，杜绝前端气泡白屏问题。
+- **AI 命运之轨规划 (Chrono-Destiny Plan)**：结合“八字干支五行”与“西方塔罗神谕”，整合用户的当前情绪状态（如疲惫、无聊），推演出今日特定时空下的联合命运出游契约。
 - **🔮 沉浸式塔罗抽选仪式 (Interactive Tarot Draw)**：
   - **78张全量牌库**：同步引入全量 78 张大/小阿卡纳卡牌数据库。
   - **多档选牌规则**：支持单牌占卜（1张）与时间之流三牌阵（过去/现在/未来，3张不重复卡牌）。
@@ -60,11 +53,14 @@ FreeWeek/
   - **多卡牌 3D 独立翻转**：规划结果页提供极其精致的 3D 卡牌偏转悬停及翻转动画。
 - **📝 结界伙伴契约修改 (Partner Covenant Management)**：
   - 在“我的”个人档案页面，针对“结界契约伙伴”增加了快捷“修改 (📝)”入口，支持对旅伴称呼、关系标签和玄学八字时空/塔罗参数进行实时回显修改，实现本地数据的闭环流转。
-- **🎨 视觉系统与精致排版升级**：
-  - **合理步骤推演层级**：将探路祭司的“推演过程”步骤面板（`LoadingStepsPanel`）重构至对话文本/契约卡片上方展示，符合先推导推理、后作答的认知逻辑。
-  - **绝对垂直对齐**：对话泡、卡片、推演面板宽度统一限制为 `320px`。移除推演面板的独立祭司头像，并通过 `marginLeft: '46px'` 保证了三者在竖直方向上完美对齐于同一条垂线上，极其精巧美观。
-  - **星罗盘交互视觉放大**：下移页面布局中心，放大星盘尺寸（外环直径增至 `190px`，磁针长度增至 `105px`，五行中心文字字号增至 `1.2rem`），增强玄学仪式感。
-  - **Markdown 粗体高亮**：解析气泡内 Markdown 格式的 `**粗体文本**` 渲染为金色主题发光字体（`#FFE169`），烘托神秘魔幻像素风格。
+- **🎫 真实出行车票/机票查询**：**星耀AI** 直连 **美团酒旅服务**。支持输入出行指令，后端自动提取意图，流式返回真实班次（带直达美团一键购票/抢票链接），生成复古像素风的“时空列车/飞行契约”实体卡。
+- **🛍️ 美团即时导购与隐藏福袋 (Meituan Direct Guide)**：
+  - 智能解析大模型返回的 Markdown 超链接，展示专属金色导购链接。
+  - **唤醒美团 App**：移动端点击超链接直接通过原生协议 `imeituan://` 呼叫并唤醒手机端美团 App，实现无缝导购闭环。
+- **🤖 LangGraph 多智能体架构 (Multi-Agent System)**：
+  - **分工明确的 Agent 网络**：基于 LangGraph 构建 Router 路由节点与多个专项专家节点（Ticket, Travel, Venue, Coupon），智能识别意图并路由执行。
+  - **SSE 实时流式响应**：前端通过 `fetchSSE` 接收后端大模型实时生成的每一个字，并在推演过程通过状态流同步各个子节点工具的执行情况（LoadingStepsPanel 效果）。
+- **📸 城市印章与拼豆创作**：通过 AR 探索与相机记录，将景点一键转化为 8-bit 像素图纸，并支持 Artkal 拼豆色卡统计及 PDF/PNG 图纸生成，联动美团闪购周边耗材包。
 
 ---
 
@@ -80,9 +76,9 @@ FreeWeek/
 
 ### 后端
 - Node.js + Express
-- LangGraph.js (`@langchain/langgraph` & `@langchain/core`)
-- LangChain OpenAI Adapter (`@langchain/openai`)
 - TypeScript
+- @langchain/langgraph & @langchain/core
+- Server-Sent Events (SSE)
 - Supabase SDK
 - axios
 - sharp
@@ -142,11 +138,6 @@ npm run dev
 - `VITE_SUPABASE_ANON_KEY`
 
 ### 后端 (`server/.env` 或 Vercel 环境变量)
-- `QWEN_API_KEY`（首选通义千问 API Key，如果配置则自动使用 Qwen 模型进行图推理路由）
-- `QWEN_MODEL`（通义千问模型 ID，例如 `Qwen/Qwen3.5-35B-A3B`）
-- `QWEN_BASE_URL`（通义千问 API Base URL）
-- `DOUBAO_API_KEY` / `VITE_DOUBAO_API_KEY`（保底豆包大模型 API Key）
-- `DOUBAO_MODEL_ID` / `VITE_DOUBAO_MODEL_ID`（保底豆包模型 Endpoint ID）
 - `SUPABASE_URL` 或 `VITE_SUPABASE_URL`
 - `SUPABASE_ANON_KEY` 或 `VITE_SUPABASE_ANON_KEY`
 - `MEITUAN_TRAVEL_TOKEN`（美团酒旅 CLI 抢票直连 Token，用于直连真实供给查询车票/机票）

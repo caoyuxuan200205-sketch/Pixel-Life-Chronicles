@@ -667,7 +667,8 @@ const LoadingStepsPanel = ({ theme, isLoading }: LoadingStepsPanelProps) => {
       className="pixel-panel" 
       style={{ 
         flex: 1,
-        maxWidth: '400px',
+        width: '100%',
+        boxSizing: 'border-box',
         background: 'var(--bg-card)', 
         border: '1px solid var(--pixel-border-color)',
         padding: '14px 16px',
@@ -1440,6 +1441,8 @@ export const AIPortalPage = () => {
           <div 
             className="pixel-panel"
             style={{ 
+              width: '100%',
+              boxSizing: 'border-box',
               padding: '12px 14px', 
               background: isUser ? 'rgba(226, 181, 83, 0.12)' : 'var(--bg-card)', 
               border: isUser ? '1px solid var(--primary)' : `1px solid var(--pixel-border-color)`,
@@ -1474,6 +1477,7 @@ export const AIPortalPage = () => {
                 flexDirection: 'column', 
                 gap: '0px', 
                 width: '100%', 
+                boxSizing: 'border-box',
                 maxWidth: '320px', 
                 marginTop: '4px',
                 border: `2px solid ${theme.color}`,
@@ -1737,6 +1741,7 @@ export const AIPortalPage = () => {
                 flexDirection: 'column', 
                 gap: '0px', 
                 width: '100%', 
+                boxSizing: 'border-box',
                 maxWidth: '320px', 
                 marginTop: '4px',
                 border: `2px solid ${theme.color}`,
@@ -1770,8 +1775,8 @@ export const AIPortalPage = () => {
                     <span style={{ fontSize: '1rem', fontWeight: 'bold', color: '#fff' }}>{ticketDeal.from}</span>
                     <span style={{ fontSize: '0.55rem', color: 'var(--text-muted)' }}>出发站</span>
                   </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1, position: 'relative', margin: '0 10px' }}>
-                    <span style={{ fontSize: '0.55rem', color: theme.color, position: 'absolute', top: '-12px' }}>{ticketDeal.date}</span>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1, margin: '0 10px' }}>
+                    <span style={{ fontSize: '0.55rem', color: theme.color, marginBottom: '2px' }}>{ticketDeal.date}</span>
                     <div style={{ width: '100%', height: '2px', background: 'rgba(255,255,255,0.15)', display: 'flex', justifyContent: 'center', alignItems: 'center', position: 'relative' }}>
                       <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: theme.color, position: 'absolute', left: 0 }} />
                       {ticketDeal.type === 'train' ? <Train size={12} style={{ color: theme.color, background: '#120d1c', padding: '0 2px', zIndex: 2 }} /> : <Plane size={12} style={{ color: theme.color, background: '#120d1c', padding: '0 2px', zIndex: 2 }} />}
@@ -1877,6 +1882,7 @@ export const AIPortalPage = () => {
                 flexDirection: 'column', 
                 gap: '0px', 
                 width: '100%', 
+                boxSizing: 'border-box',
                 maxWidth: '320px', 
                 marginTop: '4px',
                 border: `2px solid ${theme.color}`,
