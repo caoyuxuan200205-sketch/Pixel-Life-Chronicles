@@ -1,6 +1,6 @@
-import { ChatGraphState } from "../state";
-import { getChatModel } from "../../lib/llm";
-import { getWeekendSystemPrompt, getVenuePrompt } from "../prompts/systemPrompts";
+import { ChatGraphState } from "../state.js";
+import { getChatModel } from "../../lib/llm.js";
+import { getWeekendSystemPrompt, getVenuePrompt } from "../prompts/systemPrompts.js";
 
 export async function weekendNode(state: typeof ChatGraphState.State) {
   console.log(`[Weekend Node] Synthesizing 4-6 hour trip timeline for user: ${state.username} with ${state.boundMembers?.length || 0} members`);

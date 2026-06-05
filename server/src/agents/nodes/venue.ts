@@ -1,6 +1,6 @@
-import { ChatGraphState } from "../state";
-import { getChatModel } from "../../lib/llm";
-import { getGeneralSystemPrompt, getVenuePrompt, VENUE_UNACTIVATED_PROMPT } from "../prompts/systemPrompts";
+import { ChatGraphState } from "../state.js";
+import { getChatModel } from "../../lib/llm.js";
+import { getGeneralSystemPrompt, getVenuePrompt, VENUE_UNACTIVATED_PROMPT } from "../prompts/systemPrompts.js";
 
 export async function venueNode(state: typeof ChatGraphState.State) {
   console.log(`[Venue Node] Running shopping guide node. Activated link counts: ${state.venueLinks?.length || 0}`);

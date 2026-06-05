@@ -1,11 +1,11 @@
 import { StateGraph, START, END } from "@langchain/langgraph";
-import { ChatGraphState } from "./state";
-import { routerNode } from "./nodes/router";
-import { couponNode } from "./nodes/coupon";
-import { ticketNode } from "./nodes/ticket";
-import { weekendNode } from "./nodes/weekend";
-import { venueNode } from "./nodes/venue";
-import { chatNode } from "./nodes/chat";
+import { ChatGraphState } from "./state.js";
+import { routerNode } from "./nodes/router.js";
+import { couponNode } from "./nodes/coupon.js";
+import { ticketNode } from "./nodes/ticket.js";
+import { weekendNode } from "./nodes/weekend.js";
+import { venueNode } from "./nodes/venue.js";
+import { chatNode } from "./nodes/chat.js";
 
 export function buildChatGraph() {
   const graph = new StateGraph(ChatGraphState)

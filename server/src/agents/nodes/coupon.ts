@@ -1,4 +1,4 @@
-import { ChatGraphState } from "../state";
+import { ChatGraphState } from "../state.js";
 
 export async function couponNode(state: typeof ChatGraphState.State) {
   console.log(`[Coupon Node] Executing static coupon response.`);

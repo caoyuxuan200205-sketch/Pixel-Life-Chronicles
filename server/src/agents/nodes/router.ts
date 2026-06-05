@@ -1,7 +1,7 @@
-import { ChatGraphState } from "../state";
-import { getChatModel } from "../../lib/llm";
-import { ROUTER_PROMPT } from "../prompts/systemPrompts";
-import { extractTicketIntent } from "../tools/ticketTools";
+import { ChatGraphState } from "../state.js";
+import { getChatModel } from "../../lib/llm.js";
+import { ROUTER_PROMPT } from "../prompts/systemPrompts.js";
+import { extractTicketIntent } from "../tools/ticketTools.js";
 
 export async function routerNode(state: typeof ChatGraphState.State) {
   const messages = state.messages || [];

@@ -1,7 +1,7 @@
-import { ChatGraphState } from "../state";
-import { queryMeituanTravelCLI } from "../tools/ticketTools";
-import { getChatModel } from "../../lib/llm";
-import { TICKET_SYSTEM_PROMPT } from "../prompts/systemPrompts";
+import { ChatGraphState } from "../state.js";
+import { queryMeituanTravelCLI } from "../tools/ticketTools.js";
+import { getChatModel } from "../../lib/llm.js";
+import { TICKET_SYSTEM_PROMPT } from "../prompts/systemPrompts.js";
 
 export async function ticketNode(state: typeof ChatGraphState.State) {
   console.log(`[Ticket Node] Invoking ticket tools with params:`, state.ticketParams);

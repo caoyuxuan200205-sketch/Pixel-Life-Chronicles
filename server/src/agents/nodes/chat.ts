@@ -1,6 +1,6 @@
-import { ChatGraphState } from "../state";
-import { getChatModel } from "../../lib/llm";
-import { getGeneralSystemPrompt, VENUE_UNACTIVATED_PROMPT } from "../prompts/systemPrompts";
+import { ChatGraphState } from "../state.js";
+import { getChatModel } from "../../lib/llm.js";
+import { getGeneralSystemPrompt, VENUE_UNACTIVATED_PROMPT } from "../prompts/systemPrompts.js";
 
 export async function chatNode(state: typeof ChatGraphState.State) {
   console.log(`[Chat Node] Handling chat interaction for user: ${state.username}`);

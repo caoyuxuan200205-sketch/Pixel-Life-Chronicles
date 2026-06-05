@@ -9,13 +9,13 @@ import QRCode from 'qrcode';
 import fs from 'fs';
 import path from 'path';
 import { createClient } from '@supabase/supabase-js';
-import { calculateBazi } from './baziHelper';
+import { calculateBazi } from './baziHelper.js';
 import { execFile } from 'child_process';
 import { promisify } from 'util';
 import os from 'os';
 
-import { buildChatGraph } from './agents/chatGraph';
-import { streamGraphToSSE } from './lib/streaming';
+import { buildChatGraph } from './agents/chatGraph.js';
+import { streamGraphToSSE } from './lib/streaming.js';
 
 const execFileAsync = promisify(execFile);
 const chatGraph = buildChatGraph();
