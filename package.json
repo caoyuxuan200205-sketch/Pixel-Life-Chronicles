@@ -1,7 +1,6 @@
 {
   "name": "pixel-life-chronicles",
   "private": true,
-  "type": "module",
   "description": "Pixel Life Chronicles - AI-Native City Adventure Game",
   "workspaces": [
     "client",
@@ -26,6 +25,10 @@
     "express": "^4.19.2",
     "pdf-lib": "^1.17.1",
     "qrcode": "^1.5.4",
-    "sharp": "^0.33.4"
+    "sharp": "^0.33.4",
+    "uuid": "^9.0.1"
+  },
+  "overrides": {
+    "uuid": "^9.0.1"
   }
 }
