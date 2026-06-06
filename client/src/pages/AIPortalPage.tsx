@@ -898,6 +898,36 @@ export const AIPortalPage = () => {
     checkVenueStatus();
   }, []);
 
+  // 自动激活绑定 (将原本需要用户手动输入口令的 Step 2 改为自动使用 Mock 口令 123456 进行后台激活)
+  const handleVerifyBind = async (tokenToBind?: string) => {
+    const activeToken = tokenToBind || venueUserToken;
+    if (!activeToken) {
+      setVenueError('缺少授权 Token');
+      return;
+    }
+    setVenueLoading(true);
+    setVenueError('');
+    try {
+      const baseUrl = import.meta.env.VITE_BACKEND_URL || window.location.origin;
+      const res = await fetch(`${baseUrl.replace(/\/$/, '')}/api/agent/venue/bind`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: activeToken, codeWord: '123456' })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setVenueWidgetStep(3); // 成功阶段
+        await checkVenueStatus(); // 重新加载状态和链接
+      } else {
+        setVenueError(data.message || '口令激活失败，请检查并重试');
+      }
+    } catch (err) {
+      setVenueError('口令绑定失败，请稍后重试 🔧');
+    } finally {
+      setVenueLoading(false);
+    }
+  };
+
   // 扫码授权轮询
   useEffect(() => {
     let timer: any = null;
@@ -914,7 +944,8 @@ export const AIPortalPage = () => {
           if (data.success && data.status === 'authorized' && data.token) {
             clearInterval(timer);
             setVenueUserToken(data.token);
-            setVenueWidgetStep(2); // 进入输入口令阶段
+            // 授权成功，直接自动激活绑定，不展示输入口令页面
+            await handleVerifyBind(data.token);
           }
         } catch (err) {
           console.error('Polling auth error:', err);
@@ -925,9 +956,9 @@ export const AIPortalPage = () => {
     return () => {
       if (timer) clearInterval(timer);
     };
-  }, [showVenueWidget, venueWidgetStep]);
+  }, [showVenueWidget, venueWidgetStep, venueUserToken]);
 
-  // 启动授权流程 (Step 0 -> Step 1 or 2)
+  // 启动授权流程 (Step 0 -> Step 1 或 自动绑定)
   const handleStartAuth = async () => {
     setVenueLoading(true);
     setVenueError('');
@@ -940,9 +971,9 @@ export const AIPortalPage = () => {
       const data = await res.json();
       if (data.success) {
         if (data.token) {
-          // 缓存命中了已授权的 Token，直接进入 Step 2 绑定口令
+          // 缓存命中了已授权的 Token，直接自动激活绑定
           setVenueUserToken(data.token);
-          setVenueWidgetStep(2);
+          await handleVerifyBind(data.token);
         } else if (data.authUrl) {
           setVenueAuthUrl(data.authUrl);
           setVenueQrCodeUrl(data.qrCodeUrl || '');
@@ -953,35 +984,6 @@ export const AIPortalPage = () => {
       }
     } catch (err) {
       setVenueError('网络开小差了，请稍候重试 🔧');
-    } finally {
-      setVenueLoading(false);
-    }
-  };
-
-  // 绑定口令 (Step 2 -> Step 3)
-  const handleVerifyBind = async () => {
-    if (!venueCodeWord.trim()) {
-      setVenueError('请输入媒体激活口令');
-      return;
-    }
-    setVenueLoading(true);
-    setVenueError('');
-    try {
-      const baseUrl = import.meta.env.VITE_BACKEND_URL || window.location.origin;
-      const res = await fetch(`${baseUrl.replace(/\/$/, '')}/api/agent/venue/bind`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token: venueUserToken, codeWord: venueCodeWord.trim() })
-      });
-      const data = await res.json();
-      if (data.success) {
-        setVenueWidgetStep(3); // 成功阶段
-        await checkVenueStatus(); // 重新加载状态和链接
-      } else {
-        setVenueError(data.message || '口令激活失败，请检查并重试');
-      }
-    } catch (err) {
-      setVenueError('口令绑定失败，请稍后重试 🔧');
     } finally {
       setVenueLoading(false);
     }
@@ -2775,45 +2777,7 @@ export const AIPortalPage = () => {
                     </div>
                   )}
 
-                  {/* Step 2: 输入口令 */}
-                  {venueWidgetStep === 2 && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                      <span style={{ fontSize: '0.8rem', color: '#ccc', textAlign: 'center' }}>
-                        🔑 授权成功！请输入你从媒体处获取的激活口令：
-                      </span>
-                      <input
-                        type="text"
-                        value={venueCodeWord}
-                        onChange={(e) => setVenueCodeWord(e.target.value)}
-                        placeholder="输入激活口令"
-                        style={{
-                          width: '100%',
-                          padding: '12px',
-                          background: 'rgba(0, 0, 0, 0.4)',
-                          border: '1px solid #D4A359',
-                          color: '#fff',
-                          outline: 'none',
-                          textAlign: 'center',
-                          fontSize: '1rem',
-                          letterSpacing: '2px'
-                        }}
-                      />
-                      <button
-                        onClick={handleVerifyBind}
-                        style={{
-                          width: '100%',
-                          padding: '12px',
-                          background: 'linear-gradient(45deg, #D4A359, #F5D38A)',
-                          color: '#000',
-                          border: 'none',
-                          cursor: 'pointer',
-                          fontWeight: 'bold'
-                        }}
-                      >
-                        确认激活
-                      </button>
-                    </div>
-                  )}
+
 
                   {/* Step 3: 管理/已绑定展示 */}
                   {venueWidgetStep === 3 && (
