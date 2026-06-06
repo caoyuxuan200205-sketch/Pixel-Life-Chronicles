@@ -301,7 +301,7 @@ const CouponWidget = () => {
       const data = await res.json();
       if (data.error) {
          setMessage(data.message || data.error);
-      } else if (data.valid && data.user_token) {
+      } else if ((data.valid || data.success) && data.user_token) {
          localStorage.setItem('coupon_phone_masked', phone.replace(/(\d{3})\d{4}(\d{4})/, '$1****$2'));
          setStep(2);
          issueCoupon(data.user_token);
