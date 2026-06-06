@@ -335,14 +335,15 @@ const CouponWidget = () => {
       transition={{ duration: 0.4, ease: 'easeOut' }}
       style={{ 
         marginTop: '20px', 
-        padding: '24px', 
+        padding: '16px', 
         background: 'rgba(20, 15, 25, 0.65)', 
         backdropFilter: 'blur(16px)',
         border: '1px solid rgba(226, 181, 83, 0.4)',
         boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4), inset 0 0 20px rgba(226, 181, 83, 0.05)',
         color: '#fff', 
         fontSize: '0.85rem', 
-        borderRadius: '16px' 
+        borderRadius: '16px',
+        boxSizing: 'border-box'
       }}>
       
       <h3 style={{ 
@@ -405,7 +406,7 @@ const CouponWidget = () => {
             )}
           </AnimatePresence>
 
-          <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: '12px', alignItems: 'center', width: '100%', boxSizing: 'border-box' }}>
             <input 
               type="text" 
               placeholder="请输入11位手机号" 
@@ -414,7 +415,7 @@ const CouponWidget = () => {
               onFocus={() => setFocusInput('phone')}
               onBlur={() => setFocusInput('')}
               style={{ 
-                flex: 1, height: '44px', padding: '12px 16px', background: 'rgba(0,0,0,0.3)', 
+                flex: 1, minWidth: 0, width: '100%', height: '44px', padding: '12px 12px', background: 'rgba(0,0,0,0.3)', 
                 border: focusInput === 'phone' ? '1px solid #FFDF8D' : '1px solid rgba(226, 181, 83, 0.3)', 
                 color: '#FFDF8D', borderRadius: '8px', outline: 'none', transition: 'all 0.3s',
                 boxSizing: 'border-box',
@@ -427,7 +428,7 @@ const CouponWidget = () => {
                 whileHover={phone ? { scale: 1.02 } : {}} whileTap={phone ? { scale: 0.95 } : {}}
                 onClick={handleSendSms} disabled={loading || !phone} 
                 style={{ 
-                  height: '44px', padding: '0 20px', 
+                  height: '44px', padding: '0 12px', fontSize: '0.8rem',
                   background: phone ? 'linear-gradient(135deg, #FFDF8D 0%, #D4AF37 100%)' : 'rgba(255,255,255,0.1)', 
                   color: phone ? '#111' : 'rgba(255,255,255,0.3)', 
                   border: 'none', borderRadius: '8px', cursor: phone ? 'pointer' : 'not-allowed', 
@@ -443,7 +444,7 @@ const CouponWidget = () => {
           </div>
           
           {showCodeInput && (
-            <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+            <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} style={{ display: 'flex', gap: '12px', alignItems: 'center', width: '100%', boxSizing: 'border-box' }}>
               <input 
                 type="text" 
                 placeholder="请输入6位短信验证码" 
@@ -452,7 +453,7 @@ const CouponWidget = () => {
                 onFocus={() => setFocusInput('code')}
                 onBlur={() => setFocusInput('')}
                 style={{ 
-                  flex: 1, height: '44px', padding: '12px 16px', background: 'rgba(0,0,0,0.3)', 
+                  flex: 1, minWidth: 0, width: '100%', height: '44px', padding: '12px 12px', background: 'rgba(0,0,0,0.3)', 
                   border: focusInput === 'code' ? '1px solid #FFDF8D' : '1px solid rgba(226, 181, 83, 0.3)', 
                   color: '#FFDF8D', borderRadius: '8px', outline: 'none', transition: 'all 0.3s',
                   boxSizing: 'border-box',
@@ -464,7 +465,7 @@ const CouponWidget = () => {
                 whileHover={code ? { scale: 1.02 } : {}} whileTap={code ? { scale: 0.95 } : {}}
                 onClick={handleVerify} disabled={loading || !code} 
                 style={{ 
-                  height: '44px', padding: '0 20px', 
+                  height: '44px', padding: '0 12px', fontSize: '0.8rem',
                   background: code ? 'linear-gradient(135deg, #FFDF8D 0%, #D4AF37 100%)' : 'rgba(255,255,255,0.1)', 
                   color: code ? '#111' : 'rgba(255,255,255,0.3)', 
                   border: 'none', borderRadius: '8px', cursor: code ? 'pointer' : 'not-allowed', 
