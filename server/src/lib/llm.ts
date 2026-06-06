@@ -11,6 +11,7 @@ export function getChatModel(): ChatOpenAI {
       apiKey: qwenApiKey.trim(),
       configuration: {
         baseURL: (process.env.QWEN_BASE_URL || 'https://api-inference.modelscope.cn/v1').trim(),
+        timeout: 20000, // 增加到 20 秒超时，给予通义千问充足的响应时间
       },
       modelName: qwenModel,
       temperature: 0.7,

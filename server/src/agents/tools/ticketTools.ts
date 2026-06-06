@@ -63,7 +63,7 @@ export async function extractTicketIntent(userText: string, defaultCity: string)
         'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json'
       },
-      timeout: 6000
+      timeout: 15000 // 增加到 15 秒超时，防止网络卡顿导致通义千问超时
     });
 
     const content = response.data?.choices?.[0]?.message?.content || '';
@@ -82,6 +82,7 @@ export async function extractTicketIntent(userText: string, defaultCity: string)
     };
   } catch (error) {
     console.error('Failed to extract ticket intent in LangGraph:', error);
+    
     // Fallback to regex
     const hasTicketKw = /票|车|机|航班|高铁|火车|飞|出行/.test(userText);
     if (hasTicketKw) {
