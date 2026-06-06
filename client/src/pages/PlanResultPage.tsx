@@ -104,7 +104,7 @@ export const PlanResultPage = () => {
 
         const polyline = new AMap.Polyline({
           path: coordinates,
-          strokeColor: 'var(--primary)',
+          strokeColor: '#e2b553',
           strokeOpacity: 0.8,
           strokeWeight: 4,
           strokeStyle: 'dashed',
