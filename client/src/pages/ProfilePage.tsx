@@ -828,52 +828,28 @@ export const ProfilePage = () => {
                         type="date"
                         value={myBirthDate}
                         onChange={(e) => setMyBirthDate(e.target.value)}
-                        style={{
-                          width: '100%',
-                          background: '#1a1714',
-                          border: '1px solid var(--pixel-border-color)',
-                          color: '#fff',
-                          padding: '8px',
-                          fontSize: '0.8rem',
-                          outline: 'none'
-                        }}
+                        className="bazi-input"
                       />
                     </div>
 
-                    <div style={{ display: 'flex', gap: '10px' }}>
-                      <div style={{ flex: 1.2 }}>
+                    <div className="bazi-fields-row">
+                      <div className="bazi-time-col">
                         <label style={{ display: 'block', fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '4px' }}>出生时辰</label>
                         <input
                           type="time"
                           value={myBirthTime}
                           onChange={(e) => setMyBirthTime(e.target.value)}
-                          style={{
-                            width: '100%',
-                            background: '#1a1714',
-                            border: '1px solid var(--pixel-border-color)',
-                            color: '#fff',
-                            padding: '8px',
-                            fontSize: '0.8rem',
-                            outline: 'none'
-                          }}
+                          className="bazi-input"
                         />
                       </div>
-                      <div style={{ flex: 1.8 }}>
+                      <div className="bazi-place-col">
                         <label style={{ display: 'block', fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '4px' }}>出生地点</label>
                         <input
                           type="text"
                           placeholder="省/市"
                           value={myBirthPlace}
                           onChange={(e) => setMyBirthPlace(e.target.value)}
-                          style={{
-                            width: '100%',
-                            background: '#1a1714',
-                            border: '1px solid var(--pixel-border-color)',
-                            color: '#fff',
-                            padding: '8px',
-                            fontSize: '0.8rem',
-                            outline: 'none'
-                          }}
+                          className="bazi-input"
                         />
                       </div>
                     </div>
@@ -967,52 +943,28 @@ export const ProfilePage = () => {
                         type="date"
                         value={newPartnerDate}
                         onChange={(e) => setNewPartnerDate(e.target.value)}
-                        style={{
-                          width: '100%',
-                          background: '#1a1714',
-                          border: '1px solid var(--pixel-border-color)',
-                          color: '#fff',
-                          padding: '8px',
-                          fontSize: '0.8rem',
-                          outline: 'none'
-                        }}
+                        className="bazi-input"
                       />
                     </div>
 
-                    <div style={{ display: 'flex', gap: '10px' }}>
-                      <div style={{ flex: 1.2 }}>
+                    <div className="bazi-fields-row">
+                      <div className="bazi-time-col">
                         <label style={{ display: 'block', fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '4px' }}>出生时辰</label>
                         <input
                           type="time"
                           value={newPartnerTime}
                           onChange={(e) => setNewPartnerTime(e.target.value)}
-                          style={{
-                            width: '100%',
-                            background: '#1a1714',
-                            border: '1px solid var(--pixel-border-color)',
-                            color: '#fff',
-                            padding: '8px',
-                            fontSize: '0.8rem',
-                            outline: 'none'
-                          }}
+                          className="bazi-input"
                         />
                       </div>
-                      <div style={{ flex: 1.8 }}>
+                      <div className="bazi-place-col">
                         <label style={{ display: 'block', fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '4px' }}>出生地点</label>
                         <input
                           type="text"
                           placeholder="省/市"
                           value={newPartnerPlace}
                           onChange={(e) => setNewPartnerPlace(e.target.value)}
-                          style={{
-                            width: '100%',
-                            background: '#1a1714',
-                            border: '1px solid var(--pixel-border-color)',
-                            color: '#fff',
-                            padding: '8px',
-                            fontSize: '0.8rem',
-                            outline: 'none'
-                          }}
+                          className="bazi-input"
                         />
                       </div>
                     </div>
@@ -1106,52 +1058,28 @@ export const ProfilePage = () => {
                         type="date"
                         value={editPartnerDate}
                         onChange={(e) => setEditPartnerDate(e.target.value)}
-                        style={{
-                          width: '100%',
-                          background: '#1a1714',
-                          border: '1px solid var(--pixel-border-color)',
-                          color: '#fff',
-                          padding: '8px',
-                          fontSize: '0.8rem',
-                          outline: 'none'
-                        }}
+                        className="bazi-input"
                       />
                     </div>
 
-                    <div style={{ display: 'flex', gap: '10px' }}>
-                      <div style={{ flex: 1.2 }}>
+                    <div className="bazi-fields-row">
+                      <div className="bazi-time-col">
                         <label style={{ display: 'block', fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '4px' }}>出生时辰</label>
                         <input
                           type="time"
                           value={editPartnerTime}
                           onChange={(e) => setEditPartnerTime(e.target.value)}
-                          style={{
-                            width: '100%',
-                            background: '#1a1714',
-                            border: '1px solid var(--pixel-border-color)',
-                            color: '#fff',
-                            padding: '8px',
-                            fontSize: '0.8rem',
-                            outline: 'none'
-                          }}
+                          className="bazi-input"
                         />
                       </div>
-                      <div style={{ flex: 1.8 }}>
+                      <div className="bazi-place-col">
                         <label style={{ display: 'block', fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '4px' }}>出生地点</label>
                         <input
                           type="text"
                           placeholder="省/市"
                           value={editPartnerPlace}
                           onChange={(e) => setEditPartnerPlace(e.target.value)}
-                          style={{
-                            width: '100%',
-                            background: '#1a1714',
-                            border: '1px solid var(--pixel-border-color)',
-                            color: '#fff',
-                            padding: '8px',
-                            fontSize: '0.8rem',
-                            outline: 'none'
-                          }}
+                          className="bazi-input"
                         />
                       </div>
                     </div>

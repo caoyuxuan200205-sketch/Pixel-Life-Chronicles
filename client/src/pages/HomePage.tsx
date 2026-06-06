@@ -1122,76 +1122,45 @@ export const HomePage = () => {
             ) : (
               // 八字配置：生辰八字输入区
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                <div style={{ display: 'flex', gap: '10px' }}>
-                  <div style={{ flex: 1.5 }}>
+                <div className="homepage-bazi-row">
+                  <div className="homepage-bazi-col-left-1">
                     <label style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>出生公历日期</label>
                     <input
                       type="date"
                       value={member.baziInfo?.birthDate}
                       onChange={(e) => updateBazi(member.id, 'birthDate', e.target.value)}
-                      style={{
-                        width: '100%',
-                        background: 'rgba(0,0,0,0.5)',
-                        border: '1px solid var(--pixel-border-color)',
-                        color: '#fff',
-                        padding: '6px',
-                        fontSize: '0.75rem',
-                        outline: 'none'
-                      }}
+                      className="bazi-input"
                     />
                   </div>
-                  <div style={{ flex: 1 }}>
+                  <div className="homepage-bazi-col-right-1">
                     <label style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>出生时辰</label>
                     <input
                       type="time"
                       value={member.baziInfo?.birthTime}
                       onChange={(e) => updateBazi(member.id, 'birthTime', e.target.value)}
-                      style={{
-                        width: '100%',
-                        background: 'rgba(0,0,0,0.5)',
-                        border: '1px solid var(--pixel-border-color)',
-                        color: '#fff',
-                        padding: '6px',
-                        fontSize: '0.75rem',
-                        outline: 'none'
-                      }}
+                      className="bazi-input"
                     />
                   </div>
                 </div>
 
-                <div style={{ display: 'flex', gap: '10px' }}>
-                  <div style={{ flex: 1.2 }}>
+                <div className="homepage-bazi-row">
+                  <div className="homepage-bazi-col-left-2">
                     <label style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>出生地点</label>
                     <input
                       type="text"
                       placeholder="省/市"
                       value={member.baziInfo?.birthPlace}
                       onChange={(e) => updateBazi(member.id, 'birthPlace', e.target.value)}
-                      style={{
-                        width: '100%',
-                        background: 'rgba(0,0,0,0.5)',
-                        border: '1px solid var(--pixel-border-color)',
-                        color: '#fff',
-                        padding: '6px',
-                        fontSize: '0.75rem',
-                        outline: 'none'
-                      }}
+                      className="bazi-input"
                     />
                   </div>
-                  <div style={{ flex: 1.8 }}>
+                  <div className="homepage-bazi-col-right-2">
                     <label style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>今日所谋求契机</label>
                     <select
                       value={['travel', 'fortune', 'relation', 'work'].includes(member.baziInfo?.queryType || '') ? member.baziInfo?.queryType : 'custom'}
                       onChange={(e) => updateBazi(member.id, 'queryType', e.target.value)}
-                      style={{
-                        width: '100%',
-                        background: 'rgba(0,0,0,0.5)',
-                        border: '1px solid var(--pixel-border-color)',
-                        color: '#fff',
-                        padding: '6px',
-                        fontSize: '0.75rem',
-                        outline: 'none'
-                      }}
+                      className="bazi-input"
+                      style={{ padding: '6px 10px' }}
                     >
                       <option value="travel">🚶 闲暇闲逛 (祈求顺遂)</option>
                       <option value="fortune">💰 财源滚滚 (气场捞金)</option>

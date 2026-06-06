@@ -595,3 +595,60 @@ body {
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
+
+/* Mobile Responsive Optimization for Bazi/Time inputs */
+.bazi-input {
+  width: 100%;
+  background: #1a1714 !important;
+  border: 1px solid var(--pixel-border-color) !important;
+  color: #fff !important;
+  padding: 8px 10px !important;
+  font-size: 0.8rem !important;
+  outline: none !important;
+  min-height: 38px !important;
+  box-sizing: border-box !important;
+  display: block !important;
+}
+
+.bazi-fields-row {
+  display: flex !important;
+  gap: 10px !important;
+  width: 100% !important;
+}
+
+.bazi-time-col {
+  flex: 1.2 !important;
+}
+
+.bazi-place-col {
+  flex: 1.8 !important;
+}
+
+/* Homepage specific Bazi layouts */
+.homepage-bazi-row {
+  display: flex !important;
+  gap: 10px !important;
+  width: 100% !important;
+}
+.homepage-bazi-col-left-1 { flex: 1.5 !important; }
+.homepage-bazi-col-right-1 { flex: 1 !important; }
+.homepage-bazi-col-left-2 { flex: 1.2 !important; }
+.homepage-bazi-col-right-2 { flex: 1.8 !important; }
+
+@media (max-width: 480px) {
+  .bazi-fields-row,
+  .homepage-bazi-row {
+    flex-direction: column !important;
+    gap: 10px !important;
+  }
+  .bazi-time-col,
+  .bazi-place-col,
+  .homepage-bazi-col-left-1,
+  .homepage-bazi-col-right-1,
+  .homepage-bazi-col-left-2,
+  .homepage-bazi-col-right-2 {
+    flex: 1 1 100% !important;
+    width: 100% !important;
+  }
+}
+
