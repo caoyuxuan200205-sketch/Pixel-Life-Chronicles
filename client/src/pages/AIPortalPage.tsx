@@ -1129,6 +1129,16 @@ export const AIPortalPage = () => {
       if (!resData.success || !resData.reply) {
         throw new Error(resData.error || '解析出游契约答复失败');
       }
+
+      setMessages(prev => {
+        const newMsgs = [...prev];
+        const lastMsg = { ...newMsgs[newMsgs.length - 1] };
+        if (lastMsg.role === 'assistant') {
+          lastMsg.content = resData.reply;
+          newMsgs[newMsgs.length - 1] = lastMsg;
+        }
+        return newMsgs;
+      });
     } catch (err: any) {
       console.error('Chat AI query error:', err);
       
