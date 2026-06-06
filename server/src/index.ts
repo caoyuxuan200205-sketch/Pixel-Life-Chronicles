@@ -10,6 +10,7 @@ import fs from 'fs';
 import path from 'path';
 import { createClient } from '@supabase/supabase-js';
 import { calculateBazi } from './baziHelper.js';
+import { estimateTravel } from './agents/utils/geoUtils.js';
 import { execFile } from 'child_process';
 import { promisify } from 'util';
 import os from 'os';
@@ -1061,36 +1062,127 @@ ${cosmicContext}
           }
 
           const planId = `plan_${Date.now()}`;
+          
+          const parseTimeRange = (timeStr: string) => {
+            const match = timeStr.match(/(\d{1,2})[：:](\d{2})\s*[-~至—]\s*(\d{1,2})[：:](\d{2})/);
+            if (!match) return null;
+            const startHour = parseInt(match[1]);
+            const startMin = parseInt(match[2]);
+            const endHour = parseInt(match[3]);
+            const endMin = parseInt(match[4]);
+            return {
+              start: startHour * 60 + startMin,
+              end: endHour * 60 + endMin
+            };
+          };
+
+          const formatTime = (minutes: number) => {
+            const h = Math.floor(minutes / 60) % 24;
+            const m = minutes % 60;
+            return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+          };
+
+          const parseStartTime = (startStr: string) => {
+            const match = startStr.match(/(\d{1,2})[：:](\d{2})/);
+            if (!match) return 14 * 60; // 默认 14:00
+            return parseInt(match[1]) * 60 + parseInt(match[2]);
+          };
+
+          const baseEvents = planData.itinerary.map((event: any, idx: number) => {
+            const poiEntity = pois.find((p: any) => p.id === event.poiId) || 
+                              candidatePois[idx % candidatePois.length];
+            
+            let bookingStatus = undefined;
+            if (event.suggestedBooking && event.suggestedBooking.type !== 'none') {
+              bookingStatus = {
+                type: event.suggestedBooking.type,
+                name: event.suggestedBooking.name,
+                status: 'pending',
+                detail: event.suggestedBooking.detail
+              };
+            } else if (event.bookingStatus) {
+              bookingStatus = event.bookingStatus;
+            }
+
+            return {
+              id: event.id || `event_${planId}_${idx}`,
+              poi: poiEntity,
+              timeSlot: event.timeSlot,
+              activityName: event.activityName,
+              mysticReasoning: event.mysticReasoning,
+              bookingStatus
+            };
+          });
+
+          const resolvedItinerary: any[] = [];
+          let lastEnd = -1;
+          let lastPoi: any = null;
+          const baseStartMin = parseStartTime(startTime);
+
+          for (let i = 0; i < baseEvents.length; i++) {
+            const event = { ...baseEvents[i] };
+            const range = parseTimeRange(event.timeSlot);
+            
+            let duration = 90; // 默认 1.5 小时
+            if (range) {
+              duration = range.end - range.start;
+            }
+
+            let start = i === 0 ? baseStartMin : (range ? range.start : baseStartMin);
+            let end = start + duration;
+
+            if (i > 0 && lastEnd !== -1 && lastPoi) {
+              const prevLoc = lastPoi.location || [120.15, 30.25];
+              const currLoc = event.poi.location || [120.15, 30.25];
+              const travel = estimateTravel(prevLoc, currLoc);
+              const T = travel.durationMinutes;
+              const distKm = (travel.distanceMeters / 1000).toFixed(1);
+
+              const earliestStart = lastEnd + T;
+              let transitStart = lastEnd;
+              let transitEnd = earliestStart;
+
+              if (start < earliestStart) {
+                start = earliestStart;
+                end = start + duration;
+              } else {
+                transitStart = start - T;
+                transitEnd = start;
+              }
+
+              resolvedItinerary.push({
+                id: `transit_${planId}_${i}`,
+                poi: {
+                  id: 'transit',
+                  name: '时空连线',
+                  type: '交通出行;时空流转',
+                  rating: 5.0,
+                  distance: travel.distanceMeters,
+                  address: `以【${travel.modeZh}】方式行驶 ${distKm}km`,
+                  location: prevLoc
+                },
+                timeSlot: `${formatTime(transitStart)} - ${formatTime(transitEnd)}`,
+                activityName: '🚲 时空流转：前往下一站点',
+                mysticReasoning: `结界伙伴在此凝聚星轨，以【${travel.modeZh}】方式跨越 ${distKm} 公里前往下一站，预计耗时 ${T} 分钟。`,
+                bookingStatus: undefined
+              });
+            } else if (i === 0) {
+              start = baseStartMin;
+              end = start + duration;
+            }
+
+            event.timeSlot = `${formatTime(start)} - ${formatTime(end)}`;
+            resolvedItinerary.push(event);
+            lastEnd = end;
+            lastPoi = event.poi;
+          }
+
           return {
             id: planId,
             members: processedMembers,
             timeBudget,
             divinationSynthesis: planData.divinationSynthesis,
-            itinerary: planData.itinerary.map((event: any, idx: number) => {
-              const poiEntity = pois.find((p: any) => p.id === event.poiId) || 
-                                candidatePois[idx % candidatePois.length];
-              
-              let bookingStatus = undefined;
-              if (event.suggestedBooking && event.suggestedBooking.type !== 'none') {
-                bookingStatus = {
-                  type: event.suggestedBooking.type,
-                  name: event.suggestedBooking.name,
-                  status: 'pending',
-                  detail: event.suggestedBooking.detail
-                };
-              } else if (event.bookingStatus) {
-                bookingStatus = event.bookingStatus;
-              }
-
-              return {
-                id: event.id || `event_${planId}_${idx}`,
-                poi: poiEntity,
-                timeSlot: event.timeSlot,
-                activityName: event.activityName,
-                mysticReasoning: event.mysticReasoning,
-                bookingStatus
-              };
-            }),
+            itinerary: resolvedItinerary,
             individualReadings: planData.individualReadings.map((reading: any) => {
               const member = processedMembers.find((m: any) => m.id === reading.memberId);
               

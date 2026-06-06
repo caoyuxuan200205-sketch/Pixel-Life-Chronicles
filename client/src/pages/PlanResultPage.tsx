@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { Sparkles, MapPin, Navigation, ShoppingBag, ShieldCheck, PhoneCall, ChevronRight, Wand2, RefreshCw, Share2 } from 'lucide-react';
@@ -43,6 +43,19 @@ export const PlanResultPage = () => {
     track('agent_plan_result_view');
   }, [navigate]);
 
+  const itineraryWithIndices = useMemo(() => {
+    if (!plan) return [];
+    let poiCounter = 0;
+    return plan.itinerary.map(event => {
+      const isTransit = event.poi?.type?.includes('时空流转') || event.poi?.type?.includes('交通出行') || String(event.activityName).includes('时空流转');
+      return {
+        ...event,
+        isTransit,
+        poiIndex: isTransit ? -1 : ++poiCounter
+      };
+    });
+  }, [plan]);
+
   // 微地图生命周期
   useEffect(() => {
     if (!plan) return;
@@ -61,7 +74,9 @@ export const PlanResultPage = () => {
           plugins: []
         });
 
-        const coordinates = plan.itinerary.map(item => item.poi.location) as [number, number][];
+        const coordinates = plan.itinerary
+          .filter(item => item.poi && item.poi.type !== '交通出行;时空流转')
+          .map(item => item.poi.location) as [number, number][];
         if (coordinates.length === 0) return;
 
         const avgLng = coordinates.reduce((sum, c) => sum + c[0], 0) / coordinates.length;
@@ -334,123 +349,151 @@ export const PlanResultPage = () => {
       </h3>
 
       <div style={{ position: 'relative', paddingLeft: '24px', borderLeft: '2px dashed var(--pixel-border-color)', marginLeft: '12px', display: 'flex', flexDirection: 'column', gap: '32px', marginBottom: '40px' }}>
-        {plan.itinerary.map((event, idx) => (
-          <motion.div 
-            key={event.id}
-            initial={{ opacity: 0, x: -10 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: idx * 0.15 }}
-            style={{ position: 'relative' }}
-          >
-            {/* 时间轴左侧的小圆圈 */}
-            <div style={{ 
-              position: 'absolute', 
-              left: '-33px', 
-              top: '4px', 
-              width: '16px', 
-              height: '16px', 
-              borderRadius: '50%', 
-              background: 'var(--primary)', 
-              border: '3px solid var(--bg-dark)',
-              boxShadow: '0 0 8px var(--primary-glow)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '0.5rem',
-              color: '#000',
-              fontWeight: 'bold'
-            }}>
-              {idx + 1}
-            </div>
-
-            {/* 活动卡片 */}
-            <div className="pixel-panel" style={{ padding: '20px', background: 'var(--bg-card)' }}>
-              {/* 卡片头部 */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
-                <div>
-                  <span style={{ fontSize: '0.65rem', color: 'var(--primary)', fontFamily: 'var(--font-mono)' }}>{event.timeSlot}</span>
-                  <h4 style={{ color: '#fff', fontSize: '1rem', margin: '4px 0 0 0' }} className="font-mystic">{event.activityName}</h4>
+        {itineraryWithIndices.map((event, idx) => {
+          const { isTransit, poiIndex } = event;
+          const poiCounter = poiIndex;
+          return (
+              <motion.div 
+                key={event.id}
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: idx * 0.15 }}
+                style={{ position: 'relative' }}
+              >
+                {/* 时间轴左侧的小圆圈 */}
+                <div style={{ 
+                  position: 'absolute', 
+                  left: '-33px', 
+                  top: '4px', 
+                  width: '16px', 
+                  height: '16px', 
+                  borderRadius: '50%', 
+                  background: isTransit ? 'rgba(255,255,255,0.1)' : 'var(--primary)', 
+                  border: isTransit ? '2px dashed var(--primary)' : '3px solid var(--bg-dark)',
+                  boxShadow: isTransit ? 'none' : '0 0 8px var(--primary-glow)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '0.55rem',
+                  color: isTransit ? 'var(--primary)' : '#000',
+                  fontWeight: 'bold'
+                }}>
+                  {isTransit ? '🚲' : poiCounter}
                 </div>
-                <span style={{ background: 'rgba(255,255,255,0.06)', color: 'var(--text-secondary)', padding: '2px 8px', fontSize: '0.6rem' }}>
-                  {event.poi.type.split(';')[0]}
-                </span>
-              </div>
-
-              {/* 高德商户详情 */}
-              <div style={{ background: 'rgba(0,0,0,0.2)', padding: '10px', marginBottom: '16px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', fontWeight: 'bold' }}>
-                  <span style={{ color: 'var(--text-primary)' }}>📍 {event.poi.name}</span>
-                  <span style={{ color: 'var(--primary)' }}>★ {event.poi.rating}</span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.65rem', color: 'var(--text-muted)' }}>
-                  <span>{event.poi.address}</span>
-                  <span>距起点 {event.poi.distance}m</span>
-                </div>
-              </div>
-
-              {/* 命运契合度说明 */}
-              <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', padding: '10px', background: 'var(--primary-dim)', border: '1px solid rgba(226, 181, 83, 0.1)' }}>
-                <Sparkles size={14} color="var(--primary)" style={{ flexShrink: 0, marginTop: '2px' }} />
-                <p style={{ fontSize: '0.7rem', color: 'var(--text-primary)', lineHeight: '1.4' }}>
-                  {event.mysticReasoning}
-                </p>
-              </div>
-
-              {/* 预约处理面板 (Tool Calling 展示) */}
-              {event.bookingStatus && (
-                <div className="pixel-panel" style={{ padding: '12px', background: 'rgba(0,0,0,0.4)', borderStyle: 'dashed' }}>
-                  {event.bookingStatus.status === 'pending' ? (
-                    // 待预订状态
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                      <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
-                        👉 时空 Agent 建议执行工具：<span style={{ color: 'var(--primary)', fontWeight: 'bold' }}>{event.bookingStatus.name}</span>
+ 
+                {isTransit ? (
+                  /* 交通/时空流转卡片 */
+                  <div 
+                    className="pixel-panel" 
+                    style={{ 
+                      padding: '12px 16px', 
+                      background: 'rgba(255,255,255,0.02)', 
+                      borderStyle: 'dashed',
+                      borderColor: 'rgba(226, 181, 83, 0.2)' 
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: '0.65rem', color: 'var(--primary)', fontFamily: 'var(--font-mono)' }}>{event.timeSlot}</span>
+                      <span style={{ fontSize: '0.55rem', color: 'var(--text-muted)' }}>时空流转</span>
+                    </div>
+                    <h4 style={{ color: '#fff', fontSize: '0.9rem', margin: '4px 0 0 0' }} className="font-mystic">{event.activityName}</h4>
+                    <p style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', margin: '6px 0 0 0', lineHeight: '1.4', textAlign: 'left' }}>
+                      {event.mysticReasoning}
+                    </p>
+                  </div>
+                ) : (
+                  /* 活动卡片 */
+                  <div className="pixel-panel" style={{ padding: '20px', background: 'var(--bg-card)' }}>
+                    {/* 卡片头部 */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
+                      <div>
+                        <span style={{ fontSize: '0.65rem', color: 'var(--primary)', fontFamily: 'var(--font-mono)' }}>{event.timeSlot}</span>
+                        <h4 style={{ color: '#fff', fontSize: '1rem', margin: '4px 0 0 0' }} className="font-mystic">{event.activityName}</h4>
                       </div>
-                      <button
-                        className="btn btn-primary"
-                        disabled={bookingLoading[event.id]}
-                        onClick={() => handleBooking(event.id, event.bookingStatus!.type as any)}
-                        style={{ 
-                          width: '100%', 
-                          fontSize: '0.75rem', 
-                          padding: '10px', 
-                          background: 'linear-gradient(45deg, #e2b553, #b28a2a)',
-                          border: 'none',
-                          color: '#000',
-                          fontWeight: 'bold',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          gap: '6px'
-                        }}
-                      >
-                        {bookingLoading[event.id] ? (
-                          <>
-                            <RefreshCw size={12} className="spinner-icon" style={{ animation: 'spin 1.5s linear infinite' }} />
-                            <span>{bookingLoadingMsg[event.id]}</span>
-                          </>
+                      <span style={{ background: 'rgba(255,255,255,0.06)', color: 'var(--text-secondary)', padding: '2px 8px', fontSize: '0.6rem' }}>
+                        {event.poi?.type?.split(';')[0] || '特色商户'}
+                      </span>
+                    </div>
+ 
+                    {/* 高德商户详情 */}
+                    {event.poi && (
+                      <div style={{ background: 'rgba(0,0,0,0.2)', padding: '10px', marginBottom: '16px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', fontWeight: 'bold' }}>
+                          <span style={{ color: 'var(--text-primary)' }}>📍 {event.poi.name}</span>
+                          <span style={{ color: 'var(--primary)' }}>★ {event.poi.rating}</span>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.65rem', color: 'var(--text-muted)' }}>
+                          <span>{event.poi.address}</span>
+                          <span>距起点 {event.poi.distance}m</span>
+                        </div>
+                      </div>
+                    )}
+ 
+                    {/* 命运契合度说明 */}
+                    <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', padding: '10px', background: 'var(--primary-dim)', border: '1px solid rgba(226, 181, 83, 0.1)' }}>
+                      <Sparkles size={14} color="var(--primary)" style={{ flexShrink: 0, marginTop: '2px' }} />
+                      <p style={{ fontSize: '0.7rem', color: 'var(--text-primary)', lineHeight: '1.4' }}>
+                        {event.mysticReasoning}
+                      </p>
+                    </div>
+ 
+                    {/* 预约处理面板 (Tool Calling 展示) */}
+                    {event.bookingStatus && (
+                      <div className="pixel-panel" style={{ padding: '12px', background: 'rgba(0,0,0,0.4)', borderStyle: 'dashed' }}>
+                        {event.bookingStatus.status === 'pending' ? (
+                          // 待预订状态
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                            <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
+                              👉 时空 Agent 建议执行工具：<span style={{ color: 'var(--primary)', fontWeight: 'bold' }}>{event.bookingStatus.name}</span>
+                            </div>
+                            <button
+                              className="btn btn-primary"
+                              disabled={bookingLoading[event.id]}
+                              onClick={() => handleBooking(event.id, event.bookingStatus!.type as any)}
+                              style={{ 
+                                width: '100%', 
+                                fontSize: '0.75rem', 
+                                padding: '10px', 
+                                background: 'linear-gradient(45deg, #e2b553, #b28a2a)',
+                                border: 'none',
+                                color: '#000',
+                                fontWeight: 'bold',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '6px'
+                              }}
+                            >
+                              {bookingLoading[event.id] ? (
+                                <>
+                                  <RefreshCw size={12} className="spinner-icon" style={{ animation: 'spin 1.5s linear infinite' }} />
+                                  <span>{bookingLoadingMsg[event.id]}</span>
+                                </>
+                              ) : (
+                                <>
+                                  <PhoneCall size={12} />
+                                  <span>一键命定预订 (Call Tool)</span>
+                                </>
+                              )}
+                            </button>
+                          </div>
                         ) : (
-                          <>
-                            <PhoneCall size={12} />
-                            <span>一键命定预订 (Call Tool)</span>
-                          </>
+                          // 预订成功状态
+                          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                            <ShieldCheck size={16} color="#3CD070" style={{ flexShrink: 0 }} />
+                            <div style={{ flex: 1 }}>
+                              <div style={{ fontSize: '0.75rem', color: '#3CD070', fontWeight: 'bold' }}>工具自动履行成功 (Success)</div>
+                              <div style={{ fontSize: '0.65rem', color: 'var(--text-primary)', marginTop: '2px' }}>{event.bookingStatus.detail}</div>
+                            </div>
+                          </div>
                         )}
-                      </button>
-                    </div>
-                  ) : (
-                    // 预订成功状态
-                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                      <ShieldCheck size={16} color="#3CD070" style={{ flexShrink: 0 }} />
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: '0.75rem', color: '#3CD070', fontWeight: 'bold' }}>工具自动履行成功 (Success)</div>
-                        <div style={{ fontSize: '0.65rem', color: 'var(--text-primary)', marginTop: '2px' }}>{event.bookingStatus.detail}</div>
                       </div>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          </motion.div>
-        ))}
+                    )}
+                  </div>
+                )}
+            </motion.div>
+          );
+        })}
       </div>
 
       {/* 命运结界命盘解读大厅 */}
