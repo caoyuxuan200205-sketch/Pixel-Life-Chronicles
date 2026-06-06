@@ -45,6 +45,18 @@ export const HomePage = () => {
   const [timeBudget, setTimeBudget] = useState(4);
   const [distanceBudget, setDistanceBudget] = useState(8);
 
+  // 5. 自定义出发时空 (免定位)
+  const [useCustomDeparture, setUseCustomDeparture] = useState(false);
+  const [customAddress, setCustomAddress] = useState('');
+  const [customDate, setCustomDate] = useState(() => {
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const dd = String(today.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+  });
+  const [customTime, setCustomTime] = useState('14:00');
+
   // 4. 时空旅伴快捷关系网络
   const [boundMembers, setBoundMembers] = useState<BoundMember[]>(getBoundMembers());
 
@@ -204,6 +216,10 @@ export const HomePage = () => {
 
   // 核心功能：命定仪式召唤
   const handleSummon = async () => {
+    if (useCustomDeparture && !customAddress.trim()) {
+      alert('【阵法印记残缺】请输入自定义出发地址，或切换回GPS定位模式。');
+      return;
+    }
     setLoading(true);
     setActiveLogs([]);
     addLog('🌌 筑起结界祭坛，正在初始化 Chrono-Destiny 沙盒...');
@@ -257,23 +273,43 @@ export const HomePage = () => {
       const AMap = await AMapLoader.load({
         key: import.meta.env.VITE_AMAP_KEY,
         version: '2.0',
-        plugins: ['AMap.Geolocation', 'AMap.PlaceSearch']
+        plugins: ['AMap.Geolocation', 'AMap.PlaceSearch', 'AMap.Geocoder']
       });
 
-      // 定位当前坐标
-      const geolocation = new AMap.Geolocation({ enableHighAccuracy: true, timeout: 5000 });
       let center: [number, number] = [120.153, 30.258]; // 默认杭州西湖
 
-      try {
-        const pos = await new Promise<any>((resolve, reject) => {
-          geolocation.getCurrentPosition((status: string, res: any) => {
-            if (status === 'complete') resolve(res); else reject(res);
+      if (useCustomDeparture && customAddress.trim()) {
+        addLog(`🔍 正在通过星轨罗盘（高德逆地理）解析自定义出发地址: "${customAddress}"...`);
+        try {
+          const geocoder = new AMap.Geocoder();
+          const geoResult = await new Promise<any>((resolve, reject) => {
+            geocoder.getLocation(customAddress.trim(), (status: string, result: any) => {
+              if (status === 'complete' && result.geocodes && result.geocodes.length > 0) {
+                resolve(result.geocodes[0]);
+              } else {
+                reject(new Error(result.info || '高德解析失败'));
+              }
+            });
           });
-        });
-        center = [pos.position.lng, pos.position.lat];
-        addLog(`📍 定位成功！时空中心锚点: [${center[0].toFixed(4)}, ${center[1].toFixed(4)}]`);
-      } catch (e) {
-        addLog('⚠️ 定位感应微弱，采用经典地理中心 [西湖风景区] 兜底进行探针...');
+          center = [geoResult.location.lng, geoResult.location.lat];
+          addLog(`📍 解析成功！自定义出发锚点: [${center[0].toFixed(4)}, ${center[1].toFixed(4)}] (${geoResult.formattedAddress})`);
+        } catch (e: any) {
+          addLog(`⚠️ 自定义地址解析失败: ${e.message || '未知错误'}，已采用默认地理中心 [西湖风景区] 进行兜底...`);
+        }
+      } else {
+        // 定位当前坐标
+        const geolocation = new AMap.Geolocation({ enableHighAccuracy: true, timeout: 5000 });
+        try {
+          const pos = await new Promise<any>((resolve, reject) => {
+            geolocation.getCurrentPosition((status: string, res: any) => {
+              if (status === 'complete') resolve(res); else reject(res);
+            });
+          });
+          center = [pos.position.lng, pos.position.lat];
+          addLog(`📍 GPS定位成功！时空中心锚点: [${center[0].toFixed(4)}, ${center[1].toFixed(4)}]`);
+        } catch (e) {
+          addLog('⚠️ 定位感应微弱，采用经典地理中心 [西湖风景区] 兜底进行探针...');
+        }
       }
 
       // 获取多品类商户 POI
@@ -337,7 +373,9 @@ export const HomePage = () => {
           body: JSON.stringify({
             members,
             pois: realPois,
-            timeBudget
+            timeBudget,
+            startTime: useCustomDeparture ? customTime : '14:00',
+            startDate: useCustomDeparture ? customDate : undefined
           })
         },
         (chunkText) => {
@@ -461,6 +499,94 @@ export const HomePage = () => {
           <p style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: '8px', textAlign: 'right' }}>
             💡 依据 {timeBudget} 小时预算，智能推荐半径为 { { 2: 3, 3: 5, 4: 8, 5: 10, 6: 12 }[timeBudget] || 8 } 公里
           </p>
+          
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '14px' }}>
+            <span 
+              onClick={() => setUseCustomDeparture(!useCustomDeparture)} 
+              style={{ 
+                color: 'rgba(255,255,255,0.4)', 
+                fontSize: '0.7rem', 
+                cursor: 'pointer', 
+                textDecoration: 'underline'
+              }}
+            >
+              {useCustomDeparture ? '🔮 切换为自动 GPS 定位模式' : '⚙️ 自定义出发地址与时间（免定位）'}
+            </span>
+          </div>
+
+          {useCustomDeparture && (
+            <div 
+              style={{ 
+                marginTop: '16px', 
+                paddingTop: '16px', 
+                borderTop: '1px dashed rgba(255, 255, 255, 0.1)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '12px'
+              }}
+            >
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <label style={{ fontSize: '0.75rem', color: 'var(--primary)', fontWeight: 'bold', textAlign: 'left' }}>📍 出发地址 (免定位模式)</label>
+                <input 
+                  type="text" 
+                  placeholder="例如：杭州东站 或 西湖断桥" 
+                  value={customAddress} 
+                  onChange={(e) => setCustomAddress(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    background: 'rgba(0, 0, 0, 0.3)',
+                    border: '1px solid rgba(226, 181, 83, 0.3)',
+                    color: '#FFDF8D',
+                    borderRadius: '6px',
+                    outline: 'none',
+                    fontSize: '0.8rem',
+                    boxSizing: 'border-box'
+                  }}
+                />
+              </div>
+              <div style={{ display: 'flex', gap: '12px' }}>
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--primary)', fontWeight: 'bold', textAlign: 'left' }}>📅 出发日期</label>
+                  <input 
+                    type="date" 
+                    value={customDate} 
+                    onChange={(e) => setCustomDate(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '10px 12px',
+                      background: 'rgba(0, 0, 0, 0.3)',
+                      border: '1px solid rgba(226, 181, 83, 0.3)',
+                      color: '#FFDF8D',
+                      borderRadius: '6px',
+                      outline: 'none',
+                      fontSize: '0.8rem',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                </div>
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--primary)', fontWeight: 'bold', textAlign: 'left' }}>🕒 出发时间</label>
+                  <input 
+                    type="time" 
+                    value={customTime} 
+                    onChange={(e) => setCustomTime(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '10px 12px',
+                      background: 'rgba(0, 0, 0, 0.3)',
+                      border: '1px solid rgba(226, 181, 83, 0.3)',
+                      color: '#FFDF8D',
+                      borderRadius: '6px',
+                      outline: 'none',
+                      fontSize: '0.8rem',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
