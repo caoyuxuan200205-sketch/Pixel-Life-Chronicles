@@ -405,7 +405,7 @@ const CouponWidget = () => {
             )}
           </AnimatePresence>
 
-          <div style={{ display: 'flex', gap: '12px' }}>
+          <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
             <input 
               type="text" 
               placeholder="请输入11位手机号" 
@@ -414,9 +414,10 @@ const CouponWidget = () => {
               onFocus={() => setFocusInput('phone')}
               onBlur={() => setFocusInput('')}
               style={{ 
-                flex: 1, padding: '12px 16px', background: 'rgba(0,0,0,0.3)', 
+                flex: 1, height: '44px', padding: '12px 16px', background: 'rgba(0,0,0,0.3)', 
                 border: focusInput === 'phone' ? '1px solid #FFDF8D' : '1px solid rgba(226, 181, 83, 0.3)', 
                 color: '#FFDF8D', borderRadius: '8px', outline: 'none', transition: 'all 0.3s',
+                boxSizing: 'border-box',
                 boxShadow: focusInput === 'phone' ? '0 0 8px rgba(226, 181, 83, 0.2)' : 'none'
               }}
               disabled={showCodeInput || loading}
@@ -426,11 +427,15 @@ const CouponWidget = () => {
                 whileHover={phone ? { scale: 1.02 } : {}} whileTap={phone ? { scale: 0.95 } : {}}
                 onClick={handleSendSms} disabled={loading || !phone} 
                 style={{ 
-                  padding: '12px 20px', 
+                  height: '44px', padding: '0 20px', 
                   background: phone ? 'linear-gradient(135deg, #FFDF8D 0%, #D4AF37 100%)' : 'rgba(255,255,255,0.1)', 
                   color: phone ? '#111' : 'rgba(255,255,255,0.3)', 
                   border: 'none', borderRadius: '8px', cursor: phone ? 'pointer' : 'not-allowed', 
-                  fontWeight: 'bold', whiteSpace: 'nowrap', transition: 'all 0.3s'
+                  fontWeight: 'bold', whiteSpace: 'nowrap', transition: 'all 0.3s',
+                  boxSizing: 'border-box',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
                 }}>
                 {loading ? '获取中...' : '获取验证码'}
               </motion.button>
@@ -438,7 +443,7 @@ const CouponWidget = () => {
           </div>
           
           {showCodeInput && (
-            <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} style={{ display: 'flex', gap: '12px' }}>
+            <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
               <input 
                 type="text" 
                 placeholder="请输入6位短信验证码" 
@@ -447,9 +452,10 @@ const CouponWidget = () => {
                 onFocus={() => setFocusInput('code')}
                 onBlur={() => setFocusInput('')}
                 style={{ 
-                  flex: 1, padding: '12px 16px', background: 'rgba(0,0,0,0.3)', 
+                  flex: 1, height: '44px', padding: '12px 16px', background: 'rgba(0,0,0,0.3)', 
                   border: focusInput === 'code' ? '1px solid #FFDF8D' : '1px solid rgba(226, 181, 83, 0.3)', 
                   color: '#FFDF8D', borderRadius: '8px', outline: 'none', transition: 'all 0.3s',
+                  boxSizing: 'border-box',
                   boxShadow: focusInput === 'code' ? '0 0 8px rgba(226, 181, 83, 0.2)' : 'none'
                 }}
                 disabled={loading}
@@ -458,11 +464,15 @@ const CouponWidget = () => {
                 whileHover={code ? { scale: 1.02 } : {}} whileTap={code ? { scale: 0.95 } : {}}
                 onClick={handleVerify} disabled={loading || !code} 
                 style={{ 
-                  padding: '12px 20px', 
+                  height: '44px', padding: '0 20px', 
                   background: code ? 'linear-gradient(135deg, #FFDF8D 0%, #D4AF37 100%)' : 'rgba(255,255,255,0.1)', 
                   color: code ? '#111' : 'rgba(255,255,255,0.3)', 
                   border: 'none', borderRadius: '8px', cursor: code ? 'pointer' : 'not-allowed', 
-                  fontWeight: 'bold', whiteSpace: 'nowrap', transition: 'all 0.3s'
+                  fontWeight: 'bold', whiteSpace: 'nowrap', transition: 'all 0.3s',
+                  boxSizing: 'border-box',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
                 }}>
                 {loading ? '校验中...' : '确认开启'}
               </motion.button>
