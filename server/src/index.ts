@@ -1721,8 +1721,8 @@ app.get('/api/health', (req, res) => {
 // 导出 app 供 Vercel 使用
 export default app;
 
-// 仅在非 Vercel 环境下启动服务器
-if (process.env.NODE_ENV !== 'production' && !process.env.VERCEL) {
+// 仅在非 Vercel 环境下启动服务器（例如本地开发或 Railway 部署）
+if (!process.env.VERCEL) {
   app.listen(PORT, () => {
     console.log(`
     👾 Pixel Life Chronicles Backend
