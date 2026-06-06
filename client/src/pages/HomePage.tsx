@@ -1283,7 +1283,7 @@ export const HomePage = () => {
             }}
           >
             {/* Top HUD Stats Panel */}
-            <div className="pixel-panel" style={{ padding: '16px', marginBottom: '20px', background: '#1d1a18', border: '2px solid var(--primary-glow)' }}>
+            <div className="pixel-panel" style={{ padding: '16px', marginBottom: '20px', background: '#1d1a18', border: '2px solid var(--primary-glow)', maxWidth: '400px', margin: '0 auto 20px auto', width: '100%' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                 <span className="font-mystic" style={{ color: 'var(--primary)', fontWeight: 'bold', fontSize: '1.2rem', textShadow: 'var(--primary-glow) 0 0 6px' }}>
                   🧙‍♂️ 时空结界规划大厅
