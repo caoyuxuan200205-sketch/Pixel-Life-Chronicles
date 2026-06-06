@@ -8,8 +8,8 @@ import { promisify } from 'util';
 
 const execFileAsync = promisify(execFile);
 
-const AUTH_FILE = path.join(os.tmpdir(), 'auth_tokens.json');
-const BIND_FILE = path.join(os.tmpdir(), 'venue_bind.json');
+const AUTH_FILE = path.join(os.homedir(), '.xiaomei-workspace', 'auth_tokens.json');
+const BIND_FILE = path.join(os.homedir(), '.xiaomei-workspace', 'venue_bind.json');
 
 // Helper to generate device_token
 function generateDeviceToken(seed: string): string {
