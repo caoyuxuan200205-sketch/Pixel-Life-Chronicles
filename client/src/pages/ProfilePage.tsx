@@ -154,8 +154,8 @@ export const ProfilePage = () => {
 
   const handleExport = async (type: 'png' | 'pdf') => {
     if (!selectedStamp) return;
-    const BACKEND_URL = ''; // 使用相对路径适配生产环境
-    const resp = await fetch(`${BACKEND_URL}/api/bead/export/${type}`, {
+    const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || '';
+    const resp = await fetch(`${BACKEND_URL.replace(/\/$/, '')}/api/bead/export/${type}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
