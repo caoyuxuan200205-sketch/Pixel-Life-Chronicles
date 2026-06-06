@@ -2025,23 +2025,67 @@ export const AIPortalPage = () => {
                     )}
                   </div>
                 ) : (
-                  <div
-                    className="pixel-panel"
-                    style={{
-                      padding: '16px 12px',
-                      background: 'rgba(21, 36, 21, 0.75)',
-                      border: '2px solid #4caf50',
-                      color: '#4caf50',
-                      textAlign: 'center',
-                      fontFamily: 'var(--font-mystic)'
-                    }}
-                  >
-                    <h4 style={{ margin: '0 0 4px 0', fontSize: '1rem' }}>周末行程已锁定！</h4>
-                    <p style={{ fontSize: '0.6rem', color: '#a5d6a7', margin: '0' }}>
-                      已为您预约行程中的餐饮与游乐项目，预订短信已发送。
-                    </p>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <div
+                      className="pixel-panel"
+                      style={{
+                        padding: '16px 12px',
+                        background: 'rgba(21, 36, 21, 0.75)',
+                        border: '2px solid #4caf50',
+                        color: '#4caf50',
+                        textAlign: 'center',
+                        fontFamily: 'var(--font-mystic)'
+                      }}
+                    >
+                      <h4 style={{ margin: '0 0 4px 0', fontSize: '1rem' }}>周末行程已锁定！</h4>
+                      <p style={{ fontSize: '0.6rem', color: '#a5d6a7', margin: '0' }}>
+                        已为您预约行程中的餐饮与游乐项目，预订短信已发送。
+                      </p>
+                    </div>
+
+                    <button
+                      onClick={() => handleShareWeekendPlan(index)}
+                      style={{
+                        width: '100%',
+                        padding: '8px 10px',
+                        background: 'rgba(76, 175, 80, 0.1)',
+                        border: '1.5px solid rgba(76, 175, 80, 0.3)',
+                        color: '#81c784',
+                        fontSize: '0.65rem',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '6px',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      <Share2 size={12} />
+                      <span>🔗 传送阵纹给家属/好友 (已锁定版)</span>
+                    </button>
                   </div>
                 )}
+
+                {/* 保存行程长图按钮 */}
+                <button
+                  onClick={() => handleCaptureTicket(index)}
+                  style={{
+                    marginTop: '10px',
+                    width: '100%',
+                    padding: '6px 8px',
+                    background: 'rgba(255,255,255,0.08)',
+                    border: '1px solid rgba(255,255,255,0.2)',
+                    color: '#eae3d9',
+                    fontSize: '0.58rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '4px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  <Download size={11} />
+                  <span>📸 保存行程手札至相册 (生成长图)</span>
+                </button>
               </div>
             </motion.div>
           )}
