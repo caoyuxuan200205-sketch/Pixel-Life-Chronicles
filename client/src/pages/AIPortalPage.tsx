@@ -1947,8 +1947,8 @@ export const AIPortalPage = () => {
                         </span>
                       </div>
                       
-                      <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }}>
-                        {node.mysticReasoning}
+                      <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)', whiteSpace: 'pre-wrap' }}>
+                        {renderTextWithLinks(node.mysticReasoning)}
                       </div>
 
                       {/* 餐饮特殊属性展示 */}
