@@ -617,11 +617,11 @@ body {
 }
 
 .bazi-time-col {
-  flex: 1.2 !important;
+  flex: 4 1 0% !important;
 }
 
 .bazi-place-col {
-  flex: 1.8 !important;
+  flex: 6 1 0% !important;
 }
 
 /* Homepage specific Bazi layouts */
@@ -630,10 +630,10 @@ body {
   gap: 10px !important;
   width: 100% !important;
 }
-.homepage-bazi-col-left-1 { flex: 1.5 !important; }
-.homepage-bazi-col-right-1 { flex: 1 !important; }
-.homepage-bazi-col-left-2 { flex: 1.2 !important; }
-.homepage-bazi-col-right-2 { flex: 1.8 !important; }
+.homepage-bazi-col-left-1 { flex: 6 1 0% !important; }
+.homepage-bazi-col-right-1 { flex: 4 1 0% !important; }
+.homepage-bazi-col-left-2 { flex: 4 1 0% !important; }
+.homepage-bazi-col-right-2 { flex: 6 1 0% !important; }
 
 @media (max-width: 480px) {
   .homepage-bazi-row {
