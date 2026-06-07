@@ -192,7 +192,7 @@ export const AuthPage = () => {
 
           {/* 注册专属：天命偏好与生日八字档案设置 */}
           {!isLogin && (
-            <div className="pixel-panel" style={{ padding: '16px', background: 'rgba(0,0,0,0.3)', border: '1px solid var(--pixel-border-color)', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            <div className="pixel-panel" style={{ padding: '16px', background: 'rgba(0,0,0,0.3)', border: '1px solid var(--pixel-border-color)', display: 'flex', flexDirection: 'column', gap: '14px', minWidth: 0, boxSizing: 'border-box', width: '100%' }}>
               <h4 className="font-mystic" style={{ color: 'var(--primary)', fontSize: '0.85rem', marginBottom: '4px', textAlign: 'center' }}>
                 ☯️ 天命档案初始化
               </h4>
@@ -238,8 +238,8 @@ export const AuthPage = () => {
               </div>
 
               {pref === 'bazi' && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  <div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', minWidth: 0, width: '100%' }}>
+                  <div style={{ minWidth: 0, width: '100%' }}>
                     <label style={{ display: 'block', fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '4px' }}>出生公历日期</label>
                     <input
                       type="date"
