@@ -1120,7 +1120,7 @@ export const AIPortalPage = () => {
           body: JSON.stringify({
             messages: chatHistory,
             luckyElement,
-            city: '', // 由后端依据对话上下文或定位推理，不应使用出生地
+            city: localStorage.getItem('user_current_city') || '', // 由后端依据对话上下文或定位推理，不应使用出生地
             username: currentUser?.username || '探索者',
             boundMembers: getBoundMembers(),
             venueLinks

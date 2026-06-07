@@ -306,6 +306,11 @@ export const HomePage = () => {
             });
           });
           center = [pos.position.lng, pos.position.lat];
+          if (pos.addressComponent?.city) {
+            localStorage.setItem('user_current_city', pos.addressComponent.city);
+          } else if (pos.addressComponent?.province) {
+            localStorage.setItem('user_current_city', pos.addressComponent.province);
+          }
           addLog(`📍 GPS定位成功！时空中心锚点: [${center[0].toFixed(4)}, ${center[1].toFixed(4)}]`);
         } catch (e) {
           addLog('⚠️ 定位感应微弱，采用经典地理中心 [西湖风景区] 兜底进行探针...');
