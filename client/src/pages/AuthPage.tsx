@@ -113,8 +113,8 @@ export const AuthPage = () => {
         className="pixel-panel"
         style={{
           width: '100%',
-          maxWidth: '360px',
-          padding: '40px 24px',
+          maxWidth: 'clamp(320px, 90vw, 420px)',
+          padding: 'clamp(24px, 5vw, 40px) clamp(16px, 4vw, 24px)',
           position: 'relative',
         }}
       >
@@ -156,7 +156,8 @@ export const AuthPage = () => {
                   fontFamily: 'var(--font-main)',
                   fontSize: '1rem',
                   outline: 'none',
-                  boxShadow: 'inset 4px 4px 0px rgba(0,0,0,0.5)'
+                  boxShadow: 'inset 4px 4px 0px rgba(0,0,0,0.5)',
+                  boxSizing: 'border-box'
                 }}
               />
             </div>
@@ -182,7 +183,8 @@ export const AuthPage = () => {
                   fontFamily: 'var(--font-main)',
                   fontSize: '1rem',
                   outline: 'none',
-                  boxShadow: 'inset 4px 4px 0px rgba(0,0,0,0.5)'
+                  boxShadow: 'inset 4px 4px 0px rgba(0,0,0,0.5)',
+                  boxSizing: 'border-box'
                 }}
               />
             </div>
