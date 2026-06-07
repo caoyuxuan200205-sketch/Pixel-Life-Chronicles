@@ -636,7 +636,6 @@ body {
 .homepage-bazi-col-right-2 { flex: 1.8 !important; }
 
 @media (max-width: 480px) {
-  .bazi-fields-row,
   .homepage-bazi-row {
     flex-direction: column !important;
     gap: 10px !important;
