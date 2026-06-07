@@ -825,7 +825,8 @@ export const ProfilePage = () => {
                     <div>
                       <label style={{ display: 'block', fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '4px' }}>出生公历日期</label>
                       <input
-                        type="date"
+                        type="text"
+                        placeholder="YYYY-MM-DD"
                         value={myBirthDate}
                         onChange={(e) => setMyBirthDate(e.target.value)}
                         className="bazi-input"
@@ -836,7 +837,8 @@ export const ProfilePage = () => {
                       <div className="bazi-time-col">
                         <label style={{ display: 'block', fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '4px' }}>出生时辰</label>
                         <input
-                          type="time"
+                          type="text"
+                          placeholder="HH:MM"
                           value={myBirthTime}
                           onChange={(e) => setMyBirthTime(e.target.value)}
                           className="bazi-input"
@@ -940,7 +942,8 @@ export const ProfilePage = () => {
                     <div>
                       <label style={{ display: 'block', fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '4px' }}>出生公历日期</label>
                       <input
-                        type="date"
+                        type="text"
+                        placeholder="YYYY-MM-DD"
                         value={newPartnerDate}
                         onChange={(e) => setNewPartnerDate(e.target.value)}
                         className="bazi-input"
@@ -951,7 +954,8 @@ export const ProfilePage = () => {
                       <div className="bazi-time-col">
                         <label style={{ display: 'block', fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '4px' }}>出生时辰</label>
                         <input
-                          type="time"
+                          type="text"
+                          placeholder="HH:MM"
                           value={newPartnerTime}
                           onChange={(e) => setNewPartnerTime(e.target.value)}
                           className="bazi-input"
@@ -1055,7 +1059,8 @@ export const ProfilePage = () => {
                     <div>
                       <label style={{ display: 'block', fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '4px' }}>出生公历日期</label>
                       <input
-                        type="date"
+                        type="text"
+                        placeholder="YYYY-MM-DD"
                         value={editPartnerDate}
                         onChange={(e) => setEditPartnerDate(e.target.value)}
                         className="bazi-input"
@@ -1066,7 +1071,8 @@ export const ProfilePage = () => {
                       <div className="bazi-time-col">
                         <label style={{ display: 'block', fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '4px' }}>出生时辰</label>
                         <input
-                          type="time"
+                          type="text"
+                          placeholder="HH:MM"
                           value={editPartnerTime}
                           onChange={(e) => setEditPartnerTime(e.target.value)}
                           className="bazi-input"

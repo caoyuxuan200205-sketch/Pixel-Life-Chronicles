@@ -554,7 +554,8 @@ export const HomePage = () => {
                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
                   <label style={{ fontSize: '0.75rem', color: 'var(--primary)', fontWeight: 'bold', textAlign: 'left' }}>📅 出发日期</label>
                   <input 
-                    type="date" 
+                    type="text" 
+                    placeholder="YYYY-MM-DD"
                     value={customDate} 
                     onChange={(e) => setCustomDate(e.target.value)}
                     style={{
@@ -573,7 +574,8 @@ export const HomePage = () => {
                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
                   <label style={{ fontSize: '0.75rem', color: 'var(--primary)', fontWeight: 'bold', textAlign: 'left' }}>🕒 出发时间</label>
                   <input 
-                    type="time" 
+                    type="text" 
+                    placeholder="HH:MM"
                     value={customTime} 
                     onChange={(e) => setCustomTime(e.target.value)}
                     style={{
@@ -1131,7 +1133,8 @@ export const HomePage = () => {
                   <div className="homepage-bazi-col-left-1">
                     <label style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>出生公历日期</label>
                     <input
-                      type="date"
+                      type="text"
+                      placeholder="YYYY-MM-DD"
                       value={member.baziInfo?.birthDate}
                       onChange={(e) => updateBazi(member.id, 'birthDate', e.target.value)}
                       className="bazi-input"
@@ -1140,7 +1143,8 @@ export const HomePage = () => {
                   <div className="homepage-bazi-col-right-1">
                     <label style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>出生时辰</label>
                     <input
-                      type="time"
+                      type="text"
+                      placeholder="HH:MM"
                       value={member.baziInfo?.birthTime}
                       onChange={(e) => updateBazi(member.id, 'birthTime', e.target.value)}
                       className="bazi-input"

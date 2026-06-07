@@ -242,7 +242,8 @@ export const AuthPage = () => {
                   <div style={{ minWidth: 0, width: '100%' }}>
                     <label style={{ display: 'block', fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '4px' }}>出生公历日期</label>
                     <input
-                      type="date"
+                      type="text"
+                      placeholder="1998-06-15"
                       value={birthDate}
                       onChange={(e) => setBirthDate(e.target.value)}
                       className="bazi-input"
@@ -253,7 +254,8 @@ export const AuthPage = () => {
                     <div className="bazi-time-col">
                       <label style={{ display: 'block', fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '4px' }}>出生时辰</label>
                       <input
-                        type="time"
+                        type="text"
+                        placeholder="12:00"
                         value={birthTime}
                         onChange={(e) => setBirthTime(e.target.value)}
                         className="bazi-input"
