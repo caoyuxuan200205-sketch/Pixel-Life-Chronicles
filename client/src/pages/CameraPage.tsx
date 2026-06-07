@@ -190,11 +190,12 @@ export const CameraPage = () => {
 
   const navigate = useNavigate();
   const location = useLocation();
-  const state = location.state as { eventIndex?: number } | null;
-  const eventIndex = state?.eventIndex ?? 0;
-  
+  const state = location.state as { eventIndex?: number, eventId?: string } | null;
   const plan = getLatestJointPlan();
-  const activeEvent = plan ? (plan.itinerary[eventIndex] || plan.itinerary[0]) : null;
+  
+  const activeEvent = plan 
+    ? (state?.eventId ? plan.itinerary.find((e: any) => e.id === state.eventId) : plan.itinerary[state?.eventIndex ?? 0]) || plan.itinerary[0]
+    : null;
   const reading = activeEvent ? {
     poi: activeEvent.poi,
     card: plan.individualReadings[0]?.tarotCard || { name: '命运契约', emoji: '☯️', meaning: '命运契约的神秘交融。' },

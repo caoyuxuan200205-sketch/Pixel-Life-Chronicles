@@ -25,8 +25,12 @@ export const MapPage = () => {
     }
     const latestPlan = getLatestJointPlan();
     if (latestPlan) {
-      setPlan(latestPlan);
-      track('map_view_joint_plan', { itinerary_length: latestPlan.itinerary.length });
+      const filteredPlan = {
+        ...latestPlan,
+        itinerary: latestPlan.itinerary.filter(e => e.poi.name !== '时空连线')
+      };
+      setPlan(filteredPlan);
+      track('map_view_joint_plan', { itinerary_length: filteredPlan.itinerary.length });
     } else {
       navigate('/', { replace: true });
     }
@@ -293,7 +297,7 @@ export const MapPage = () => {
             </p>
 
             <button
-              onClick={() => navigate('/camera', { state: { eventIndex: activeStopIndex } })}
+              onClick={() => navigate('/camera', { state: { eventId: activeEvent.id } })}
               style={{
                 width: '100%',
                 background: 'linear-gradient(135deg, var(--primary) 0%, #d49f24 100%)',
