@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Clock, Plus, Trash2, Wand2, Compass, Sparkles, User as UserIcon, Calendar, Info, Heart, Coins, ShieldAlert, Briefcase } from 'lucide-react';
+import { Calendar, Clock, Coins, Compass, Heart, Info, MapPin, MessageCircleMore, Orbit, Plus, ShieldAlert, SlidersHorizontal, Sparkles, Trash2, User as UserIcon, UsersRound, Wand2, Briefcase } from 'lucide-react';
 import AMapLoader from '@amap/amap-jsapi-loader';
 import { useNavigate } from 'react-router-dom';
 import { track } from "@vercel/analytics";
@@ -16,8 +16,13 @@ import {
 import { MOOD_TAGS } from '../services/ai';
 
 const RPG_AVATARS = ['🧙‍♂️', '🧝‍♀️', '🧛‍♂️', '🤺', '🤠', '🧚‍♀️', '🧜‍♂️', '👸'];
+const TRIP_SCENARIOS = [
+  '帮我选一个适合出发的日子',
+  '按命理帮我挑机票和酒店',
+  '这件犹豫很久的事，该怎么选？'
+];
 
-export const HomePage = () => {
+export const HomePage = ({ mode = 'landing' }: { mode?: 'landing' | 'planner' }) => {
   const navigate = useNavigate();
   const currentUser = getCurrentUser();
 
@@ -44,6 +49,7 @@ export const HomePage = () => {
   // 2. 出行时间预算 (2-6 小时)
   const [timeBudget, setTimeBudget] = useState(4);
   const [distanceBudget, setDistanceBudget] = useState(8);
+  const [tripWish, setTripWish] = useState('');
 
   // 5. 自定义出发时空 (免定位)
   const [useCustomDeparture, setUseCustomDeparture] = useState(false);
@@ -379,6 +385,7 @@ export const HomePage = () => {
             members,
             pois: realPois,
             timeBudget,
+            tripWish: tripWish.trim(),
             startTime: useCustomDeparture ? customTime : '14:00',
             startDate: useCustomDeparture ? customDate : undefined
           })
@@ -435,24 +442,78 @@ export const HomePage = () => {
   };
 
   return (
-    <div className="home-container" style={{ padding: '24px 20px 100px 20px', minHeight: '100vh', background: 'var(--bg-dark)' }}>
-      {/* 顶部标题与世界观介绍 */}
-      <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-        <h1 className="font-mystic" style={{ color: 'var(--primary)', fontSize: '2rem', textShadow: 'var(--primary-glow) 0 0 8px', margin: '10px 0' }}>
-          ☯️ 时空命格结界
-        </h1>
-        <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', letterSpacing: '0.05em' }}>
-          —— 融合东西玄学灵力的周末闲时组队规划 Agent ——
-        </p>
-      </div>
+    <div className={`home-container home-container--${mode}`} style={{ padding: '24px 20px 100px 20px', minHeight: '100vh', background: 'var(--app-home-background)' }}>
 
+      {mode === 'planner' && (
+        <div className="xuantu-brand-lockup xuantu-page-brand">
+          <span className="xuantu-brand-mark" aria-hidden="true"><Orbit size={20} /></span>
+          <span>玄途 Agent</span>
+        </div>
+      )}      {mode === 'landing' && (
+      <section className="xuantu-hero">
+        <div className="xuantu-brand-lockup">
+          <span className="xuantu-brand-mark" aria-hidden="true"><Orbit size={20} /></span>
+          <span>玄途 Agent</span>
+        </div>
+
+        <div className="xuantu-claim">首个玄学行程规划 Agent</div>
+        <h1>让玄学，<br />帮你决定<span>任何悬而未决的事情</span></h1>
+        <p className="xuantu-hero-copy">从去哪、何时出发，到挑选航班、酒店和门票；<br />也可以问那些迟迟拿不定主意的事。<br />玄途会结合命理给出判断，并继续帮你把决定落地。</p>
+
+        <div className="xuantu-intent-card">
+          <label htmlFor="trip-wish">有什么悬而未决，问玄途</label>
+          <textarea
+            id="trip-wish"
+            value={tripWish}
+            onChange={(event) => setTripWish(event.target.value)}
+            placeholder="例如：下周哪天去成都更顺？帮我挑航班和酒店；这份工作要不要接；今晚适合见他吗……"
+            rows={3}
+          />
+          <div className="xuantu-scenario-list" aria-label="向玄途提问示例">
+            {TRIP_SCENARIOS.map((scenario) => (
+              <button type="button" key={scenario} onClick={() => setTripWish(scenario)}>
+                {scenario}
+              </button>
+            ))}
+          </div>
+          <button
+            type="button"
+            className="xuantu-chat-cta"
+            disabled={!tripWish.trim()}
+            onClick={() => {
+              if (!tripWish.trim()) return;
+              sessionStorage.setItem('xuantu_initial_prompt', tripWish.trim());
+              sessionStorage.setItem('xuantu_auto_send', '1');
+              navigate('/ai');
+            }}
+          >
+            <MessageCircleMore size={16} /> 问玄途 AI
+          </button>
+          <div className="xuantu-planner-link">
+            <span>已有明确行程，想精确设置？</span>
+            <button type="button" onClick={() => navigate('/planner')}>进入深度规划</button>
+          </div>
+        </div>
+
+        <div className="xuantu-proof-row" aria-label="玄途能力">
+          <span>任何问题都能问</span><i />
+          <span>结合个人命盘</span><i />
+          <span>把决定变成行动</span>
+        </div>
+      </section>
+      )}
+
+      <div className="xuantu-section-heading">
+        <span>玄学行程详细规划</span>
+        <small>约 1 分钟</small>
+      </div>
       {/* 第一部分：出行预算选择 */}
       <div className="pixel-panel" style={{ padding: '20px', marginBottom: '24px', background: 'var(--bg-card)' }}>
         {/* 第一个滑块：时空时间预算 */}
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
             <Clock size={18} color="var(--primary)" />
-            <h3 className="font-mystic" style={{ color: '#fff', fontSize: '1rem', margin: 0 }}>出行时空时间预算</h3>
+            <h3 className="font-mystic" style={{ color: '#fff', fontSize: '1rem', margin: 0 }}>计划游玩时长</h3>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
             <input
@@ -473,7 +534,7 @@ export const HomePage = () => {
             </div>
           </div>
           <p style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: '8px', textAlign: 'right' }}>
-            💡 推荐 4-6 小时以开启最完美的 3 站命运旅程
+            <Info size={12} /> 推荐 4-6 小时以开启最完美的 3 站命运旅程
           </p>
         </div>
 
@@ -481,7 +542,7 @@ export const HomePage = () => {
         <div style={{ marginTop: '20px', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '20px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
             <Compass size={18} color="var(--primary)" />
-            <h3 className="font-mystic" style={{ color: '#fff', fontSize: '1rem', margin: 0 }}>时空探索半径范围</h3>
+            <h3 className="font-mystic" style={{ color: '#fff', fontSize: '1rem', margin: 0 }}>可接受的探索范围</h3>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
             <input
@@ -502,7 +563,7 @@ export const HomePage = () => {
             </div>
           </div>
           <p style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: '8px', textAlign: 'right' }}>
-            💡 依据 {timeBudget} 小时预算，智能推荐半径为 { { 2: 3, 3: 5, 4: 8, 5: 10, 6: 12 }[timeBudget] || 8 } 公里
+            <Info size={12} /> 依据 {timeBudget} 小时预算，智能推荐半径为 { { 2: 3, 3: 5, 4: 8, 5: 10, 6: 12 }[timeBudget] || 8 } 公里
           </p>
           
           <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '14px' }}>
@@ -515,7 +576,7 @@ export const HomePage = () => {
                 textDecoration: 'underline'
               }}
             >
-              {useCustomDeparture ? '🔮 切换为自动 GPS 定位模式' : '⚙️ 自定义出发地址与时间（免定位）'}
+              <SlidersHorizontal size={13} /> {useCustomDeparture ? '切换为自动 GPS 定位模式' : '自定义出发地址与时间（免定位）'}
             </span>
           </div>
 
@@ -531,7 +592,7 @@ export const HomePage = () => {
               }}
             >
               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                <label style={{ fontSize: '0.75rem', color: 'var(--primary)', fontWeight: 'bold', textAlign: 'left' }}>📍 出发地址 (免定位模式)</label>
+                <label className="field-label" style={{ fontSize: '0.75rem', color: 'var(--primary)', fontWeight: 'bold', textAlign: 'left' }}><MapPin size={13} /> 出发地址 (免定位模式)</label>
                 <input 
                   type="text" 
                   placeholder="例如：杭州东站 或 西湖断桥" 
@@ -552,7 +613,7 @@ export const HomePage = () => {
               </div>
               <div style={{ display: 'flex', gap: '12px' }}>
                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                  <label style={{ fontSize: '0.75rem', color: 'var(--primary)', fontWeight: 'bold', textAlign: 'left' }}>📅 出发日期</label>
+                  <label className="field-label" style={{ fontSize: '0.75rem', color: 'var(--primary)', fontWeight: 'bold', textAlign: 'left' }}><Calendar size={13} /> 出发日期</label>
                   <input 
                     type="text" 
                     placeholder="YYYY-MM-DD"
@@ -572,7 +633,7 @@ export const HomePage = () => {
                   />
                 </div>
                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                  <label style={{ fontSize: '0.75rem', color: 'var(--primary)', fontWeight: 'bold', textAlign: 'left' }}>🕒 出发时间</label>
+                  <label className="field-label" style={{ fontSize: '0.75rem', color: 'var(--primary)', fontWeight: 'bold', textAlign: 'left' }}><Clock size={13} /> 出发时间</label>
                   <input 
                     type="text" 
                     placeholder="HH:MM"
@@ -603,7 +664,7 @@ export const HomePage = () => {
         <div className="pixel-panel" style={{ padding: '16px', marginBottom: '24px', background: 'var(--bg-card)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
             <Sparkles size={16} color="var(--primary)" />
-            <h4 className="font-mystic" style={{ color: '#fff', fontSize: '0.9rem', margin: 0 }}>👥 结界快捷入阵 (契约伙伴)</h4>
+            <h4 className="font-mystic section-title" style={{ color: '#fff', fontSize: '0.9rem', margin: 0 }}><UsersRound size={16} /> 结界快捷入阵 (契约伙伴)</h4>
           </div>
           <div 
             className="no-scrollbar"
@@ -679,7 +740,7 @@ export const HomePage = () => {
                   )}
 
                   <span style={{ fontSize: '1.8rem', filter: isSelected ? 'drop-shadow(0 0 4px var(--primary))' : 'none' }}>
-                    {avatarEmoji}
+                    <UserIcon size={21} />
                   </span>
 
                   <div style={{ 
@@ -712,7 +773,7 @@ export const HomePage = () => {
       )}
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-        <h3 className="font-mystic" style={{ color: '#fff', fontSize: '1.1rem', margin: 0 }}>🔮 结界伙伴成员</h3>
+        <h3 className="font-mystic section-title" style={{ color: '#fff', fontSize: '1.1rem', margin: 0 }}><UsersRound size={18} /> 结界伙伴成员</h3>
         <button
           className="btn btn-ghost"
           onClick={addMember}
@@ -738,7 +799,7 @@ export const HomePage = () => {
             {/* 成员头部信息 */}
             <div style={{ display: 'flex', alignItems: 'center', justifycontent: 'space-between', marginBottom: '16px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1 }}>
-                <span style={{ fontSize: '1.5rem' }}>{RPG_AVATARS[idx % RPG_AVATARS.length]}</span>
+                <span className="member-avatar"><UserIcon size={19} /></span>
                 <input
                   type="text"
                   value={member.name}
@@ -775,14 +836,14 @@ export const HomePage = () => {
                 onClick={() => updateMember(member.id, { divinationMethod: 'tarot' })}
                 style={{ flex: 1, padding: '6px', fontSize: '0.75rem', textTransform: 'none' }}
               >
-                🃏 西方塔罗 (情绪调治)
+                <Sparkles size={15} /> 西方塔罗 (情绪调治)
               </button>
               <button
                 className={`btn ${member.divinationMethod === 'bazi' ? 'btn-primary' : 'btn-ghost'}`}
                 onClick={() => updateMember(member.id, { divinationMethod: 'bazi' })}
                 style={{ flex: 1, padding: '6px', fontSize: '0.75rem', textTransform: 'none' }}
               >
-                ☯️ 东方八字 (时空命理)
+                <Orbit size={15} /> 东方八字 (时空命理)
               </button>
             </div>
 
@@ -808,7 +869,7 @@ export const HomePage = () => {
                           borderColor: member.mood === tag.id ? 'var(--primary)' : 'rgba(255,255,255,0.05)'
                         }}
                       >
-                        <span style={{ marginRight: '6px' }}>{tag.emoji}</span>
+                        <span className="mood-mark" aria-hidden="true" />
                         {tag.label}
                       </button>
                     ))}
@@ -926,11 +987,11 @@ export const HomePage = () => {
                       <div style={{ textAlign: 'center' }}>
                         <div style={{ fontSize: '0.65rem', color: 'var(--primary)', fontWeight: 'bold', marginBottom: '4px' }}>
                           {(member.tarotCardIndexes || []).length === 0 ? (
-                            '🔮 命运之轮转动，请用心挑选第一张牌'
+                            '命运之轮转动，请用心挑选第一张牌'
                           ) : (member.tarotCardIndexes || []).length < (member.tarotDrawRule === 'three' ? 3 : 1) ? (
                             `已锁定 ${(member.tarotCardIndexes || []).length} 张牌，请继续挑选下一张`
                           ) : (
-                            '✨ 命定仪式已完成'
+                            '命定仪式已完成'
                           )}
                         </div>
                         <div style={{ fontSize: '0.55rem', color: 'var(--text-muted)' }}>
@@ -998,7 +1059,7 @@ export const HomePage = () => {
                                 {String(idx + 1).padStart(2, '0')}
                               </div>
                               <div style={{ fontSize: '1rem', opacity: 0.8 }}>
-                                {isSelected ? '🔒' : '✨'}
+                                {isSelected ? '●' : '○'}
                               </div>
                               <div style={{ 
                                 fontSize: '0.4rem', 
@@ -1104,7 +1165,7 @@ export const HomePage = () => {
                           gap: '6px'
                         }}
                       >
-                        <span>🔮 命运共鸣已建立。已锁定 {member.tarotCardIndexes.length} 张奥秘牌位。</span>
+                        <span>命运共鸣已建立。已锁定 {member.tarotCardIndexes.length} 张奥秘牌位。</span>
                         <button
                           onClick={() => updateMember(member.id, { tarotCardIndexes: undefined, tarotCardIndex: undefined })}
                           style={{
@@ -1171,11 +1232,11 @@ export const HomePage = () => {
                       className="bazi-input"
                       style={{ padding: '6px 10px' }}
                     >
-                      <option value="travel">🚶 闲暇闲逛 (祈求顺遂)</option>
-                      <option value="fortune">💰 财源滚滚 (气场捞金)</option>
-                      <option value="relation">❤️ 命中宿缘 (桃花羁绊)</option>
-                      <option value="work">💼 功成名就 (开运辟邪)</option>
-                      <option value="custom">✍️ 自定义天命契机...</option>
+                      <option value="travel">闲暇闲逛 (祈求顺遂)</option>
+                      <option value="fortune">财源滚滚 (气场捞金)</option>
+                      <option value="relation">命中宿缘 (桃花羁绊)</option>
+                      <option value="work">功成名就 (开运辟邪)</option>
+                      <option value="custom">自定义天命契机...</option>
                     </select>
 
                     {(!['travel', 'fortune', 'relation', 'work'].includes(member.baziInfo?.queryType || '')) && (
@@ -1208,7 +1269,7 @@ export const HomePage = () => {
       <div style={{ marginTop: '24px', display: 'flex', gap: '8px', opacity: 0.8 }} className="pixel-panel">
         <Info size={16} color="var(--primary)" style={{ flexShrink: 0, marginTop: '2px' }} />
         <p style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', lineHeight: '1.4' }}>
-          💡 命运仪式说明：法阵召集完毕后，规划 Agent 将基于高德地图检索出结界周围数公里的真实场景，为您定制融合各人八字开运及塔罗安抚的最优时空出行链路。
+          命运仪式说明：规划 Agent 将基于高德地图检索附近真实场景，为同行成员定制融合偏好与出行需求的路线。
         </p>
       </div>
 
@@ -1234,7 +1295,7 @@ export const HomePage = () => {
           }}
         >
           <Sparkles size={18} />
-          开启命定契约 🔮
+          让玄途开始规划
         </button>
       </div>
 
@@ -1264,7 +1325,7 @@ export const HomePage = () => {
             <div className="pixel-panel" style={{ padding: '16px', marginBottom: '20px', background: '#1d1a18', border: '2px solid var(--primary-glow)', maxWidth: '400px', margin: '0 auto 20px auto', width: '100%' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                 <span className="font-mystic" style={{ color: 'var(--primary)', fontWeight: 'bold', fontSize: '1.2rem', textShadow: 'var(--primary-glow) 0 0 6px' }}>
-                  🧙‍♂️ 时空结界规划大厅
+                  <Sparkles size={17} /> 时空结界规划大厅
                 </span>
                 <span style={{ fontSize: '0.65rem', background: 'var(--primary-dim)', color: 'var(--primary)', padding: '2px 8px', border: '1px solid var(--primary)' }}>
                   AGENTIC FLOW
@@ -1295,22 +1356,22 @@ export const HomePage = () => {
                 const isFailed = node.status === 'failed';
                 const isIdle = node.status === 'idle';
 
-                let statusText = '⏳ 等待中';
+                let statusText = '等待中';
                 let cardBorder = '1px solid var(--pixel-border-color)';
                 let cardBg = 'rgba(42,38,35,0.4)';
                 let glowShadow = 'none';
 
                 if (isActive) {
-                  statusText = '⚡ 规划中...';
+                  statusText = '规划中...';
                   cardBorder = '2px solid var(--primary)';
                   cardBg = 'rgba(74,57,26,0.3)';
                   glowShadow = '0 0 10px rgba(226,181,83,0.3)';
                 } else if (isCompleted) {
-                  statusText = '✅ 完结';
+                  statusText = '已完成';
                   cardBorder = '1px solid #4caf50';
                   cardBg = 'rgba(76,175,80,0.06)';
                 } else if (isFailed) {
-                  statusText = '❌ 干扰中断';
+                  statusText = '已中断';
                   cardBorder = '1px solid #f44336';
                   cardBg = 'rgba(244,67,54,0.08)';
                 }

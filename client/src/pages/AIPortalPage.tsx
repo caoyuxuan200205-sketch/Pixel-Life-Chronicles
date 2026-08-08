@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Compass, Sparkles, Wand2, Clock, MapPin, CheckCircle, Navigation, Info, ChevronRight, ChevronLeft, User, Send, RefreshCw, Trash2, Download, Share2, Train, Plane, Ticket } from 'lucide-react';
+import { CheckCircle, ChevronLeft, ChevronRight, Clock, Compass, Download, Info, MapPin, Navigation, Orbit, Plane, RefreshCw, Send, Share2, Sparkles, Ticket, Train, Trash2, User, Wand2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import html2canvas from 'html2canvas';
 import { getCurrentUser, getBoundMembers, type BoundMember } from '../store';
@@ -19,7 +19,7 @@ const ELEMENT_MAP: Record<string, string> = {
 function calculateFrontBazi(birthDateStr: string, birthTimeStr: string) {
   const [year, month, day] = birthDateStr.split('-').map(Number);
   const [hour] = birthTimeStr.split(':').map(Number);
-  
+
   // 年柱
   let yearOffset = year - 4;
   if (month === 1 || (month === 2 && day < 4)) {
@@ -46,7 +46,7 @@ function calculateFrontBazi(birthDateStr: string, birthTimeStr: string) {
   const baseDate = new Date(2000, 0, 1);
   const targetDate = new Date(year, month - 1, day, hour, 0);
   const diffDays = Math.floor((Date.UTC(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate()) - Date.UTC(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate())) / (1000 * 60 * 60 * 24));
-  
+
   const dayStemIndex = ((4 + diffDays) % 10 + 10) % 10;
   const dayStem = STEMS[dayStemIndex];
 
@@ -329,29 +329,29 @@ const CouponWidget = () => {
   };
 
   return (
-    <motion.div 
-      initial={{ opacity: 0, scale: 0.98, y: 10 }} 
-      animate={{ opacity: 1, scale: 1, y: 0 }} 
+    <motion.div
+      initial={{ opacity: 0, scale: 0.98, y: 10 }}
+      animate={{ opacity: 1, scale: 1, y: 0 }}
       transition={{ duration: 0.4, ease: 'easeOut' }}
-      style={{ 
-        marginTop: '20px', 
-        padding: '16px', 
-        background: 'rgba(20, 15, 25, 0.65)', 
+      style={{
+        marginTop: '20px',
+        padding: '16px',
+        background: 'rgba(20, 15, 25, 0.65)',
         backdropFilter: 'blur(16px)',
         border: '1px solid rgba(226, 181, 83, 0.4)',
         boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4), inset 0 0 20px rgba(226, 181, 83, 0.05)',
-        color: '#fff', 
-        fontSize: '0.85rem', 
+        color: '#fff',
+        fontSize: '0.85rem',
         borderRadius: '16px',
         boxSizing: 'border-box'
       }}>
-      
-      <h3 style={{ 
-        color: '#FFDF8D', 
-        marginTop: 0, 
-        marginBottom: '20px', 
-        display: 'flex', 
-        alignItems: 'center', 
+
+      <h3 style={{
+        color: '#FFDF8D',
+        marginTop: 0,
+        marginBottom: '20px',
+        display: 'flex',
+        alignItems: 'center',
         gap: '8px',
         fontSize: '1.15rem',
         textShadow: '0 0 12px rgba(226, 181, 83, 0.6)',
@@ -359,7 +359,7 @@ const CouponWidget = () => {
       }}>
         <Sparkles size={20} color="#FFDF8D" /> 美团专属隐藏福袋
       </h3>
-      
+
       {step === 0 && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
           <p style={{ lineHeight: '1.6', fontSize: '0.9rem', marginBottom: '12px' }}>
@@ -371,17 +371,17 @@ const CouponWidget = () => {
             继续使用即代表您已充分理解并同意《Skills服务使用规则》以及《美团用户服务协议》《隐私政策》的全部内容，且自愿接受该等规则约束。
           </p>
           <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
-            <motion.button 
-              whileHover={{ scale: 1.02 }} 
+            <motion.button
+              whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.95 }}
-              onClick={handleAgree} 
-              style={{ 
-                padding: '10px 24px', 
-                background: 'linear-gradient(135deg, #FFDF8D 0%, #D4AF37 100%)', 
-                color: '#111', 
-                border: 'none', 
-                borderRadius: '8px', 
-                cursor: 'pointer', 
+              onClick={handleAgree}
+              style={{
+                padding: '10px 24px',
+                background: 'linear-gradient(135deg, #FFDF8D 0%, #D4AF37 100%)',
+                color: '#111',
+                border: 'none',
+                borderRadius: '8px',
+                cursor: 'pointer',
                 fontWeight: 'bold',
                 boxShadow: '0 4px 12px rgba(226, 181, 83, 0.4)'
               }}>
@@ -397,7 +397,7 @@ const CouponWidget = () => {
             即将为您注入福袋之力。<br/>
             <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.5)' }}>请先进行美团时空印记（手机号）验证，凭证将完全在本地沙箱加密保存。</span>
           </p>
-          
+
           <AnimatePresence>
             {message && (
               <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} style={{ color: '#FFDF8D', fontSize: '0.75rem', background: 'rgba(226, 181, 83, 0.1)', padding: '8px 12px', borderRadius: '6px', borderLeft: '3px solid #E2B553' }}>
@@ -407,16 +407,16 @@ const CouponWidget = () => {
           </AnimatePresence>
 
           <div style={{ display: 'flex', gap: '12px', alignItems: 'center', width: '100%', boxSizing: 'border-box' }}>
-            <input 
-              type="text" 
-              placeholder="请输入11位手机号" 
-              value={phone} 
+            <input
+              type="text"
+              placeholder="请输入11位手机号"
+              value={phone}
               onChange={e => setPhone(e.target.value)}
               onFocus={() => setFocusInput('phone')}
               onBlur={() => setFocusInput('')}
-              style={{ 
-                flex: 1, minWidth: 0, width: '100%', height: '44px', padding: '12px 12px', background: 'rgba(0,0,0,0.3)', 
-                border: focusInput === 'phone' ? '1px solid #FFDF8D' : '1px solid rgba(226, 181, 83, 0.3)', 
+              style={{
+                flex: 1, minWidth: 0, width: '100%', height: '44px', padding: '12px 12px', background: 'rgba(0,0,0,0.3)',
+                border: focusInput === 'phone' ? '1px solid #FFDF8D' : '1px solid rgba(226, 181, 83, 0.3)',
                 color: '#FFDF8D', borderRadius: '8px', outline: 'none', transition: 'all 0.3s',
                 boxSizing: 'border-box',
                 boxShadow: focusInput === 'phone' ? '0 0 8px rgba(226, 181, 83, 0.2)' : 'none'
@@ -424,14 +424,14 @@ const CouponWidget = () => {
               disabled={showCodeInput || loading}
             />
             {!showCodeInput && (
-              <motion.button 
+              <motion.button
                 whileHover={phone ? { scale: 1.02 } : {}} whileTap={phone ? { scale: 0.95 } : {}}
-                onClick={handleSendSms} disabled={loading || !phone} 
-                style={{ 
+                onClick={handleSendSms} disabled={loading || !phone}
+                style={{
                   height: '44px', padding: '0 12px', fontSize: '0.8rem',
-                  background: phone ? 'linear-gradient(135deg, #FFDF8D 0%, #D4AF37 100%)' : 'rgba(255,255,255,0.1)', 
-                  color: phone ? '#111' : 'rgba(255,255,255,0.3)', 
-                  border: 'none', borderRadius: '8px', cursor: phone ? 'pointer' : 'not-allowed', 
+                  background: phone ? 'linear-gradient(135deg, #FFDF8D 0%, #D4AF37 100%)' : 'rgba(255,255,255,0.1)',
+                  color: phone ? '#111' : 'rgba(255,255,255,0.3)',
+                  border: 'none', borderRadius: '8px', cursor: phone ? 'pointer' : 'not-allowed',
                   fontWeight: 'bold', whiteSpace: 'nowrap', transition: 'all 0.3s',
                   boxSizing: 'border-box',
                   display: 'flex',
@@ -442,33 +442,33 @@ const CouponWidget = () => {
               </motion.button>
             )}
           </div>
-          
+
           {showCodeInput && (
             <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} style={{ display: 'flex', gap: '12px', alignItems: 'center', width: '100%', boxSizing: 'border-box' }}>
-              <input 
-                type="text" 
-                placeholder="请输入6位短信验证码" 
-                value={code} 
+              <input
+                type="text"
+                placeholder="请输入6位短信验证码"
+                value={code}
                 onChange={e => setCode(e.target.value)}
                 onFocus={() => setFocusInput('code')}
                 onBlur={() => setFocusInput('')}
-                style={{ 
-                  flex: 1, minWidth: 0, width: '100%', height: '44px', padding: '12px 12px', background: 'rgba(0,0,0,0.3)', 
-                  border: focusInput === 'code' ? '1px solid #FFDF8D' : '1px solid rgba(226, 181, 83, 0.3)', 
+                style={{
+                  flex: 1, minWidth: 0, width: '100%', height: '44px', padding: '12px 12px', background: 'rgba(0,0,0,0.3)',
+                  border: focusInput === 'code' ? '1px solid #FFDF8D' : '1px solid rgba(226, 181, 83, 0.3)',
                   color: '#FFDF8D', borderRadius: '8px', outline: 'none', transition: 'all 0.3s',
                   boxSizing: 'border-box',
                   boxShadow: focusInput === 'code' ? '0 0 8px rgba(226, 181, 83, 0.2)' : 'none'
                 }}
                 disabled={loading}
               />
-              <motion.button 
+              <motion.button
                 whileHover={code ? { scale: 1.02 } : {}} whileTap={code ? { scale: 0.95 } : {}}
-                onClick={handleVerify} disabled={loading || !code} 
-                style={{ 
+                onClick={handleVerify} disabled={loading || !code}
+                style={{
                   height: '44px', padding: '0 12px', fontSize: '0.8rem',
-                  background: code ? 'linear-gradient(135deg, #FFDF8D 0%, #D4AF37 100%)' : 'rgba(255,255,255,0.1)', 
-                  color: code ? '#111' : 'rgba(255,255,255,0.3)', 
-                  border: 'none', borderRadius: '8px', cursor: code ? 'pointer' : 'not-allowed', 
+                  background: code ? 'linear-gradient(135deg, #FFDF8D 0%, #D4AF37 100%)' : 'rgba(255,255,255,0.1)',
+                  color: code ? '#111' : 'rgba(255,255,255,0.3)',
+                  border: 'none', borderRadius: '8px', cursor: code ? 'pointer' : 'not-allowed',
                   fontWeight: 'bold', whiteSpace: 'nowrap', transition: 'all 0.3s',
                   boxSizing: 'border-box',
                   display: 'flex',
@@ -499,23 +499,23 @@ const CouponWidget = () => {
               <div style={{ fontSize: '1.2rem', fontWeight: 'bold', background: 'linear-gradient(90deg, #4caf50, #81c784)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <CheckCircle size={22} color="#4caf50" /> 成功获得 {couponResult.coupon_count} 张专属神券！
               </div>
-              
+
               {/* 世界级美团金卡 UI */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                 {couponResult.coupons?.map((c:any, i:number) => (
-                  <motion.div 
-                    key={i} 
+                  <motion.div
+                    key={i}
                     whileHover={{ scale: 1.02, y: -2 }}
-                    style={{ 
-                      background: 'linear-gradient(135deg, #FFF8E1 0%, #F4D03F 30%, #D4AC0D 70%, #F9E79F 100%)', 
+                    style={{
+                      background: 'linear-gradient(135deg, #FFF8E1 0%, #F4D03F 30%, #D4AC0D 70%, #F9E79F 100%)',
                       backgroundSize: '200% auto',
                       animation: 'gradientFlow 4s ease infinite',
-                      borderRadius: '12px', 
-                      padding: '18px 20px', 
-                      color: '#3A2703', 
-                      display: 'flex', 
-                      justifyContent: 'space-between', 
-                      alignItems: 'center', 
+                      borderRadius: '12px',
+                      padding: '18px 20px',
+                      color: '#3A2703',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
                       boxShadow: '0 6px 20px rgba(212, 172, 13, 0.3), inset 0 1px 1px rgba(255,255,255,0.8)',
                       position: 'relative',
                       overflow: 'hidden'
@@ -524,9 +524,9 @@ const CouponWidget = () => {
                     {/* 卡券两侧的半圆打孔装饰 */}
                     <div style={{ position: 'absolute', left: '-10px', width: '20px', height: '20px', borderRadius: '50%', background: '#1c1524', boxShadow: 'inset -2px 0 4px rgba(0,0,0,0.3)' }} />
                     <div style={{ position: 'absolute', right: '-10px', width: '20px', height: '20px', borderRadius: '50%', background: '#1c1524', boxShadow: 'inset 2px 0 4px rgba(0,0,0,0.3)' }} />
-                    
+
                     {/* 卡券发光扫光动画层 (通过CSS注入，见外层) */}
-                    
+
                     <div style={{ zIndex: 1, paddingLeft: '8px', maxWidth: '65%' }}>
                       <div style={{ fontSize: '1.25rem', fontWeight: '900', letterSpacing: '0.5px', textShadow: '0 1px 1px rgba(255,255,255,0.6)' }}>
                         {c.name}
@@ -547,17 +547,17 @@ const CouponWidget = () => {
 
               <div style={{ marginTop: '20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(0,0,0,0.3)', padding: '12px 16px', borderRadius: '8px', border: '1px solid rgba(226, 181, 83, 0.2)' }}>
                 <span style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.8)' }}>🛍️ 券已自动入账！</span>
-                <motion.a 
+                <motion.a
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  href="https://click.meituan.com/t?t=1&c=2&p=Zcjq1Lxzawjj" 
-                  target="_blank" 
-                  rel="noreferrer" 
-                  style={{ 
+                  href="https://click.meituan.com/t?t=1&c=2&p=Zcjq1Lxzawjj"
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{
                     display: 'flex', alignItems: 'center', gap: '4px',
-                    padding: '8px 16px', background: 'linear-gradient(90deg, #FF9800, #FF5722)', 
-                    color: '#fff', textDecoration: 'none', borderRadius: '20px', 
-                    fontSize: '0.85rem', fontWeight: 'bold', boxShadow: '0 4px 10px rgba(255, 152, 0, 0.4)' 
+                    padding: '8px 16px', background: 'linear-gradient(90deg, #FF9800, #FF5722)',
+                    color: '#fff', textDecoration: 'none', borderRadius: '20px',
+                    fontSize: '0.85rem', fontWeight: 'bold', boxShadow: '0 4px 10px rgba(255, 152, 0, 0.4)'
                   }}
                 >
                   去美团使用 <ChevronRight size={16} />
@@ -585,7 +585,7 @@ const CouponWidget = () => {
           {/* Step 4: 提醒功能 */}
           <div style={{ borderTop: '1px dashed rgba(255,255,255,0.15)', marginTop: '16px', paddingTop: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'rgba(255,255,255,0.8)' }}>
-              <Clock size={16} color="#FFDF8D" /> 
+              <Clock size={16} color="#FFDF8D" />
               <span>每天 10:00 自动提醒我领大额红包</span>
             </div>
             <label style={{ position: 'relative', display: 'inline-block', width: '44px', height: '24px' }}>
@@ -674,13 +674,13 @@ const LoadingStepsPanel = ({ theme, isLoading }: LoadingStepsPanelProps) => {
   const completedCount = Math.min(currentStep, 4);
 
   return (
-    <div 
-      className="pixel-panel" 
-      style={{ 
+    <div
+      className="pixel-panel"
+      style={{
         flex: 1,
         width: '100%',
         boxSizing: 'border-box',
-        background: 'var(--bg-card)', 
+        background: 'var(--bg-card)',
         border: '1px solid var(--pixel-border-color)',
         padding: '14px 16px',
         display: 'flex',
@@ -694,9 +694,9 @@ const LoadingStepsPanel = ({ theme, isLoading }: LoadingStepsPanelProps) => {
       {/* 标题栏 */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <span className="font-mystic" style={{ fontSize: '0.85rem', fontWeight: 'bold', color: '#fff', display: 'flex', alignItems: 'center', gap: '6px' }}>
-          🔮 祭司推演过程
+          <Orbit size={15} /> 祭司推演过程
         </span>
-        <button 
+        <button
           onClick={() => setIsCollapsed(!isCollapsed)}
           style={{
             background: 'none',
@@ -722,7 +722,7 @@ const LoadingStepsPanel = ({ theme, isLoading }: LoadingStepsPanelProps) => {
       {/* 步骤列表 */}
       {!isCollapsed && (
         <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', gap: '14px', marginTop: '6px', paddingLeft: '4px' }}>
-          
+
           {/* 连接线 */}
           <div style={{
             position: 'absolute',
@@ -755,33 +755,33 @@ const LoadingStepsPanel = ({ theme, isLoading }: LoadingStepsPanelProps) => {
 
             return (
               <div key={index} style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', zIndex: 1 }}>
-                
+
                 {/* 节点图标 */}
-                <div style={{ 
-                  width: '16px', 
-                  height: '16px', 
-                  display: 'flex', 
-                  alignItems: 'center', 
+                <div style={{
+                  width: '16px',
+                  height: '16px',
+                  display: 'flex',
+                  alignItems: 'center',
                   justifyContent: 'center',
                   flexShrink: 0,
                   marginTop: '2px'
                 }}>
                   {isDone ? (
-                    <div style={{ 
-                      width: '8px', 
-                      height: '8px', 
-                      borderRadius: '50%', 
-                      background: theme.color, 
+                    <div style={{
+                      width: '8px',
+                      height: '8px',
+                      borderRadius: '50%',
+                      background: theme.color,
                       boxShadow: `0 0 8px ${theme.glow}`,
                       transition: 'all 0.3s'
                     }} />
                   ) : isActive ? (
                     <RefreshCw size={10} className="spinner-icon" style={{ animation: 'spin 1.5s linear infinite', color: theme.color }} />
                   ) : (
-                    <div style={{ 
-                      width: '6px', 
-                      height: '6px', 
-                      borderRadius: '50%', 
+                    <div style={{
+                      width: '6px',
+                      height: '6px',
+                      borderRadius: '50%',
                       background: 'rgba(255,255,255,0.15)'
                     }} />
                   )}
@@ -789,16 +789,16 @@ const LoadingStepsPanel = ({ theme, isLoading }: LoadingStepsPanelProps) => {
 
                 {/* 文本内容 */}
                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-                  <div style={{ 
-                    fontSize: '0.75rem', 
-                    fontWeight: 'bold', 
+                  <div style={{
+                    fontSize: '0.75rem',
+                    fontWeight: 'bold',
                     color: isPending ? 'rgba(255,255,255,0.3)' : '#fff',
                     transition: 'color 0.3s'
                   }}>
                     {step.title}
                   </div>
-                  <div style={{ 
-                    fontSize: '0.65rem', 
+                  <div style={{
+                    fontSize: '0.65rem',
                     color: isActive ? theme.color : isPending ? 'rgba(255,255,255,0.2)' : 'var(--text-secondary)',
                     marginTop: '2px',
                     textAlign: 'left',
@@ -809,8 +809,8 @@ const LoadingStepsPanel = ({ theme, isLoading }: LoadingStepsPanelProps) => {
                 </div>
 
                 {/* 状态文字 */}
-                <div style={{ 
-                  fontSize: '0.65rem', 
+                <div style={{
+                  fontSize: '0.65rem',
                   color: isDone ? '#3CD070' : isActive ? theme.color : 'rgba(255,255,255,0.2)',
                   fontWeight: isActive ? 'bold' : 'normal',
                   flexShrink: 0
@@ -847,7 +847,7 @@ export const AIPortalPage = () => {
   // 1. 判断玄学大结界基础参数
   const [luckyElement, setLuckyElement] = useState('金');
   const [mainElement, setMainElement] = useState('水');
-  
+
   // 罗盘动画控制与交互
   const [spinSpeed, setSpinSpeed] = useState(20); // 慢速自动转
   const [isCompassHovered, setIsCompassHovered] = useState(false);
@@ -933,7 +933,7 @@ export const AIPortalPage = () => {
     let timer: any = null;
     if (showVenueWidget && venueWidgetStep === 1) {
       const baseUrl = import.meta.env.VITE_BACKEND_URL || window.location.origin;
-      
+
       timer = setInterval(async () => {
         try {
           const res = await fetch(`${baseUrl.replace(/\/$/, '')}/api/agent/venue/auth/poll`, {
@@ -952,7 +952,7 @@ export const AIPortalPage = () => {
         }
       }, 3000);
     }
-    
+
     return () => {
       if (timer) clearInterval(timer);
     };
@@ -1018,15 +1018,16 @@ export const AIPortalPage = () => {
 
   // 2. AI 对话聊天历史与输入管理
   const [messages, setMessages] = useState<Array<{ role: 'user' | 'assistant', content: string }>>([]);
-  const [inputValue, setInputValue] = useState('');
+  const [inputValue, setInputValue] = useState(() => sessionStorage.getItem('xuantu_initial_prompt') || '');
+
   const [isLoading, setIsLoading] = useState(false);
-  
+
   // 记录每个消息卡片的多路 Booking 预订状态和截屏状态
   const [bookingSuccessMap, setBookingSuccessMap] = useState<Record<number, boolean>>({});
   const [sharedSuccessMap, setSharedSuccessMap] = useState<Record<number, boolean>>({});
   const [isCapturing, setIsCapturing] = useState(false);
   const [captureProgress, setCaptureProgress] = useState('');
-  
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const isSendingRef = useRef(false);
 
@@ -1040,7 +1041,7 @@ export const AIPortalPage = () => {
       navigate('/auth', { replace: true });
       return;
     }
-    
+
     // 如果设置了个人八字，解析得出幸运五行
     if (currentUser.baziInfo) {
       const { mainElement: me, luckyElement: le } = calculateFrontBazi(
@@ -1053,7 +1054,7 @@ export const AIPortalPage = () => {
   }, [currentUser?.id, currentUser?.baziInfo?.birthDate, currentUser?.baziInfo?.birthTime, navigate]);
 
   // 天命迎新欢迎语
-  const welcomeSpeech = `🔮 探险者 **${currentUser?.username || '探索者'}**，欢迎入阵星耀命盘。我是您的“时空探路祭司”。
+  const welcomeSpeech = `🔮 探险者 **${currentUser?.username || '探索者'}**，欢迎入阵星耀命盘。我是你的“玄学行程规划 Agent”。
 
 感应到您的幸运五行属【**${luckyElement}**】，今日地利开运方位：【**${currentDir.dir}**】。
 
@@ -1088,7 +1089,7 @@ export const AIPortalPage = () => {
     setInputValue('');
 
     let updatedHistory = [...messages];
-    
+
     // 首次开始聊天时，在聊天历史中预埋 Priest 的欢迎词，构建自然连贯的对话流程
     if (!hasUserMessages) {
       updatedHistory = [
@@ -1106,12 +1107,12 @@ export const AIPortalPage = () => {
       const baseUrl = import.meta.env.VITE_BACKEND_URL || window.location.origin;
       // 过滤系统欢迎词，打包真实上下文
       const chatHistory = updatedHistory.map(m => ({ role: m.role, content: m.content }));
-      
+
       const { fetchSSEJSON } = await import('../lib/fetchSSE');
-      
+
       // Initialize an empty response so we can stream into it
       setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
-      
+
       const resData = await fetchSSEJSON(
         `${baseUrl.replace(/\/$/, '')}/api/agent/chat`,
         {
@@ -1154,7 +1155,7 @@ export const AIPortalPage = () => {
       });
     } catch (err: any) {
       console.error('Chat AI query error:', err);
-      
+
       // 真实反馈错误，完全禁用降级兜底方案
       await new Promise(r => setTimeout(r, 800));
       setMessages(prev => [...prev, {
@@ -1166,6 +1167,15 @@ export const AIPortalPage = () => {
       isSendingRef.current = false;
     }
   };
+
+  useEffect(() => {
+    const initialPrompt = sessionStorage.getItem('xuantu_initial_prompt');
+    const shouldAutoSend = sessionStorage.getItem('xuantu_auto_send') === '1';
+    sessionStorage.removeItem('xuantu_initial_prompt');
+    sessionStorage.removeItem('xuantu_auto_send');
+    if (!initialPrompt || !shouldAutoSend) return;
+    void handleSendMessage(initialPrompt);
+  }, []);
 
   // 重置对话线程，清除所有状态并返回 Splash
   const handleRestartChat = () => {
@@ -1254,7 +1264,7 @@ export const AIPortalPage = () => {
   const handleShareWeekendPlan = (index: number) => {
     setIsCapturing(true);
     setCaptureProgress('✨ 正在传送时空阵纹...');
-    
+
     setTimeout(() => {
       setSharedSuccessMap(prev => ({
         ...prev,
@@ -1278,7 +1288,7 @@ export const AIPortalPage = () => {
   const handleCaptureTicket = async (index: number) => {
     setIsCapturing(true);
     setCaptureProgress('🔮 正在凝聚契约法阵长卷...');
-    
+
     // 稍作等待以确保渲染稳定
     setTimeout(async () => {
       try {
@@ -1345,8 +1355,8 @@ export const AIPortalPage = () => {
           boldParts.push(str.substring(lastIdx, boldMatch.index));
         }
         boldParts.push(
-          <strong 
-            key={`bold-${baseKey}-${boldMatch.index}`} 
+          <strong
+            key={`bold-${baseKey}-${boldMatch.index}`}
             style={{ fontWeight: 'bold', color: '#FFE169' }}
           >
             {boldMatch[1]}
@@ -1427,9 +1437,9 @@ export const AIPortalPage = () => {
     return (
       <React.Fragment key={index}>
         {renderSteps()}
-        <div 
-          style={{ 
-            display: 'flex', 
+        <div
+          style={{
+            display: 'flex',
             justifyContent: isUser ? 'flex-end' : 'flex-start',
             alignItems: 'flex-start',
             gap: '10px',
@@ -1453,21 +1463,21 @@ export const AIPortalPage = () => {
             fontSize: '1.25rem',
             boxShadow: `0 0 8px ${theme.glow}`
           }}>
-            🧙‍♂️
+            <User size={21} />
           </div>
         )}
 
         {/* 气泡及契约 */}
         <div style={{ display: 'flex', flexDirection: 'column', width: '100%', maxWidth: '320px', gap: '10px' }}>
-          
+
           {/* 文字内容 */}
-          <div 
+          <div
             className="pixel-panel"
-            style={{ 
+            style={{
               width: '100%',
               boxSizing: 'border-box',
-              padding: '12px 14px', 
-              background: isUser ? 'rgba(226, 181, 83, 0.12)' : 'var(--bg-card)', 
+              padding: '12px 14px',
+              background: isUser ? 'rgba(226, 181, 83, 0.12)' : 'var(--bg-card)',
               border: isUser ? '1px solid var(--primary)' : `1px solid var(--pixel-border-color)`,
               color: '#fff',
               fontSize: '0.8rem',
@@ -1483,9 +1493,9 @@ export const AIPortalPage = () => {
           >
             {/* 顶栏昵称 */}
             <div style={{ fontSize: '0.65rem', color: isUser ? '#FFE169' : theme.color, fontWeight: 'bold', marginBottom: '4px', userSelect: 'none', WebkitUserSelect: 'none' }}>
-              {isUser ? `${currentUser?.username || '探索者'}` : '时空探路祭司'}
+              {isUser ? `${currentUser?.username || '探索者'}` : '玄学行程规划'}
             </div>
-            
+
             {renderTextWithLinks(text)}
           </div>
 
@@ -1495,13 +1505,13 @@ export const AIPortalPage = () => {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               id={`ticket-card-${index}`}
-              style={{ 
-                display: 'flex', 
-                flexDirection: 'column', 
-                gap: '0px', 
-                width: '100%', 
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0px',
+                width: '100%',
                 boxSizing: 'border-box',
-                maxWidth: '320px', 
+                maxWidth: '320px',
                 marginTop: '4px',
                 border: `2px solid ${theme.color}`,
                 boxShadow: `0 0 15px ${theme.glow}, 4px 4px 0 rgba(0,0,0,0.5)`,
@@ -1512,9 +1522,9 @@ export const AIPortalPage = () => {
               }}
             >
               {/* 卡片顶头饰条 */}
-              <div style={{ 
-                height: '8px', 
-                background: `linear-gradient(90deg, ${theme.color} 0%, rgba(255,255,255,0.2) 50%, ${theme.color} 100%)` 
+              <div style={{
+                height: '8px',
+                background: `linear-gradient(90deg, ${theme.color} 0%, rgba(255,255,255,0.2) 50%, ${theme.color} 100%)`
               }} />
 
               {/* 契约头部 */}
@@ -1575,14 +1585,14 @@ export const AIPortalPage = () => {
               </div>
 
               {/* 出行吉时条 */}
-              <div style={{ 
-                display: 'flex', 
-                gap: '6px', 
-                padding: '10px 14px', 
-                background: 'rgba(226,181,83,0.04)', 
+              <div style={{
+                display: 'flex',
+                gap: '6px',
+                padding: '10px 14px',
+                background: 'rgba(226,181,83,0.04)',
                 borderBottom: '1px dashed rgba(255,255,255,0.08)',
-                fontSize: '0.65rem', 
-                color: '#fff', 
+                fontSize: '0.65rem',
+                color: '#fff',
                 textAlign: 'left'
               }}>
                 <Clock size={13} style={{ color: theme.color, flexShrink: 0, marginTop: '1px' }} />
@@ -1621,7 +1631,7 @@ export const AIPortalPage = () => {
                     >
                       <span>🤝 一键锁定天命契约并付款 (美团代订)</span>
                     </button>
-                    
+
                     {/* 去真实美团对比/查看 */}
                     <a
                       href={getMeituanSearchUrl(deal.hotel.name)}
@@ -1663,12 +1673,12 @@ export const AIPortalPage = () => {
                     }}
                   >
                     {/* CSS bar code 创意条码 */}
-                    <div style={{ 
-                      display: 'flex', 
-                      gap: '2px', 
-                      height: '24px', 
-                      justifyContent: 'center', 
-                      margin: '2px 0 8px 0', 
+                    <div style={{
+                      display: 'flex',
+                      gap: '2px',
+                      height: '24px',
+                      justifyContent: 'center',
+                      margin: '2px 0 8px 0',
                       opacity: 0.6,
                       background: 'rgba(255,255,255,0.05)',
                       padding: '4px'
@@ -1683,16 +1693,16 @@ export const AIPortalPage = () => {
                     <p style={{ fontSize: '0.6rem', color: '#a5d6a7', lineHeight: '1.4', margin: '0 0 10px 0' }}>
                       已成功使用您的绑定账户完成一键代订避世套餐！凭证短信已同步发送至手机。
                     </p>
-                    
-                    <div style={{ 
-                      borderTop: '1px dashed rgba(76, 175, 80, 0.3)', 
-                      paddingTop: '8px', 
-                      display: 'flex', 
-                      flexDirection: 'column', 
-                      gap: '3px', 
-                      fontSize: '0.6rem', 
-                      color: '#a5d6a7', 
-                      textAlign: 'left' 
+
+                    <div style={{
+                      borderTop: '1px dashed rgba(76, 175, 80, 0.3)',
+                      paddingTop: '8px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '3px',
+                      fontSize: '0.6rem',
+                      color: '#a5d6a7',
+                      textAlign: 'left'
                     }}>
                       <div>🎫 <b>美团凭证码</b>：<span style={{ color: '#fff', fontFamily: 'monospace' }}>MT9986321{12 + index}</span></div>
                       <div>🚙 <b>开运自驾时段</b>：{deal.auspiciousHour.time} 临【{deal.auspiciousHour.label}】</div>
@@ -1759,13 +1769,13 @@ export const AIPortalPage = () => {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               id={`ticket-card-${index}`}
-              style={{ 
-                display: 'flex', 
-                flexDirection: 'column', 
-                gap: '0px', 
-                width: '100%', 
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0px',
+                width: '100%',
                 boxSizing: 'border-box',
-                maxWidth: '320px', 
+                maxWidth: '320px',
                 marginTop: '4px',
                 border: `2px solid ${theme.color}`,
                 boxShadow: `0 0 15px ${theme.glow}, 4px 4px 0 rgba(0,0,0,0.5)`,
@@ -1776,9 +1786,9 @@ export const AIPortalPage = () => {
               }}
             >
               {/* 卡片顶头饰条 */}
-              <div style={{ 
-                height: '8px', 
-                background: `linear-gradient(90deg, ${theme.color} 0%, rgba(255,255,255,0.2) 50%, ${theme.color} 100%)` 
+              <div style={{
+                height: '8px',
+                background: `linear-gradient(90deg, ${theme.color} 0%, rgba(255,255,255,0.2) 50%, ${theme.color} 100%)`
               }} />
 
               {/* 契约头部 */}
@@ -1816,11 +1826,11 @@ export const AIPortalPage = () => {
               {/* 方案列表 */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '10px 14px', borderBottom: '1px dashed rgba(255,255,255,0.08)' }}>
                 {ticketDeal.options && ticketDeal.options.map((opt: any, optIdx: number) => (
-                  <div 
-                    key={optIdx} 
-                    style={{ 
-                      padding: '10px', 
-                      background: 'rgba(255,255,255,0.03)', 
+                  <div
+                    key={optIdx}
+                    style={{
+                      padding: '10px',
+                      background: 'rgba(255,255,255,0.03)',
                       border: '1px solid rgba(255,255,255,0.08)',
                       display: 'flex',
                       flexDirection: 'column',
@@ -1883,10 +1893,10 @@ export const AIPortalPage = () => {
               </div>
 
               {/* 出征吉时推荐 */}
-              <div style={{ 
-                padding: '10px 14px 12px 14px', 
-                fontSize: '0.6rem', 
-                color: 'var(--text-muted)', 
+              <div style={{
+                padding: '10px 14px 12px 14px',
+                fontSize: '0.6rem',
+                color: 'var(--text-muted)',
                 textAlign: 'left'
               }}>
                 ℹ️ 乘此列车/航班出行，可于时空中契合幸运【{luckyElement}】气场，助推宿命吉运！
@@ -1900,13 +1910,13 @@ export const AIPortalPage = () => {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               id={`ticket-card-${index}`}
-              style={{ 
-                display: 'flex', 
-                flexDirection: 'column', 
-                gap: '0px', 
-                width: '100%', 
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0px',
+                width: '100%',
                 boxSizing: 'border-box',
-                maxWidth: '320px', 
+                maxWidth: '320px',
                 marginTop: '4px',
                 border: `2px solid ${theme.color}`,
                 boxShadow: `0 0 15px ${theme.glow}, 4px 4px 0 rgba(0,0,0,0.5)`,
@@ -1917,9 +1927,9 @@ export const AIPortalPage = () => {
               }}
             >
               {/* 卡片顶头饰条 */}
-              <div style={{ 
-                height: '8px', 
-                background: `linear-gradient(90deg, ${theme.color} 0%, rgba(255,255,255,0.2) 50%, ${theme.color} 100%)` 
+              <div style={{
+                height: '8px',
+                background: `linear-gradient(90deg, ${theme.color} 0%, rgba(255,255,255,0.2) 50%, ${theme.color} 100%)`
               }} />
 
               {/* 契约头部 */}
@@ -1942,13 +1952,13 @@ export const AIPortalPage = () => {
               {/* 时间线 */}
               <div style={{ display: 'flex', flexDirection: 'column', padding: '14px 14px 4px 14px', position: 'relative' }}>
                 <div style={{ position: 'absolute', left: '21px', top: '24px', bottom: '24px', width: '2px', background: `linear-gradient(180deg, ${theme.color} 0%, rgba(255,255,255,0.1) 100%)` }} />
-                
+
                 {weekendDeal.timeline && weekendDeal.timeline.map((node: any, idx: number) => (
                   <div key={idx} style={{ display: 'flex', gap: '12px', marginBottom: '16px', position: 'relative', zIndex: 2 }}>
                     <div style={{ width: '16px', height: '16px', borderRadius: '50%', background: '#120d1c', border: `2px solid ${theme.color}`, display: 'flex', justifyContent: 'center', alignItems: 'center', flexShrink: 0, marginTop: '2px' }}>
                       <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: theme.color }} />
                     </div>
-                    
+
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1 }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                         <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -1959,7 +1969,7 @@ export const AIPortalPage = () => {
                           {node.tag}
                         </span>
                       </div>
-                      
+
                       <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)', whiteSpace: 'pre-wrap' }}>
                         {renderTextWithLinks(node.mysticReasoning)}
                       </div>
@@ -2010,7 +2020,7 @@ export const AIPortalPage = () => {
                     >
                       <span>🤝 缔结天命契约 (一键安排)</span>
                     </button>
-                    
+
                     {!sharedSuccessMap[index] ? (
                       <button
                         onClick={() => handleShareWeekendPlan(index)}
@@ -2123,7 +2133,7 @@ export const AIPortalPage = () => {
             fontSize: '1.2rem',
             boxShadow: '0 0 8px rgba(226,181,83,0.3)'
           }}>
-            🤠
+            <User size={21} />
           </div>
         )}
 
@@ -2133,16 +2143,16 @@ export const AIPortalPage = () => {
   };
 
   return (
-    <div style={{ 
+    <div className="ai-portal-page" style={{
       display: 'flex',
       flexDirection: 'column',
-      height: '100dvh', 
-      background: 'radial-gradient(circle at center, #181320 0%, #09070c 100%)', 
-      color: 'var(--text-primary)', 
+      height: '100dvh',
+      background: 'var(--app-ai-background)',
+      color: 'var(--text-primary)',
       overflow: 'hidden',
       position: 'relative'
     }}>
-      
+
       {/* 截图/截图状态指示蒙层 */}
       {isCapturing && (
         <div style={{
@@ -2164,49 +2174,49 @@ export const AIPortalPage = () => {
       )}
 
       {/* 顶部固定 HUD 导航栏 */}
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'space-between', 
-        alignItems: 'center', 
-        padding: '16px 20px', 
+      <div className="ai-portal-header" style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        padding: '16px 20px',
         borderBottom: '1px solid rgba(255,255,255,0.05)',
         background: 'rgba(15, 11, 20, 0.85)',
         backdropFilter: 'blur(16px)',
         zIndex: 50
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <button 
-            onClick={() => navigate('/')} 
-            style={{ 
-              background: 'none', border: 'none', color: theme.color, 
-              display: 'flex', alignItems: 'center', justifyContent: 'center', 
+        <div className="ai-portal-header-row" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <button
+            onClick={() => navigate('/')}
+            style={{
+              background: 'none', border: 'none', color: theme.color,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
               cursor: 'pointer', padding: 0, marginRight: '4px'
             }}
           >
             <ChevronLeft size={24} />
           </button>
-          <span style={{ fontSize: '1.3rem', textShadow: `0 0 6px ${theme.color}` }}>🌟</span>
+          <span className="ai-brand-symbol"><Sparkles size={18} /></span>
           <div>
             <h2 className="font-mystic" style={{ color: '#fff', fontSize: '1.05rem', margin: 0, textAlign: 'left' }}>
-              星耀AI <span style={{ color: theme.color, fontSize: '0.8rem', marginLeft: '4px' }}>时空探路祭司</span>
+              玄途 Agent <span style={{ color: theme.color, fontSize: '0.8rem', marginLeft: '4px' }}>玄学行程规划</span>
             </h2>
           </div>
         </div>
-        
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+
+        <div className="ai-portal-header-row" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           {/* 开运指示牌 */}
-          <div style={{ 
-            fontSize: '0.58rem', 
-            background: theme.badgeBg, 
-            color: theme.color, 
-            border: `1px solid ${theme.color}`, 
+          <div style={{
+            fontSize: '0.58rem',
+            background: theme.badgeBg,
+            color: theme.color,
+            border: `1px solid ${theme.color}`,
             padding: '2px 6px',
             fontWeight: 'bold',
             borderRadius: '0px'
           }}>
             {luckyElement}命大吉
           </div>
-          
+
           {/* 美团导购助手激活状态按钮 */}
           <button
             onClick={() => {
@@ -2262,38 +2272,38 @@ export const AIPortalPage = () => {
       </div>
 
       {/* 中部滚动聊天视窗 */}
-      <div style={{ 
-        flex: 1, 
-        overflowY: 'auto', 
+      <div style={{
+        flex: 1,
+        overflowY: 'auto',
         padding: '20px 16px',
         display: 'flex',
         flexDirection: 'column',
         gap: '4px'
-      }} className="no-scrollbar">
-        
+      }} className="ai-conversation-scroll no-scrollbar">
+
         {/* ========================================================
             1. EMPTY LANDING STATE: 完美的 AI 主视觉 (完全参考“漫旅”项目的极奢风格)
             ======================================================== */}
         {!hasUserMessages && (
-          <div style={{ 
-            display: 'flex', 
-            flexDirection: 'column', 
-            alignItems: 'center', 
-            justifyContent: 'flex-start', 
+          <div className="ai-empty-state" style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'flex-start',
             padding: '80px 0 30px 0',
             width: '100%',
             height: '100%',
             minHeight: '420px'
           }}>
-            
+
             {/* 3D 旋转星盘主视觉 */}
-            <div 
-              style={{ 
-                display: 'flex', 
-                flexDirection: 'column', 
-                alignItems: 'center', 
-                justifyContent: 'center', 
-                margin: '10px 0 25px 0', 
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                margin: '10px 0 25px 0',
                 position: 'relative',
                 cursor: 'pointer'
               }}
@@ -2383,7 +2393,7 @@ export const AIPortalPage = () => {
               </motion.div>
 
               <div style={{ fontSize: '0.5rem', color: 'var(--text-muted)', marginTop: '8px', opacity: 0.6 }}>
-                🧭 触摸星罗盘加速旋转
+                <Compass size={13} /> 触摸星罗盘加速旋转
               </div>
             </div>
 
@@ -2394,22 +2404,22 @@ export const AIPortalPage = () => {
                 <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '8px', fontFamily: 'var(--font-main)', opacity: 0.85 }}>
                   {getTimeGreeting(currentUser?.username || '探索者')}
                 </div>
-                
-                {/* 大标题：你的避世开运之旅 正在编织中 */}
-                <h1 className="font-mystic" style={{ 
-                  fontSize: '2.1rem', 
-                  lineHeight: '1.25', 
-                  color: '#eae3d9', 
+
+                {/* 大标题：说出你的出行愿望 玄途为你推演路线 */}
+                <h1 className="font-mystic" style={{
+                  fontSize: '2.1rem',
+                  lineHeight: '1.25',
+                  color: '#eae3d9',
                   margin: '4px 0',
                   fontWeight: 'normal',
                   letterSpacing: '1px'
                 }}>
-                  你的避世开运之旅
+                  说出你的出行愿望
                 </h1>
-                <h1 className="font-mystic" style={{ 
-                  fontSize: '2.1rem', 
-                  lineHeight: '1.25', 
-                  color: '#eae3d9', 
+                <h1 className="font-mystic" style={{
+                  fontSize: '2.1rem',
+                  lineHeight: '1.25',
+                  color: '#eae3d9',
                   margin: '4px 0 14px 0',
                   fontWeight: 'normal',
                   letterSpacing: '1px',
@@ -2417,13 +2427,13 @@ export const AIPortalPage = () => {
                   alignItems: 'center',
                   gap: '8px'
                 }}>
-                  正在编织中 <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: theme.color, display: 'inline-block', boxShadow: `0 0 8px ${theme.glow}` }} />
+                  玄途为你推演路线 <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: theme.color, display: 'inline-block', boxShadow: `0 0 8px ${theme.glow}` }} />
                 </h1>
 
                 {/* 精美金色渐变分割线带小金圆点 */}
-                <div style={{ 
-                  height: '2px', 
-                  background: `linear-gradient(90deg, ${theme.color} 0%, rgba(255,255,255,0.05) 100%)`, 
+                <div style={{
+                  height: '2px',
+                  background: `linear-gradient(90deg, ${theme.color} 0%, rgba(255,255,255,0.05) 100%)`,
                   width: '90px',
                   marginBottom: '16px',
                   position: 'relative'
@@ -2441,9 +2451,9 @@ export const AIPortalPage = () => {
                 </div>
 
                 {/* 幸运五行与开运方位子文本 */}
-                <div style={{ 
-                  fontSize: '0.75rem', 
-                  color: 'var(--text-secondary)', 
+                <div style={{
+                  fontSize: '0.75rem',
+                  color: 'var(--text-secondary)',
                   lineHeight: '1.5',
                   display: 'flex',
                   alignItems: 'center',
@@ -2472,12 +2482,12 @@ export const AIPortalPage = () => {
                 flexShrink: 0,
                 marginTop: '4px'
               }}>
-                避世季 2026
+                玄途 · 2026
               </div>
             </div>
 
             {/* 图2风格的中心高画质圆角对话文本输入框 */}
-            <div style={{
+            <div className="ai-landing-input" style={{
               display: 'flex',
               alignItems: 'center',
               background: 'rgba(255, 255, 255, 0.04)',
@@ -2510,13 +2520,13 @@ export const AIPortalPage = () => {
                 flexShrink: 0,
                 boxShadow: `0 0 6px ${theme.glow}`
               }}>
-                🔮
+                <Orbit size={22} />
               </div>
 
               {/* 真实输入框 */}
               <input
                 type="text"
-                placeholder="倾诉任何具体的出行、避世宿命需求..."
+                placeholder="告诉玄途：和谁、何时、在哪里、想怎样度过…"
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
                 onKeyDown={(e) => {
@@ -2575,12 +2585,12 @@ export const AIPortalPage = () => {
       {/* 底部固定聊天输入底槽 (当用户已经开启对话后才显示) */}
       <AnimatePresence>
         {hasUserMessages && (
-          <motion.div 
+          <motion.div className="ai-chat-composer"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 20 }}
-            style={{ 
-              padding: '12px 16px 16px 16px', 
+            style={{
+              padding: '12px 16px 16px 16px',
               marginBottom: '0px', // No nav bar anymore
               borderTop: '1px solid rgba(255,255,255,0.05)',
               background: 'rgba(9, 7, 12, 0.95)',
@@ -2592,7 +2602,7 @@ export const AIPortalPage = () => {
             }}
           >
             <textarea
-              placeholder="向时空探路祭司倾诉你的出行心里话..."
+              placeholder="继续补充需求，或告诉玄途怎样调整行程…"
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={(e) => {
@@ -2717,11 +2727,11 @@ export const AIPortalPage = () => {
                   {/* Step 0: 免责与服务声明 */}
                   {venueWidgetStep === 0 && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                      <div style={{ 
-                        fontSize: '0.8rem', 
-                        color: '#bbb', 
-                        background: 'rgba(0,0,0,0.3)', 
-                        padding: '12px', 
+                      <div style={{
+                        fontSize: '0.8rem',
+                        color: '#bbb',
+                        background: 'rgba(0,0,0,0.3)',
+                        padding: '12px',
                         lineHeight: '1.5',
                         display: 'flex',
                         flexDirection: 'column',
@@ -2789,7 +2799,7 @@ export const AIPortalPage = () => {
                       <p style={{ fontSize: '0.75rem', color: '#aaa', margin: 0, textAlign: 'center' }}>
                         已解锁以下五大业务优惠推荐权限：
                       </p>
-                      
+
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '0.75rem' }}>
                         {venueLinks.length > 0 ? (
                           venueLinks.map((link, idx) => (

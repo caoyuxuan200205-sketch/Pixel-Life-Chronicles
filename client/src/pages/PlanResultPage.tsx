@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { Sparkles, MapPin, Navigation, ShoppingBag, ShieldCheck, PhoneCall, ChevronRight, Wand2, RefreshCw, Share2 } from 'lucide-react';
+import { Bike, ChevronRight, Download, Info, Map, MapPin, Navigation, Orbit, Palette, PhoneCall, QrCode, RefreshCw, Share2, ShieldCheck, ShoppingBag, Sparkles, UserRound, Wand2 } from 'lucide-react';
 import AMapLoader from '@amap/amap-jsapi-loader';
 import html2canvas from 'html2canvas';
 import { track } from "@vercel/analytics";
@@ -98,16 +98,16 @@ export const PlanResultPage = () => {
           const marker = new AMap.Marker({
             position: coord,
             content: `<div style="
-              width: 20px; 
-              height: 20px; 
-              border-radius: 50%; 
-              background: var(--primary); 
-              color: #000; 
+              width: 20px;
+              height: 20px;
+              border-radius: 50%;
+              background: var(--primary);
+              color: #000;
               font-family: var(--font-mystic);
-              font-size: 0.65rem; 
+              font-size: 0.65rem;
               font-weight: bold;
-              display: flex; 
-              align-items: center; 
+              display: flex;
+              align-items: center;
               justify-content: center;
               border: 2px solid #fff;
               box-shadow: 0 0 6px var(--primary-glow);
@@ -160,7 +160,7 @@ export const PlanResultPage = () => {
   // 执行一键预约
   const handleBooking = async (eventId: string, bookingType: 'didi' | 'coupon' | 'ticket') => {
     setBookingLoading(prev => ({ ...prev, [eventId]: true }));
-    
+
     // 模拟不同环节的时空调用进度跑马灯
     const msgs = {
       didi: ['📡 正在定位当前时空信标...', '🚗 唤醒高德专车调度系统...', '🚕 匹配最近的像素专车司机...'],
@@ -169,7 +169,7 @@ export const PlanResultPage = () => {
     }[bookingType];
 
     setBookingLoadingMsg(prev => ({ ...prev, [eventId]: msgs[0] }));
-    
+
     // 模拟步骤轮播
     setTimeout(() => {
       setBookingLoadingMsg(prev => ({ ...prev, [eventId]: msgs[1] }));
@@ -190,7 +190,7 @@ export const PlanResultPage = () => {
             bookingType
           })
         });
-        
+
         const data = await res.json();
         if (data.success) {
           // 更新本地 store 状态
@@ -242,7 +242,7 @@ export const PlanResultPage = () => {
         }
 
         setCaptureProgress('🖼️ 正在捕捉结界信标与命盘...');
-        
+
         // 渲染成 Canvas，设置 scale 为 2 以确保超高清像素画画风不模糊
         const canvas = await html2canvas(shareElement, {
           useCORS: true,
@@ -271,41 +271,48 @@ export const PlanResultPage = () => {
 
   return (
     <>
-      <div 
-        id="share-page-root" 
-        style={{ 
-          padding: '24px 20px 100px 20px', 
-          minHeight: '100vh', 
-          background: 'var(--bg-dark)', 
+      <div
+        id="share-page-root"
+        style={{
+          padding: '24px 20px 100px 20px',
+          minHeight: '100vh',
+          background: 'var(--app-journey-background)',
           color: '#fff',
           position: 'relative'
         }}
       >
-        
+        <div className="xuantu-brand-lockup xuantu-page-brand">
+          <span className="xuantu-brand-mark" aria-hidden="true"><Orbit size={20} /></span>
+          <span>玄途 Agent</span>
+        </div>
+
+
         {/* 顶部契约文书 scroll layout */}
         <div style={{ textAlign: 'center', marginBottom: '24px' }}>
           <span style={{ fontSize: '0.65rem', color: 'var(--primary)', border: '1px solid var(--primary)', padding: '2px 8px', letterSpacing: '0.1em' }}>
-            CHRONO COVENANT
+            XUANTU AGENT · ITINERARY
           </span>
           <h2 className="font-mystic" style={{ color: 'var(--primary)', margin: '8px 0', fontSize: '1.5rem' }}>
-            时空命运契约文书
+            玄途为你规划的今日行程
           </h2>
+          <p className="xuantu-result-subtitle">玄学推演 · 真实地点 · 可执行路线</p>
+
         </div>
 
         {/* 判词 - 无框，直接展示在背景上，大号斜体 */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          style={{ 
-            marginBottom: '24px', 
+          style={{
+            marginBottom: '24px',
             padding: '0 8px',
             position: 'relative'
           }}
         >
-          <p className="font-mystic" style={{ 
-            fontSize: '0.9rem', 
-            color: '#e6ded4', 
-            lineHeight: '1.8', 
+          <p className="font-mystic" style={{
+            fontSize: '0.9rem',
+            color: '#e6ded4',
+            lineHeight: '1.8',
             textAlign: 'justify',
             fontStyle: 'italic',
             letterSpacing: '0.05em',
@@ -324,16 +331,16 @@ export const PlanResultPage = () => {
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
             <span style={{ fontSize: '0.65rem', color: 'var(--primary)', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px' }}>
-              🧭 结界时空连线微地图
+              <Map size={15} /> 行程路线预览
             </span>
-            <span style={{ fontSize: '0.55rem', color: 'var(--text-muted)' }}>已锁定 {plan.itinerary.length} 个命运信标</span>
+            <span style={{ fontSize: '0.55rem', color: 'var(--text-muted)' }}>共 {plan.itinerary.length} 个行程节点</span>
           </div>
-          
-          <div 
-            id="covenant-mini-map" 
-            style={{ 
-              width: '100%', 
-              height: '160px', 
+
+          <div
+            id="covenant-mini-map"
+            style={{
+              width: '100%',
+              height: '160px',
               background: '#1c1714',
               position: 'relative',
               border: '2px solid var(--primary)',
@@ -345,7 +352,7 @@ export const PlanResultPage = () => {
 
       {/* 核心 Timeline 时空行程安排 */}
       <h3 className="font-mystic" style={{ color: '#fff', fontSize: '1.1rem', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-        🗺️ 时空探索行进图谱
+        <Navigation size={18} /> 为你安排的行程
       </h3>
 
       <div style={{ position: 'relative', paddingLeft: '24px', borderLeft: '2px dashed var(--pixel-border-color)', marginLeft: '12px', display: 'flex', flexDirection: 'column', gap: '32px', marginBottom: '40px' }}>
@@ -353,7 +360,7 @@ export const PlanResultPage = () => {
           const { isTransit, poiIndex } = event;
           const poiCounter = poiIndex;
           return (
-              <motion.div 
+              <motion.div
                 key={event.id}
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
@@ -361,14 +368,14 @@ export const PlanResultPage = () => {
                 style={{ position: 'relative' }}
               >
                 {/* 时间轴左侧的小圆圈 */}
-                <div style={{ 
-                  position: 'absolute', 
-                  left: '-33px', 
-                  top: '4px', 
-                  width: '16px', 
-                  height: '16px', 
-                  borderRadius: '50%', 
-                  background: isTransit ? 'rgba(255,255,255,0.1)' : 'var(--primary)', 
+                <div style={{
+                  position: 'absolute',
+                  left: '-33px',
+                  top: '4px',
+                  width: '16px',
+                  height: '16px',
+                  borderRadius: '50%',
+                  background: isTransit ? 'rgba(255,255,255,0.1)' : 'var(--primary)',
                   border: isTransit ? '2px dashed var(--primary)' : '3px solid var(--bg-dark)',
                   boxShadow: isTransit ? 'none' : '0 0 8px var(--primary-glow)',
                   display: 'flex',
@@ -378,18 +385,18 @@ export const PlanResultPage = () => {
                   color: isTransit ? 'var(--primary)' : '#000',
                   fontWeight: 'bold'
                 }}>
-                  {isTransit ? '🚲' : poiCounter}
+                  {isTransit ? <Bike size={15} /> : poiCounter}
                 </div>
- 
+
                 {isTransit ? (
                   /* 交通/时空流转卡片 */
-                  <div 
-                    className="pixel-panel" 
-                    style={{ 
-                      padding: '12px 16px', 
-                      background: 'rgba(255,255,255,0.02)', 
+                  <div
+                    className="pixel-panel"
+                    style={{
+                      padding: '12px 16px',
+                      background: 'rgba(255,255,255,0.02)',
                       borderStyle: 'dashed',
-                      borderColor: 'rgba(226, 181, 83, 0.2)' 
+                      borderColor: 'rgba(226, 181, 83, 0.2)'
                     }}
                   >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -414,12 +421,12 @@ export const PlanResultPage = () => {
                         {event.poi?.type?.split(';')[0] || '特色商户'}
                       </span>
                     </div>
- 
+
                     {/* 高德商户详情 */}
                     {event.poi && (
                       <div style={{ background: 'rgba(0,0,0,0.2)', padding: '10px', marginBottom: '16px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', fontWeight: 'bold' }}>
-                          <span style={{ color: 'var(--text-primary)' }}>📍 {event.poi.name}</span>
+                          <span style={{ color: 'var(--text-primary)' }}><MapPin size={13} /> {event.poi.name}</span>
                           <span style={{ color: 'var(--primary)' }}>★ {event.poi.rating}</span>
                         </div>
                         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.65rem', color: 'var(--text-muted)' }}>
@@ -428,7 +435,7 @@ export const PlanResultPage = () => {
                         </div>
                       </div>
                     )}
- 
+
                     {/* 命运契合度说明 */}
                     <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', padding: '10px', background: 'var(--primary-dim)', border: '1px solid rgba(226, 181, 83, 0.1)' }}>
                       <Sparkles size={14} color="var(--primary)" style={{ flexShrink: 0, marginTop: '2px' }} />
@@ -436,7 +443,7 @@ export const PlanResultPage = () => {
                         {event.mysticReasoning}
                       </p>
                     </div>
- 
+
                     {/* 预约处理面板 (Tool Calling 展示) */}
                     {event.bookingStatus && (
                       <div className="pixel-panel" style={{ padding: '12px', background: 'rgba(0,0,0,0.4)', borderStyle: 'dashed' }}>
@@ -444,16 +451,16 @@ export const PlanResultPage = () => {
                           // 待预订状态
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                             <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
-                              👉 时空 Agent 建议执行工具：<span style={{ color: 'var(--primary)', fontWeight: 'bold' }}>{event.bookingStatus.name}</span>
+                              <Wand2 size={13} /> 时空 Agent 建议执行工具：<span style={{ color: 'var(--primary)', fontWeight: 'bold' }}>{event.bookingStatus.name}</span>
                             </div>
                             <button
                               className="btn btn-primary"
                               disabled={bookingLoading[event.id]}
                               onClick={() => handleBooking(event.id, event.bookingStatus!.type as any)}
-                              style={{ 
-                                width: '100%', 
-                                fontSize: '0.75rem', 
-                                padding: '10px', 
+                              style={{
+                                width: '100%',
+                                fontSize: '0.75rem',
+                                padding: '10px',
                                 background: 'linear-gradient(45deg, #e2b553, #b28a2a)',
                                 border: 'none',
                                 color: '#000',
@@ -498,7 +505,7 @@ export const PlanResultPage = () => {
 
       {/* 命运结界命盘解读大厅 */}
       <h3 className="font-mystic" style={{ color: '#fff', fontSize: '1.1rem', marginBottom: '20px' }}>
-        🔮 结界命盘专属解读
+        <Orbit size={18} /> 这条路线为什么适合你
       </h3>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '28px', marginBottom: '40px' }}>
@@ -509,14 +516,14 @@ export const PlanResultPage = () => {
           const isTarot = member.divinationMethod === 'tarot';
 
           return (
-            <div 
-              key={reading.memberId} 
+            <div
+              key={reading.memberId}
               className="pixel-panel"
               style={{ padding: '24px 20px', background: 'var(--bg-card)' }}
             >
               {/* 成员头部 */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '12px' }}>
-                <span style={{ fontSize: '1.4rem' }}>🧙</span>
+                <span className="member-avatar"><UserRound size={17} /></span>
                 <div>
                   <h4 style={{ color: '#fff', fontSize: '0.9rem', margin: 0 }}>{member.name}</h4>
                   <span style={{ fontSize: '0.6rem', color: 'var(--primary)' }}>
@@ -539,17 +546,17 @@ export const PlanResultPage = () => {
 
                       return (
                         <div key={cardPosIdx} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
-                          <div 
+                          <div
                             onClick={() => {
                               setFlippedCards(prev => ({
                                 ...prev,
                                 [uniqueCardId]: !prev[uniqueCardId]
                               }));
                             }}
-                            style={{ 
-                              width: '110px', 
-                              height: '180px', 
-                              perspective: '1000px', 
+                            style={{
+                              width: '110px',
+                              height: '180px',
+                              perspective: '1000px',
                               cursor: 'pointer',
                               position: 'relative'
                             }}
@@ -579,7 +586,7 @@ export const PlanResultPage = () => {
                                 gap: '8px',
                                 boxShadow: '0 6px 12px rgba(0,0,0,0.5)'
                               }}>
-                                <div style={{ fontSize: '1.5rem', opacity: 0.7 }}>🔮</div>
+                                <div className="reading-symbol"><Orbit size={18} /></div>
                                 <span style={{ fontSize: '0.45rem', color: 'var(--primary)', fontFamily: 'var(--font-mono)', letterSpacing: '0.1em' }}>REVEAL</span>
                               </div>
 
@@ -602,7 +609,7 @@ export const PlanResultPage = () => {
                                 <div style={{ fontSize: '0.5rem', color: 'var(--primary)', borderBottom: '1px solid var(--primary)', width: '100%', paddingBottom: '2px', textTransform: 'uppercase', fontWeight: 'bold', fontSize: '0.45rem', textAlign: 'center' }}>
                                   {positionLabel}
                                 </div>
-                                
+
                                 <div style={{ textAlign: 'center' }}>
                                   <div style={{ fontSize: '2.5rem', margin: '4px 0' }}>{card.emoji}</div>
                                   <div style={{ fontSize: '0.75rem', color: '#fff', fontWeight: 'bold' }} className="font-mystic">
@@ -616,7 +623,7 @@ export const PlanResultPage = () => {
                               </div>
                             </motion.div>
                           </div>
-                          
+
                           <span style={{ fontSize: '0.55rem', color: 'var(--text-muted)' }}>
                             {isFlipped ? '已翻开' : '点击翻牌'}
                           </span>
@@ -626,13 +633,13 @@ export const PlanResultPage = () => {
                   </div>
 
                   {/* 解读文本 */}
-                  <div 
-                    style={{ 
-                      background: 'rgba(0,0,0,0.3)', 
-                      padding: '16px', 
-                      fontSize: '0.75rem', 
-                      lineHeight: '1.6', 
-                      color: 'var(--text-primary)', 
+                  <div
+                    style={{
+                      background: 'rgba(0,0,0,0.3)',
+                      padding: '16px',
+                      fontSize: '0.75rem',
+                      lineHeight: '1.6',
+                      color: 'var(--text-primary)',
                       borderLeft: '2px solid var(--primary)',
                       width: '100%',
                       textAlign: 'justify'
@@ -644,7 +651,7 @@ export const PlanResultPage = () => {
               ) : (
                 // 东方生辰八字排盘面板
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                  
+
                   {/* 八字四柱排盘 */}
                   {reading.baziChart && (
                     <div className="pixel-panel" style={{ padding: '16px', background: 'rgba(0,0,0,0.4)', border: '2px solid #E2B553' }}>
@@ -665,10 +672,10 @@ export const PlanResultPage = () => {
                           const isDayPillar = idx === 2; // 日柱高亮，日主代表核心运势
 
                           return (
-                            <div 
-                              key={idx} 
-                              style={{ 
-                                background: isDayPillar ? 'rgba(226, 181, 83, 0.15)' : 'rgba(255,255,255,0.02)', 
+                            <div
+                              key={idx}
+                              style={{
+                                background: isDayPillar ? 'rgba(226, 181, 83, 0.15)' : 'rgba(255,255,255,0.02)',
                                 border: isDayPillar ? '1px solid #E2B553' : '1px solid rgba(255,255,255,0.05)',
                                 padding: '10px 4px'
                               }}
@@ -694,11 +701,11 @@ export const PlanResultPage = () => {
                         <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>五行生克乘侮比例</span>
                         <div style={{ display: 'flex', gap: '6px', fontSize: '0.65rem' }}>
                           <span style={{ color: '#E2B553' }}>幸运五行 ➔</span>
-                          <span style={{ 
+                          <span style={{
                             background: { '金': '#E2B553', '木': '#3CD070', '水': '#4CA3F5', '火': '#FF5E5E', '土': '#A87A54' }[reading.baziChart.luckyElement] || 'var(--primary)',
-                            color: '#000', 
-                            padding: '0 4px', 
-                            fontWeight: 'bold' 
+                            color: '#000',
+                            padding: '0 4px',
+                            fontWeight: 'bold'
                           }}>
                             {reading.baziChart.luckyElement}
                           </span>
@@ -734,7 +741,7 @@ export const PlanResultPage = () => {
       {!isCapturing && (
         <div className="pixel-panel" style={{ padding: '24px 20px', background: 'var(--bg-card)', border: '1px dashed var(--primary)', textAlign: 'center', marginBottom: '32px' }}>
           <h4 className="font-mystic" style={{ color: 'var(--primary)', margin: '0 0 10px 0', fontSize: '1rem' }}>
-            🗺️ 开启时空轨迹导航与命运印鉴
+            <Map size={18} /> 开启时空轨迹导航与命运印鉴
           </h4>
           <p style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', lineHeight: '1.5', marginBottom: '20px' }}>
             命运结界已开启！现在可以前往“冒险”界面查看全线步行自驾轨迹与像素小人漫步，或者前往“创作”界面生成“命运纪念印章”拼豆图纸存入命格宝箱！
@@ -746,14 +753,14 @@ export const PlanResultPage = () => {
                 track('plan_result_click_go_to_map');
                 navigate('/map');
               }}
-              style={{ 
-                width: '100%', 
-                fontSize: '0.85rem', 
-                padding: '14px', 
-                background: 'linear-gradient(45deg, #FFD000, #FFA500)', 
-                border: 'none', 
-                color: '#000', 
-                fontWeight: 'bold', 
+              style={{
+                width: '100%',
+                fontSize: '0.85rem',
+                padding: '14px',
+                background: 'linear-gradient(45deg, #FFD000, #FFA500)',
+                border: 'none',
+                color: '#000',
+                fontWeight: 'bold',
                 boxShadow: '0 4px 0 #805c19',
                 display: 'flex',
                 alignItems: 'center',
@@ -761,26 +768,26 @@ export const PlanResultPage = () => {
                 gap: '6px'
               }}
             >
-              🧭 开启“冒险”时空地图导航 <ChevronRight size={14} />
+              <Navigation size={15} /> 开启“冒险”时空地图导航 <ChevronRight size={14} />
             </button>
-            
+
             <button
               className="btn btn-ghost"
               onClick={() => {
                 track('plan_result_click_create_stamp');
                 navigate('/camera');
               }}
-              style={{ 
-                width: '100%', 
-                fontSize: '0.75rem', 
-                padding: '10px', 
-                color: 'var(--primary)', 
-                border: '1px solid var(--primary)', 
+              style={{
+                width: '100%',
+                fontSize: '0.75rem',
+                padding: '10px',
+                color: 'var(--primary)',
+                border: '1px solid var(--primary)',
                 background: 'transparent',
                 boxShadow: 'none'
               }}
             >
-              🎨 前往创作“命运纪念印章” &gt;
+              <Palette size={15} /> 前往创作“命运纪念印章” <ChevronRight size={14} />
             </button>
           </div>
         </div>
@@ -808,17 +815,17 @@ export const PlanResultPage = () => {
               gap: '8px'
             }}
           >
-            🔮 一键生成“完整行程命运契约分享图卡”
+            <Share2 size={16} /> 一键生成“完整行程命运契约分享图卡”
           </button>
         </div>
       )}
 
       {/* 截图专属精致页脚 - 仅在生成截图时显示 */}
       {isCapturing && (
-        <div style={{ 
-          textAlign: 'center', 
-          marginTop: '40px', 
-          padding: '24px 20px', 
+        <div style={{
+          textAlign: 'center',
+          marginTop: '40px',
+          padding: '24px 20px',
           borderTop: '2px dashed var(--primary)',
           background: 'rgba(0,0,0,0.2)',
           display: 'flex',
@@ -827,17 +834,17 @@ export const PlanResultPage = () => {
           gap: '8px'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ fontSize: '1.2rem' }}>☯️</span>
+            <Orbit size={18} />
             <span style={{ fontSize: '0.9rem', color: 'var(--primary)', fontWeight: 'bold', letterSpacing: '0.1em' }} className="font-mystic">
-              CHRONO COVENANT · 时空命运契约
+              XUANTU AGENT · ITINERARY · 时空命运契约
             </span>
-            <span style={{ fontSize: '1.2rem' }}>🃏</span>
+            <Sparkles size={18} />
           </div>
           <div style={{ fontSize: '0.6rem', color: 'var(--text-secondary)' }}>
             —— 本契约受时空结界保护，由 Pixel Life Chronicles 命盘信标机签署 ——
           </div>
           <div style={{ fontSize: '0.55rem', color: 'var(--text-muted)', marginTop: '8px' }}>
-            🔮 扫描此结界二维码，开启您与同伴的时空命格大冒险
+            <QrCode size={14} /> 扫描二维码，开启您与同伴的时空命格旅程
           </div>
         </div>
       )}
@@ -846,30 +853,30 @@ export const PlanResultPage = () => {
       {/* 实时预订成功弹出吐司 (Toast notification with micro-animations) - 放在截图区域外 */}
       <AnimatePresence>
         {successToast && (
-          <motion.div 
-            initial={{ opacity: 0, y: 50 }} 
-            animate={{ opacity: 1, y: 0 }} 
+          <motion.div
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 50 }}
-            style={{ 
-              position: 'fixed', 
-              bottom: '100px', 
-              left: '20px', 
-              right: '20px', 
-              zIndex: 9999, 
+            style={{
+              position: 'fixed',
+              bottom: '100px',
+              left: '20px',
+              right: '20px',
+              zIndex: 9999,
               pointerEvents: 'none',
               display: 'flex',
               justifyContent: 'center'
             }}
           >
-            <div className="pixel-panel" style={{ 
-              background: '#3CD070', 
-              color: '#000', 
-              padding: '16px 20px', 
-              fontWeight: 900, 
+            <div className="pixel-panel" style={{
+              background: '#3CD070',
+              color: '#000',
+              padding: '16px 20px',
+              fontWeight: 900,
               fontSize: '0.75rem',
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: '10px', 
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
               boxShadow: '0 10px 30px rgba(60,208,112,0.4)',
               border: '2px solid #000'
             }}>
@@ -900,7 +907,7 @@ export const PlanResultPage = () => {
             fontSize: '3rem',
             animation: 'spin 2.5s linear infinite'
           }}>
-            🔮
+            <Orbit size={30} />
           </div>
           <h3 className="font-mystic" style={{ color: 'var(--primary)', fontSize: '1.2rem' }}>
             {captureProgress}
@@ -936,15 +943,15 @@ export const PlanResultPage = () => {
           >
             <div style={{ textAlign: 'center', marginBottom: '16px', maxWidth: '340px' }}>
               <h3 className="font-mystic" style={{ color: 'var(--primary)', fontSize: '1.25rem', marginBottom: '8px' }}>
-                ✨ 命运契约画卷编织完成 ✨
+                命运契约画卷编织完成
               </h3>
               <p style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', lineHeight: '1.4' }}>
-                💡 <b>长按下方图片</b> 即可保存到相册，或直接发送给您的结界伴侣！
+                <Info size={14} /> <b>长按下方图片</b>即可保存到相册，或直接发送给同行伙伴
               </p>
             </div>
 
             {/* 图片预览容器，设置宽度，保持长图原始比例 */}
-            <div 
+            <div
               className="pixel-panel"
               style={{
                 width: '100%',
@@ -956,15 +963,15 @@ export const PlanResultPage = () => {
                 overflow: 'hidden'
               }}
             >
-              <img 
-                src={shareImgUrl} 
-                alt="Chrono Covenant Long Share" 
-                style={{ 
-                  width: '100%', 
+              <img
+                src={shareImgUrl}
+                alt="Chrono Covenant Long Share"
+                style={{
+                  width: '100%',
                   display: 'block',
                   userSelect: 'auto', // 关键！确保用户长按可以保存！
                   WebkitUserSelect: 'auto'
-                }} 
+                }}
               />
             </div>
 
@@ -985,7 +992,7 @@ export const PlanResultPage = () => {
                   color: '#000'
                 }}
               >
-                💾 下载高清长图
+                <Download size={16} /> 下载高清长图
               </a>
 
               <button

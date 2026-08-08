@@ -1,5 +1,6 @@
-import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Link, Navigate, useLocation } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
+import { House, Route as RouteIcon, Sparkles, UserRound } from 'lucide-react';
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/react";
 import './App.css';
@@ -7,146 +8,84 @@ import { HomePage } from './pages/HomePage';
 import { MapPage } from './pages/MapPage';
 import { CameraPage } from './pages/CameraPage';
 import { ProfilePage } from './pages/ProfilePage';
-import { AuthPage } from './pages/AuthPage';
+import { AuthPageV2 } from './pages/AuthPageV2';
 import { CollectionPage } from './pages/CollectionPage';
 import { PlanResultPage } from './pages/PlanResultPage';
 import { AIPortalPage } from './pages/AIPortalPage';
 
-// --- Injected Keyframe Styles ---
-const StyleInject = () => (
-  <style>{`
-    @keyframes breath-glow {
-      0%, 100% {
-        box-shadow: 0 0 5px rgba(255, 208, 0, 0.15), 0 4px 0 rgba(0,0,0,0.4);
-        transform: scale(1);
-      }
-      50% {
-        box-shadow: 0 0 15px rgba(255, 208, 0, 0.45), 0 4px 0 rgba(0,0,0,0.4);
-        transform: scale(1.05);
-      }
-    }
-  `}</style>
-);
-
 // --- Components ---
 
-import { getLatestJointPlan } from './store';
+import { getCurrentUser, getLatestJointPlan } from './store';
+
 
 const NavBar = () => {
   const location = useLocation();
   const hasPlan = !!getLatestJointPlan();
-  
+
   const navItems = [
-    { path: '/', label: '探索', icon: '🔭', restricted: false },
-    { path: '/map', label: '冒险', icon: '🗺️', restricted: !hasPlan },
-    { path: '/ai', label: '星耀AI', icon: '🌟', restricted: false, isCentral: true },
-    { path: '/plan', label: '命运', icon: '🔮', restricted: !hasPlan },
-    { path: '/profile', label: '我的', icon: '🤠', restricted: false },
+    { path: '/', label: '首页', icon: House, restricted: false },
+    { path: '/planner', label: '规划', icon: Sparkles, restricted: false },
+    { path: '/plan', label: '行程', icon: RouteIcon, restricted: !hasPlan },
+    { path: '/profile', label: '我的', icon: UserRound, restricted: false },
   ];
 
-  const handleNavClick = (e: React.MouseEvent, item: typeof navItems[0]) => {
-    if (item.restricted) {
-      e.preventDefault();
-      alert('【命格结界尚未凝聚】\n\n请先回到“探索”界面完成多人命盘编织，结界之力才会为你指引方向。');
-      return;
-    }
+  const handleNavClick = (event: React.MouseEvent, item: typeof navItems[0]) => {
+    if (!item.restricted) return;
+    event.preventDefault();
+    alert('还没有可查看的行程。\n\n请先在规划页告诉玄途你的出行愿望。');
   };
 
   return (
-    <div className="nav-bar pixel-panel" style={{ borderRadius: 0, boxShadow: 'none', borderBottom: 'none' }}>
+    <nav className="nav-bar xuantu-nav" aria-label="主要导航">
       {navItems.map((item) => {
-        if (item.isCentral) {
-          const isActive = location.pathname === item.path;
-          return (
-            <Link 
-              key={item.path} 
-              to={item.path} 
-              className={`nav-item central-nav-item ${isActive ? 'active' : ''}`}
-              style={{
-                position: 'relative',
-                transform: 'translateY(-12px)',
-                zIndex: 100,
-                textDecoration: 'none'
-              }}
-            >
-              <div 
-                style={{
-                  width: '52px',
-                  height: '52px',
-                  borderRadius: '50%',
-                  background: isActive ? 'linear-gradient(135deg, #FFD000, #FFA500)' : '#231e1a',
-                  border: isActive ? '3px solid #fff' : '3px solid var(--pixel-border-color)',
-                  boxShadow: isActive ? '0 0 15px rgba(255, 208, 0, 0.6), 4px 4px 0 rgba(0,0,0,0.4)' : '0 4px 0 rgba(0,0,0,0.4)',
-                  display: 'flex',
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                  transition: 'all 0.2s',
-                  animation: isActive ? 'none' : 'breath-glow 2.5s infinite ease-in-out',
-                }}
-              >
-                <span style={{ fontSize: '24px' }}>{item.icon}</span>
-              </div>
-              <span style={{ marginTop: '2px', fontFamily: 'var(--font-main)', fontSize: '0.65rem', color: isActive ? 'var(--primary)' : 'var(--text-secondary)' }}>
-                {item.label}
-              </span>
-            </Link>
-          );
-        }
-
-        const isActive = location.pathname === item.path || 
-                        (item.path === '/profile' && location.pathname === '/collection');
+        const Icon = item.icon;
+        const isActive = location.pathname === item.path ||
+          (item.path === '/' && location.pathname === '/ai') ||
+          (item.path === '/profile' && location.pathname === '/collection');
 
         return (
-          <Link 
-            key={item.path} 
-            to={item.path} 
-            onClick={(e) => handleNavClick(e, item)}
+          <Link
+            key={item.path}
+            to={item.path}
+            onClick={(event) => handleNavClick(event, item)}
             className={`nav-item ${isActive ? 'active' : ''}`}
-            style={{ 
-              opacity: item.restricted ? 0.4 : 1,
+            style={{
+              opacity: item.restricted ? 0.42 : 1,
               filter: item.restricted ? 'grayscale(0.8)' : 'none',
             }}
           >
-            <span style={{ 
-              fontSize: '24px', 
-              filter: isActive ? 'drop-shadow(2px 2px 0px rgba(226, 181, 83, 0.5))' : 'none', 
-              transform: isActive ? 'scale(1.1)' : 'scale(1)', 
-              transition: 'all 0.2s' 
-            }}>
-              {item.icon}
-            </span>
-            <span style={{ marginTop: '2px', fontFamily: 'var(--font-main)' }}>{item.label}</span>
-            {item.restricted && (
-               <div style={{ position: 'absolute', top: '8px', right: '12px', fontSize: '10px' }}>🔒</div>
-            )}
+            <span aria-hidden="true"><Icon /></span>
+            <span>{item.label}</span>
+            {item.restricted && <span className="nav-restricted-dot" aria-hidden="true" />}
           </Link>
         );
       })}
-    </div>
+    </nav>
   );
 };
-
 // --- Pages ---
 
 const AppContent = () => {
   const location = useLocation();
-  const hideNavBar = location.pathname === '/auth' || location.pathname === '/ai';
+  const hideNavBar = location.pathname === '/auth';
+  const isAuthenticated = !!getCurrentUser();
   
   return (
     <div className="app-shell">
       <AnimatePresence mode="wait">
         <Routes location={location} key={location.pathname}>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/ai" element={<AIPortalPage />} />
-          <Route path="/plan" element={<PlanResultPage />} />
-          <Route path="/map" element={<MapPage />} />
-          <Route path="/camera" element={<CameraPage />} />
-          <Route path="/collection" element={<CollectionPage />} />
-          <Route path="/profile" element={<ProfilePage />} />
-          <Route path="/auth" element={<AuthPage />} />
+          <Route path="/" element={isAuthenticated ? <HomePage mode="landing" /> : <Navigate to="/auth" replace />} />
+          <Route path="/planner" element={isAuthenticated ? <HomePage mode="planner" /> : <Navigate to="/auth" replace />} />
+          <Route path="/ai" element={isAuthenticated ? <AIPortalPage /> : <Navigate to="/auth" replace />} />
+          <Route path="/plan" element={isAuthenticated ? <PlanResultPage /> : <Navigate to="/auth" replace />} />
+          <Route path="/map" element={isAuthenticated ? <MapPage /> : <Navigate to="/auth" replace />} />
+          <Route path="/camera" element={isAuthenticated ? <CameraPage /> : <Navigate to="/auth" replace />} />
+          <Route path="/collection" element={isAuthenticated ? <CollectionPage /> : <Navigate to="/auth" replace />} />
+          <Route path="/profile" element={isAuthenticated ? <ProfilePage /> : <Navigate to="/auth" replace />} />
+          <Route path="/auth" element={<AuthPageV2 />} />
         </Routes>
       </AnimatePresence>
-      {!hideNavBar && <NavBar />}
+      {isAuthenticated && !hideNavBar && <NavBar />}
     </div>
   );
 };
@@ -154,7 +93,6 @@ const AppContent = () => {
 function App() {
   return (
     <BrowserRouter>
-      <StyleInject />
       <AppContent />
       <Analytics />
       <SpeedInsights />

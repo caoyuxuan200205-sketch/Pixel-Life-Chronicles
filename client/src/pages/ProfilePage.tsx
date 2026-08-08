@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronRight, ShoppingCart, MapPin, Scissors, Info, Loader2, Sparkles, X } from 'lucide-react';
+import { Award, CalendarDays, Camera, ChevronRight, Info, Loader2, LogOut, MapPin, MapPinned, Orbit, PackageOpen, Pencil, ScrollText, Scissors, Settings, ShieldCheck, ShoppingCart, Sparkles, Stamp, Trash2, UserRound, UsersRound, X } from 'lucide-react';
 import { getStamps, clearStamps, getCurrentUser, logout, saveCurrentUser, getBoundMembers, saveBoundMembers, type StampRecord, type BoundMember, type User } from '../store';
 
 export const ProfilePage = () => {
@@ -75,7 +75,7 @@ export const ProfilePage = () => {
     saveCurrentUser(updatedUser);
     setUser(updatedUser);
     setShowEditBaziModal(false);
-    triggerToast('☯️ 个人天命档案已更新！');
+    triggerToast('个人天命档案已更新');
   };
 
   const handleAddPartner = () => {
@@ -106,14 +106,14 @@ export const ProfilePage = () => {
     setNewPartnerRelation('friend');
     setNewPartnerMethod('bazi');
     
-    triggerToast('👪 成功缔结旅伴契约！');
+    triggerToast('成功缔结旅伴契约');
   };
 
   const handleDeletePartner = (id: string) => {
     const updated = boundMembers.filter(m => m.id !== id);
     saveBoundMembers(updated);
     setBoundMembers(updated);
-    triggerToast('🗑️ 已解除旅伴契约。');
+    triggerToast('已解除旅伴契约');
   };
 
   const handleSavePartner = () => {
@@ -141,7 +141,7 @@ export const ProfilePage = () => {
     saveBoundMembers(updated);
     setBoundMembers(updated);
     setShowEditPartnerModal(false);
-    triggerToast('📝 旅伴契约已更新！');
+    triggerToast('旅伴契约已更新');
   };
 
   // 导出逻辑
@@ -216,7 +216,7 @@ export const ProfilePage = () => {
     await new Promise(r => setTimeout(r, 1500));
     setIsPaying(false);
     setShowMeituanModal(false);
-    triggerToast('🚀 支付成功！美团骑手已出发，预计 30 分钟送达');
+    triggerToast('支付成功，美团骑手已出发，预计 30 分钟送达');
   };
 
   const handleProxyOrder = async () => {
@@ -224,7 +224,7 @@ export const ProfilePage = () => {
     await new Promise(r => setTimeout(r, 2000));
     setIsOrdering(false);
     setShowProxyModal(false);
-    triggerToast('🎨 契约已达成！工坊职人已接收图纸，制作完成后将第一时间顺丰寄出');
+    triggerToast('契约已达成，工坊职人已接收图纸');
   };
 
   const SEARCH_STATUSES = [
@@ -312,22 +312,27 @@ export const ProfilePage = () => {
   };
 
   const handleSettings = () => setShowSettings(true);
-  const handleAchievements = () => alert('🏆 成就系统正在初始化中...\n\n继续收集印章以解锁“先锋探索者”称号！');
+  const handleAchievements = () => alert('成就系统正在初始化中...\n\n继续收集印章以解锁“先锋探索者”称号！');
   const handlePrivacy = () => {
-    alert('🔒 你的隐私已被“像素加密”。\n\n所有数据均存储在本地（LocalStorage），我们不会上传你的位置或代号。');
+    alert('你的隐私数据已被妥善保护。\n\n所有数据均存储在本地（LocalStorage），我们不会上传你的位置或代号。');
   };
 
   return (
-    <div className="page" style={{ padding: '0 0 80px 0', overflowY: 'auto' }}>
+    <div className="page profile-page" style={{ padding: '0 0 80px 0', overflowY: 'auto' }}>
+      <div className="xuantu-brand-lockup xuantu-page-brand">
+        <span className="xuantu-brand-mark" aria-hidden="true"><Orbit size={20} /></span>
+        <span>玄途 Agent</span>
+      </div>
+
       {/* ===== 个人信息头部 ===== */}
-      <div style={{ padding: '60px 24px 24px 24px', position: 'relative' }}>
+      <div className="profile-identity-block" style={{ padding: '60px 24px 24px 24px', position: 'relative' }}>
         <div style={{ position: 'absolute', top: '24px', right: '24px' }}>
-          <button onClick={handleSettings} className="btn btn-ghost btn-icon" style={{ padding: '6px' }}>⚙️</button>
+          <button onClick={handleSettings} className="btn btn-ghost btn-icon profile-icon-button" style={{ padding: '6px' }} aria-label="设置"><Settings size={18} /></button>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-          <div style={{ width: '76px', height: '76px', background: '#25221F', border: '4px solid #4a433a', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: 'inset 4px 4px 0px rgba(0,0,0,0.5)', fontSize: '40px' }}>
-            🤠
+          <div className="profile-avatar" style={{ width: '76px', height: '76px', background: '#25221F', border: '4px solid #4a433a', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: 'inset 4px 4px 0px rgba(0,0,0,0.5)', fontSize: '40px' }}>
+            <UserRound size={30} />
           </div>
           <div>
             <h2 style={{ fontSize: '1.4rem', fontWeight: 700, marginBottom: '8px' }}>{user ? user.username : '未登录'}</h2>
@@ -348,15 +353,15 @@ export const ProfilePage = () => {
       <div style={{ padding: '0 20px', marginBottom: '24px' }}>
         <div className="pixel-panel" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', padding: '16px 0', textAlign: 'center' }}>
           <div style={{ borderRight: '2px solid var(--pixel-border-color)' }}>
-            <div style={{ fontSize: '1.2rem', fontWeight: 700 }}>📔 {stamps.length}</div>
+            <div className="profile-stat-value"><Stamp size={17} /> {stamps.length}</div>
             <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>收集印章</div>
           </div>
           <div style={{ borderRight: '2px solid var(--pixel-border-color)' }}>
-            <div style={{ fontSize: '1.2rem', fontWeight: 700 }}>🗺️ 12 🔥</div>
+            <div className="profile-stat-value"><MapPinned size={17} /> 12</div>
             <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>探索点</div>
           </div>
           <div>
-            <div style={{ fontSize: '1.2rem', fontWeight: 700 }}>📅 8</div>
+            <div className="profile-stat-value"><CalendarDays size={17} /> 8</div>
             <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>连续签到</div>
           </div>
         </div>
@@ -370,7 +375,7 @@ export const ProfilePage = () => {
           <div className="pixel-panel" style={{ padding: '16px', background: 'rgba(226, 181, 83, 0.03)', border: '1px solid var(--primary-dim)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
               <h4 className="font-mystic" style={{ fontSize: '0.95rem', color: 'var(--primary)', fontWeight: 'bold' }}>
-                ☯️ 我的个人天命档案
+                <ScrollText size={17} /> 我的个人天命档案
               </h4>
               <button 
                 onClick={() => {
@@ -389,7 +394,7 @@ export const ProfilePage = () => {
             
             <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: '6px' }}>
               <div>
-                占卜偏好: <span style={{ color: '#fff', fontWeight: 'bold' }}>{user.divinationPreference === 'bazi' ? '☯️ 东方八字' : '🃏 西方塔罗'}</span>
+                占卜偏好: <span style={{ color: '#fff', fontWeight: 'bold' }}>{user.divinationPreference === 'bazi' ? '东方八字' : '西方塔罗'}</span>
               </div>
               {user.divinationPreference === 'bazi' && user.baziInfo && (
                 <>
@@ -406,7 +411,7 @@ export const ProfilePage = () => {
         <div className="pixel-panel" style={{ padding: '16px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
             <h4 className="font-mystic" style={{ fontSize: '0.95rem', color: 'var(--primary)', fontWeight: 'bold' }}>
-              👪 结界契约伙伴
+              <UsersRound size={17} /> 结界契约伙伴
             </h4>
             <button 
               onClick={() => setShowAddPartnerModal(true)} 
@@ -425,10 +430,10 @@ export const ProfilePage = () => {
             ) : (
               boundMembers.map(member => {
                 const tagEmojis = {
-                  family: '👪 家人',
-                  friend: '🤝 朋友',
-                  partner: '❤️ 伴侣',
-                  other: '✨ 旅人'
+                  family: '家人',
+                  friend: '朋友',
+                  partner: '伴侣',
+                  other: '旅人'
                 };
                 
                 return (
@@ -457,7 +462,7 @@ export const ProfilePage = () => {
                         </span>
                       </div>
                       <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: '4px' }}>
-                        偏好: {member.divinationMethod === 'bazi' ? `☯️ 八字 (${member.baziInfo?.birthDate})` : '🃏 塔罗'}
+                        偏好: {member.divinationMethod === 'bazi' ? `八字 (${member.baziInfo?.birthDate})` : '塔罗'}
                       </div>
                     </div>
 
@@ -476,14 +481,14 @@ export const ProfilePage = () => {
                         style={{ background: 'transparent', border: 'none', color: 'var(--primary)', cursor: 'pointer', padding: '4px', fontSize: '0.8rem' }}
                         title="修改契约"
                       >
-                        📝
+                        <Pencil size={15} />
                       </button>
                       <button 
                         onClick={() => handleDeletePartner(member.id)} 
                         style={{ background: 'transparent', border: 'none', color: '#cc5555', cursor: 'pointer', padding: '4px', fontSize: '0.8rem' }}
                         title="解除契约"
                       >
-                        🗑️
+                        <Trash2 size={15} />
                       </button>
                     </div>
                   </div>
@@ -503,7 +508,7 @@ export const ProfilePage = () => {
             style={{ fontSize: '1.1rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}
             onClick={() => navigate('/collection')}
           >
-            📦 我的城市图鉴 <ChevronRight size={14} />
+            <PackageOpen size={19} /> 我的城市图鉴 <ChevronRight size={14} />
           </h3>
           <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
             <button 
@@ -520,7 +525,7 @@ export const ProfilePage = () => {
         <div className="pixel-panel" style={{ padding: stamps.length === 0 ? '40px 20px' : '12px', overflow: 'hidden' }}>
           {stamps.length === 0 ? (
             <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: '48px', marginBottom: '12px' }}>📷</div>
+              <div className="profile-empty-icon"><Camera size={26} /></div>
               <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>还没有收集到印章，快去占卜寻宝吧</p>
             </div>
           ) : (
@@ -569,9 +574,9 @@ export const ProfilePage = () => {
       <div style={{ padding: '0 20px', position: 'relative' }}>
         <div className="pixel-panel" style={{ padding: 0 }}>
           {[
-            { icon: '🏅', label: '我的成就', value: '敬请期待', onClick: handleAchievements },
-            { icon: '🛡️', label: '隐私与安全', value: '', onClick: handlePrivacy },
-            ...(user ? [{ icon: '🚪', label: '退出登录', value: '', danger: true, onClick: handleLogoutClick }] : []),
+            { icon: <Award size={18} />, label: '我的成就', value: '敬请期待', onClick: handleAchievements },
+            { icon: <ShieldCheck size={18} />, label: '隐私与安全', value: '', onClick: handlePrivacy },
+            ...(user ? [{ icon: <LogOut size={18} />, label: '退出登录', value: '', danger: true, onClick: handleLogoutClick }] : []),
           ].map((item, idx, arr) => (
             <motion.button 
               key={idx} 
@@ -608,7 +613,7 @@ export const ProfilePage = () => {
         {showClearConfirm && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="modal-overlay" onClick={() => setShowClearConfirm(false)}>
             <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} className="pixel-panel modal-content" onClick={e => e.stopPropagation()}>
-              <div style={{ fontSize: '32px', marginBottom: '12px' }}>🗑️</div>
+              <div className="modal-symbol danger"><Trash2 size={22} /></div>
               <h3 className="font-mystic" style={{ color: '#cc5555', marginBottom: '12px' }}>清空图鉴？</h3>
               <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '24px' }}>一旦清空，你收集的所有命运印章将永远消失。</p>
               <div style={{ display: 'flex', gap: '12px' }}>
@@ -647,7 +652,7 @@ export const ProfilePage = () => {
 
               {/* 商业化模块 */}
               <div style={{ borderTop: '2px solid var(--pixel-border-color)', paddingTop: '20px' }}>
-                <h4 className="font-mystic" style={{ color: 'var(--primary)', fontSize: '0.9rem', marginBottom: '12px' }}>🛒 实体化印章</h4>
+                <h4 className="font-mystic section-title" style={{ color: 'var(--primary)', fontSize: '0.9rem', marginBottom: '12px' }}><ShoppingCart size={16} /> 实体化印章</h4>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                   
                   {/* 材料包 */}
@@ -747,8 +752,8 @@ export const ProfilePage = () => {
         {/* 退出确认 */}
         {showLogoutConfirm && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="modal-overlay" onClick={() => setShowLogoutConfirm(false)}>
-            <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} className="pixel-panel modal-content" onClick={e => e.stopPropagation()}>
-              <div style={{ fontSize: '32px', marginBottom: '12px' }}>🚪</div>
+            <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} className="pixel-panel modal-content logout-confirm-modal" onClick={e => e.stopPropagation()}>
+              <div className="modal-symbol danger"><LogOut size={22} /></div>
               <h3 className="font-mystic" style={{ marginBottom: '16px', color: '#cc5555' }}>退出旅程?</h3>
               <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '24px' }}>你确定要暂时离开这个像素世界吗？</p>
               <div style={{ display: 'flex', gap: '12px' }}>
@@ -765,7 +770,7 @@ export const ProfilePage = () => {
             <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} className="pixel-panel modal-content" onClick={e => e.stopPropagation()}>
               <h3 className="font-mystic" style={{ marginBottom: '20px', textAlign: 'center', color: 'var(--primary)' }}>系统设置</h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}><span>背景音乐</span><button className="btn btn-ghost btn-sm" onClick={() => alert('🎵 暂无音源')}>OFF</button></div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}><span>背景音乐</span><button className="btn btn-ghost btn-sm" onClick={() => alert('暂无可用音源')}>OFF</button></div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}><span>震动反馈</span><button className="btn btn-primary btn-sm">ON</button></div>
               </div>
               <button onClick={() => setShowSettings(false)} className="btn btn-primary" style={{ width: '100%', marginTop: '24px' }}>返回</button>
@@ -798,7 +803,7 @@ export const ProfilePage = () => {
                         height: 'auto'
                       }}
                     >
-                      ☯️ 东方八字
+                      东方八字
                     </button>
                     <button
                       type="button"
@@ -815,7 +820,7 @@ export const ProfilePage = () => {
                         height: 'auto'
                       }}
                     >
-                      🃏 西方塔罗
+                      西方塔罗
                     </button>
                   </div>
                 </div>
@@ -909,10 +914,10 @@ export const ProfilePage = () => {
                         outline: 'none'
                       }}
                     >
-                      <option value="family">👪 家人</option>
-                      <option value="friend">🤝 朋友</option>
-                      <option value="partner">❤️ 伴侣</option>
-                      <option value="other">✨ 其他</option>
+                      <option value="family">家人</option>
+                      <option value="friend">朋友</option>
+                      <option value="partner">伴侣</option>
+                      <option value="other">其他</option>
                     </select>
                   </div>
 
@@ -931,8 +936,8 @@ export const ProfilePage = () => {
                         outline: 'none'
                       }}
                     >
-                      <option value="bazi">☯️ 东方八字</option>
-                      <option value="tarot">🃏 西方塔罗</option>
+                      <option value="bazi">东方八字</option>
+                      <option value="tarot">西方塔罗</option>
                     </select>
                   </div>
                 </div>
@@ -1026,10 +1031,10 @@ export const ProfilePage = () => {
                         outline: 'none'
                       }}
                     >
-                      <option value="family">👪 家人</option>
-                      <option value="friend">🤝 朋友</option>
-                      <option value="partner">❤️ 伴侣</option>
-                      <option value="other">✨ 其他</option>
+                      <option value="family">家人</option>
+                      <option value="friend">朋友</option>
+                      <option value="partner">伴侣</option>
+                      <option value="other">其他</option>
                     </select>
                   </div>
 
@@ -1048,8 +1053,8 @@ export const ProfilePage = () => {
                         outline: 'none'
                       }}
                     >
-                      <option value="bazi">☯️ 东方八字</option>
-                      <option value="tarot">🃏 西方塔罗</option>
+                      <option value="bazi">东方八字</option>
+                      <option value="tarot">西方塔罗</option>
                     </select>
                   </div>
                 </div>
@@ -1309,7 +1314,7 @@ export const ProfilePage = () => {
               </div>
             </div>
             <div style={{ marginTop: '20px', color: 'var(--text-secondary)', fontSize: '0.75rem' }}>
-              💡 提示：每一格代表一颗拼豆，请对照颜色进行排列。
+              提示：每一格代表一颗拼豆，请对照颜色进行排列。
             </div>
           </motion.div>
         )}
