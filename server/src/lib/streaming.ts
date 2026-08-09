@@ -16,12 +16,12 @@ export async function streamGraphToSSE(
   // 2. Immediately send initial ping to notify reverse proxy (e.g. Vercel Edge) to open stream
   res.write('data: {"type":"ping"}\n\n');
 
-  // 3. Heartbeat Keepalive (Every 3 seconds)
+  // 3. Heartbeat Keepalive (Every 1 second to keep Vercel Edge proxy alive during long tool runs)
   const heartbeat = setInterval(() => {
     try {
       res.write('data: {"type":"ping"}\n\n');
     } catch (_) {}
-  }, 3000);
+  }, 1000);
 
   try {
     // 3. Stream graph events and filter for tagged generation chunks
