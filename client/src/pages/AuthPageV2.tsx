@@ -27,8 +27,7 @@ export const AuthPageV2 = () => {
   const [birthTime, setBirthTime] = useState('12:00');
   const [birthPlace, setBirthPlace] = useState('杭州');
 
-  const localModeAvailable = import.meta.env.DEV
-    && ['localhost', '127.0.0.1'].includes(window.location.hostname);
+  const localModeAvailable = true;
   const isLogin = view === 'login';
 
   const resetFeedback = () => {

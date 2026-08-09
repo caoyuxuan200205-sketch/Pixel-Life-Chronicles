@@ -214,7 +214,7 @@ async function runEvaluation() {
             city: tc.context.city || '南京',
             luckyElement: tc.context.luckyElement || '金',
             username: tc.context.username || '探索者',
-            boundMembers: tc.boundMembers || [],
+            boundMembers: (tc as any).boundMembers || [],
             venueLinks: []
           };
           const routeRes = await routerNode(routerState as any);
