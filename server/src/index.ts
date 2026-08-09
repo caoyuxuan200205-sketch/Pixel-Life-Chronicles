@@ -31,7 +31,7 @@ const chatGraph = buildChatGraph();
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 3002;
 
 // 初始化 Supabase 客户端 (后端使用)
 const supabaseUrl = (process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '').trim();
@@ -937,7 +937,7 @@ const LOCAL_TAROT_CARDS = [
 
 app.post('/api/agent/plan', async (req, res) => {
   try {
-    const { members = [], pois = [], timeBudget = 4, startTime = '14:00', startDate } = req.body;
+    const { members = [], pois = [], timeBudget = 4, tripWish = '', startTime = '14:00', startDate } = req.body;
     
     if (members.length === 0) {
       return res.status(400).json({ error: '成员列表不能为空' });
@@ -981,7 +981,7 @@ app.post('/api/agent/plan', async (req, res) => {
     if (apiKey && modelId) {
       try {
         const systemPrompt = `你是一个融合了东方命理学（生辰八字）与西方神秘学（塔罗占卜）的“时空命运规划御史” (Chrono-Destiny Plan Agent)。
-你的任务是为结界中的所有成员，在候选商户 POI 中，规划一条长约 ${timeBudget} 小时的周末出行轨迹，并完成各自的命运解读。出行的第一个活动必须从 ${startTime} 开始（日期为 ${startDate || '今天'}），后续活动的 timeSlot 依次顺延。你必须根据成员的具体八字、喜用五行、塔罗运势、当前情绪倾向、以及他们键入的【心里话/天命出游意向】，进行极具“绝对说服力”和“深厚宿命感”的量身定制分析，严禁空洞笼统的套话！
+你的任务是为结界中的所有成员，在候选商户 POI 中，规划一条长约 ${timeBudget} 小时的周末出行轨迹，并完成各自的命运解读。 用户本次明确表达的核心出行愿望是：“${tripWish || '希望获得一条适合当下状态的玄学行程'}”。该愿望必须优先影响地点筛选、节奏、活动类型与玄学解释。出行的第一个活动必须从 ${startTime} 开始（日期为 ${startDate || '今天'}），后续活动的 timeSlot 依次顺延。你必须根据成员的具体八字、喜用五行、塔罗运势、当前情绪倾向、以及他们键入的【心里话/天命出游意向】，进行极具“绝对说服力”和“深厚宿命感”的量身定制分析，严禁空洞笼统的套话！
 
 【编织分析的硬性准则】：
 1. 【命运交织综述 (divinationSynthesis)】：撰写一段 100-150 字的极具玄学意境和文学美感的联合解盘词。深度分析成员们的五行气场（如金木相克、水火既济）与心理倾向是如何在今日的特定时空交汇的，解释他们一同出行的“宿命契机”。
@@ -1038,6 +1038,9 @@ app.post('/api/agent/plan', async (req, res) => {
               role: 'user', 
               content: `【结界成员配置】：
 ${JSON.stringify(processedMembers, null, 2)}
+
+【本次出行愿望】：
+${tripWish || '未填写，由 Agent 根据成员状态生成'}
 
 【候选商户】：
 ${JSON.stringify(candidatePois, null, 2)}

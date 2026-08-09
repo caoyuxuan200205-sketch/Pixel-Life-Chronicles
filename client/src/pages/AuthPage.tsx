@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, Mail, Lock } from 'lucide-react';
+import { ChevronLeft, CircleAlert, Mail, Lock, Orbit, Sparkles } from 'lucide-react';
 import { track } from "@vercel/analytics";
 import { supabase } from '../lib/supabase';
 import { login, register } from '../store';
@@ -13,6 +13,8 @@ export const AuthPage = () => {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [authUnavailable, setAuthUnavailable] = useState(false);
+  const localModeAvailable = import.meta.env.DEV && ['localhost', '127.0.0.1'].includes(window.location.hostname);
 
   // 新建注册用天命偏好与生日状态
   const [pref, setPref] = useState<'tarot' | 'bazi'>('bazi');
@@ -23,6 +25,7 @@ export const AuthPage = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setAuthUnavailable(false);
     setLoading(true);
 
     const trimmedEmail = email.trim();
@@ -77,7 +80,7 @@ export const AuthPage = () => {
       } else if (!isLogin && result.user) {
         // 注册成功但需要邮箱确认 (session 为 null)
         track('user_register_pending_confirmation', { email: trimmedEmail });
-        alert('📜 契约已缔结！请前往你的邮箱点击确认链接，完成最终仪式后即可登录。');
+        alert('契约已缔结！请前往你的邮箱点击确认链接，完成最终确认后即可登录。');
         setIsLogin(true);
         setError('');
       } else if (!isLogin) {
@@ -85,6 +88,14 @@ export const AuthPage = () => {
       }
     } catch (err: any) {
       console.error('Auth full error:', err);
+      const message = err?.message || 'Request failed';
+      const isConnectionError = /fetch failed|failed to fetch|network|timeout/i.test(message);
+      if (isConnectionError) {
+        setAuthUnavailable(true);
+        setError('\u8ba4\u8bc1\u670d\u52a1\u6682\u65f6\u65e0\u6cd5\u8fde\u63a5\u3002\u4f60\u53ef\u4ee5\u68c0\u67e5\u7f51\u7edc\u540e\u91cd\u8bd5\uff0c\u6216\u5148\u4f7f\u7528\u672c\u5730\u4f53\u9a8c\u6a21\u5f0f\u3002');
+        track(isLogin ? 'user_login_failure' : 'user_register_failure', { reason: message });
+        return;
+      }
       alert(`认证异常: ${err.message}`);
       setError(err.message || '操作失败，请重试');
       track(isLogin ? 'user_login_failure' : 'user_register_failure', { reason: err.message });
@@ -94,10 +105,10 @@ export const AuthPage = () => {
   };
 
   return (
-    <div className="page" style={{ alignItems: 'center', justifyContent: 'center', padding: '20px', position: 'relative' }}>
+    <div className="page auth-page" style={{ alignItems: 'center', justifyContent: 'center', padding: '20px', position: 'relative' }}>
       
       {/* 返回按钮 */}
-      <div style={{ position: 'absolute', top: '40px', left: '20px', zIndex: 10 }}>
+      <div className="auth-back" style={{ position: 'absolute', top: '40px', left: '20px', zIndex: 10 }}>
         <button 
           onClick={() => navigate('/')}
           className="btn btn-ghost"
@@ -110,7 +121,7 @@ export const AuthPage = () => {
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="pixel-panel"
+        className="pixel-panel auth-card"
         style={{
           width: '100%',
           maxWidth: 'clamp(320px, 90vw, 420px)',
@@ -118,8 +129,8 @@ export const AuthPage = () => {
           position: 'relative',
         }}
       >
-        <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-          <div style={{ 
+        <div className="auth-header" style={{ textAlign: 'center', marginBottom: '32px' }}>
+          <div className="auth-emblem" style={{
             fontSize: '48px',
             marginBottom: '16px',
             filter: 'drop-shadow(4px 4px 0px rgba(0,0,0,0.5))'
@@ -134,7 +145,7 @@ export const AuthPage = () => {
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        <form className="auth-form" onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           
           <div style={{ position: 'relative' }}>
             <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '8px' }}>
@@ -194,7 +205,7 @@ export const AuthPage = () => {
           {!isLogin && (
             <div className="pixel-panel" style={{ padding: '16px', background: 'rgba(0,0,0,0.3)', border: '1px solid var(--pixel-border-color)', display: 'flex', flexDirection: 'column', gap: '14px', minWidth: 0, boxSizing: 'border-box', width: '100%' }}>
               <h4 className="font-mystic" style={{ color: 'var(--primary)', fontSize: '0.85rem', marginBottom: '4px', textAlign: 'center' }}>
-                ☯️ 天命档案初始化
+                <Orbit size={15} /> 天命档案初始化
               </h4>
 
               <div>
@@ -215,7 +226,7 @@ export const AuthPage = () => {
                       height: 'auto'
                     }}
                   >
-                    ☯️ 东方八字
+                    <Orbit size={14} /> 东方八字
                   </button>
                   <button
                     type="button"
@@ -232,7 +243,7 @@ export const AuthPage = () => {
                       height: 'auto'
                     }}
                   >
-                    🃏 西方塔罗
+                    <Sparkles size={14} /> 西方塔罗
                   </button>
                 </div>
               </div>
@@ -285,7 +296,7 @@ export const AuthPage = () => {
                 exit={{ opacity: 0, height: 0 }}
                 style={{ color: '#cc5555', fontSize: '0.8rem', textAlign: 'center' }}
               >
-                ⚠ {error}
+                <CircleAlert size={14} /> {error}
               </motion.div>
             )}
           </AnimatePresence>
@@ -298,9 +309,28 @@ export const AuthPage = () => {
           >
             {loading ? '仪式进行中...' : (isLogin ? '进入世界' : '完成缔结')}
           </button>
+
+          {authUnavailable && localModeAvailable && (
+            <button
+              type="button"
+              className="btn btn-ghost"
+              style={{ width: '100%', fontSize: '0.85rem' }}
+              onClick={() => {
+                const localEmail = email.trim() || 'local@freeweek.dev';
+                const username = localEmail.split('@')[0] || 'local-user';
+                const userId = `local_${encodeURIComponent(localEmail)}`;
+                if (isLogin) login(username, userId, localEmail);
+                else register(username, userId, localEmail, pref, pref === 'bazi' ? { birthDate, birthTime, birthPlace } : undefined);
+                track('local_auth_fallback', { mode: isLogin ? 'login' : 'register' });
+                navigate('/', { replace: true });
+              }}
+            >
+              {'\u6682\u4ee5\u672c\u5730\u8eab\u4efd\u8fdb\u5165'}
+            </button>
+          )}
         </form>
 
-        <div style={{ textAlign: 'center', marginTop: '32px' }}>
+        <div className="auth-footer" style={{ textAlign: 'center', marginTop: '32px' }}>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginBottom: '12px' }}>
             {isLogin ? '还没有代号？' : '已经有代号了？'}
           </p>

@@ -4,17 +4,12 @@
   "installCommand": "npm install --legacy-peer-deps && npm rebuild esbuild",
   "rewrites": [
     {
-      "source": "/api/(.*)",
-      "destination": "/api/index.ts"
+      "source": "/api/:path*",
+      "destination": "http://106.55.102.61:3000/api/:path*"
     },
     {
       "source": "/((?!api/).*)",
       "destination": "/index.html"
     }
-  ],
-  "functions": {
-    "api/index.ts": {
-      "maxDuration": 60
-    }
-  }
+  ]
 }

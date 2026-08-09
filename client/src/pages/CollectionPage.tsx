@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Camera, X, Trash2, Info, ShoppingCart, MapPin, Scissors, Calendar, Loader2, Sparkles, ChevronRight } from 'lucide-react';
+import { AlertTriangle, Calendar, Camera, ChevronRight, Info, Loader2, MapPin, Scissors, ShoppingCart, Sparkles, Trash2, X } from 'lucide-react';
 import { getStamps, clearStamps, type StampRecord } from '../store';
 
 interface NearbyShop {
@@ -151,7 +151,7 @@ export const CollectionPage = () => {
   };
 
   return (
-    <div className="page" style={{ padding: '20px 20px var(--nav-height) 20px', position: 'relative' }}>
+    <div className="page collection-page" style={{ padding: '20px 20px var(--nav-height) 20px', position: 'relative' }}>
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -179,7 +179,7 @@ export const CollectionPage = () => {
       {stamps.length === 0 ? (
         <div style={{ textAlign: 'center', color: 'var(--text-muted)', marginTop: '60px' }}>
           <Camera size={48} style={{ opacity: 0.4 }} />
-          <p style={{ marginTop: '12px', marginBottom: '20px' }}>暂无印章，快去探索吧 🚀</p>
+          <p style={{ marginTop: '12px', marginBottom: '20px' }}>暂无印章，开始探索后会在这里生成你的收藏</p>
           <button className="btn btn-primary" onClick={() => navigate('/')}>开启今日占卜</button>
         </div>
       ) : (
@@ -309,12 +309,12 @@ export const CollectionPage = () => {
                 </div>
               </div>
               <p style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textAlign: 'center', marginBottom: '24px' }}>
-                💡 规格：32x32 标准拼豆网格
+                <Info size={14} /> 规格：32x32 标准拼豆网格
               </p>
 
               {/* 商业化模块 */}
               <div className="pixel-panel" style={{ padding: '16px', background: 'rgba(255,195,0,0.05)', borderColor: 'var(--primary-dim)' }}>
-                <h5 className="font-mystic" style={{ fontSize: '0.8rem', color: 'var(--primary)', marginBottom: '12px' }}>🛒 实体化你的命运印章</h5>
+                <h5 className="font-mystic section-title" style={{ fontSize: '0.8rem', color: 'var(--primary)', marginBottom: '12px' }}><ShoppingCart size={15} /> 实体化你的命运印章</h5>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                     
                     {/* 材料包 */}
@@ -433,7 +433,7 @@ export const CollectionPage = () => {
                 textAlign: 'center'
               }}
             >
-              <div style={{ fontSize: '40px', marginBottom: '16px' }}>⚠️</div>
+              <div className="modal-symbol danger"><AlertTriangle size={22} /></div>
               <h3 className="font-mystic" style={{ color: '#ff4b4b', marginBottom: '12px' }}>清空图鉴？</h3>
               <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '24px', lineHeight: '1.5' }}>
                 此操作将永久移除所有已收集的命定印章，无法恢复。

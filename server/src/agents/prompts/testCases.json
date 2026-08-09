@@ -1,0 +1,427 @@
+[
+  {
+    "id": 1,
+    "scenario": "travel_deal",
+    "description": "常规周边温泉与山水出游规划需求",
+    "query": "我想去个清静的地方泡温泉、吃土鸡，呼吸大自然",
+    "context": {
+      "username": "探险家小木",
+      "luckyElement": "木",
+      "city": "南京"
+    },
+    "expectedTag": "travel_deal"
+  },
+  {
+    "id": 2,
+    "scenario": "travel_deal",
+    "description": "五行开运自驾推荐需求",
+    "query": "最近在工作上有点受挫，心情烦躁，有什么能开运开阔心胸的周边游地方推荐吗？",
+    "context": {
+      "username": "逆流的鱼",
+      "luckyElement": "水",
+      "city": "杭州"
+    },
+    "expectedTag": "travel_deal"
+  },
+  {
+    "id": 3,
+    "scenario": "ticket_deal",
+    "description": "火车票查询 - 包含可用供给数据",
+    "query": "帮我定一张明天早上南京到上海的高铁票，越快越好",
+    "context": {
+      "username": "行路人",
+      "luckyElement": "金",
+      "city": "南京",
+      "ticketSupplies": "【时空天命枢纽真实车票/机票供给数据】：\n[G7001 南京→上海 乘车日期: 6月8日 出发: 07:00 到达: 08:30 二等座 ¥136.5](http://dpurl.cn/trainG7001)\n[G7003 南京→上海 乘车日期: 6月8日 出发: 07:30 到达: 09:00 二等座 ¥136.5](http://dpurl.cn/trainG7003)"
+    },
+    "expectedTag": "ticket_deal"
+  },
+  {
+    "id": 4,
+    "scenario": "ticket_deal",
+    "description": "机票查询 - 包含可用航班数据",
+    "query": "下周五下午想飞深圳，帮我看看南京到深圳的航班",
+    "context": {
+      "username": "凌云客",
+      "luckyElement": "金",
+      "city": "南京",
+      "ticketSupplies": "【时空天命枢纽真实车票/机票供给数据】：\n[ZH9862 南京禄口→深圳宝安 乘车日期: 6月12日 出发: 14:15 到达: 16:30 经济舱 ¥680](http://dpurl.cn/flightZH9862)\n[MU2731 南京禄口→深圳宝安 乘车日期: 6月12日 出发: 16:00 到达: 18:15 经济舱 ¥710](http://dpurl.cn/flightMU2731)"
+    },
+    "expectedTag": "ticket_deal"
+  },
+  {
+    "id": 5,
+    "scenario": "ticket_deal",
+    "description": "火车票查询 - 无票/售罄 fallback 状态",
+    "query": "查一下明天南京到拉萨的硬卧车票",
+    "context": {
+      "username": "寻梦者",
+      "luckyElement": "土",
+      "city": "南京",
+      "ticketSupplies": "⚠️ 目标班次已售罄（无票状况）。时空枢纽已为您启动备选与抢票方案：\n[候补 Z164 南京→拉萨 乘车日期: 6月8日 二等座 ¥389](http://dpurl.cn/standbyZ164) (美团候补抢票成功率 98%)"
+    },
+    "expectedTag": "ticket_deal"
+  },
+  {
+    "id": 6,
+    "scenario": "weekend_deal",
+    "description": "周末出行 - 多人合盘（老婆减肥 + 孩子游乐）",
+    "query": "周末我想带我老婆还有孩子出去转转，老婆在减肥要吃沙拉，孩子喜欢游乐场，给个安排吧",
+    "context": {
+      "username": "奶爸阿强",
+      "luckyElement": "火",
+      "city": "北京",
+      "boundMembers": [
+        {
+          "role": "老婆",
+          "divinationMethod": "八字五行",
+          "baziInfo": "五行喜金，避忌辛辣重油"
+        },
+        {
+          "role": "孩子",
+          "divinationMethod": "塔罗牌",
+          "tarotCardIndex": 19
+        }
+      ]
+    },
+    "expectedTag": "weekend_deal"
+  },
+  {
+    "id": 7,
+    "scenario": "weekend_deal",
+    "description": "周末出行 - 伴侣纪念日合盘",
+    "query": "今天下班后我想带女朋友去个浪漫点的地方过纪念日，她喜欢清静",
+    "context": {
+      "username": "深情男主",
+      "luckyElement": "木",
+      "city": "上海",
+      "boundMembers": [
+        {
+          "role": "女朋友",
+          "divinationMethod": "八字五行",
+          "baziInfo": "五行喜水，命中与江河湖水有缘"
+        }
+      ]
+    },
+    "expectedTag": "weekend_deal"
+  },
+  {
+    "id": 8,
+    "scenario": "venue",
+    "description": "生活服务 - 点外卖（应分类到外卖，不输出XML卡片）",
+    "query": "肚子饿了，帮我点个必胜客披萨送到家，有优惠吗？",
+    "context": {
+      "username": "干饭人",
+      "luckyElement": "水",
+      "city": "南京"
+    },
+    "expectedIntent": "venue",
+    "expectedTag": "none"
+  },
+  {
+    "id": 9,
+    "scenario": "venue",
+    "description": "生活服务 - 餐饮团购（不输出XML卡片）",
+    "query": "今天晚上想和哥们去新街口聚餐吃火锅，推荐个便宜的团购代金券吧",
+    "context": {
+      "username": "火锅爱好者",
+      "luckyElement": "土",
+      "city": "南京"
+    },
+    "expectedIntent": "venue",
+    "expectedTag": "none"
+  },
+  {
+    "id": 10,
+    "scenario": "coupon",
+    "description": "领券薅羊毛（应分类到 coupon，不输出 XML 卡片）",
+    "query": "美团今天有没有大额的隐藏红包或者神券可以领？我想省点钱",
+    "context": {
+      "username": "省钱专家",
+      "luckyElement": "水",
+      "city": "南京"
+    },
+    "expectedIntent": "coupon",
+    "expectedTag": "none"
+  },
+  {
+    "id": 11,
+    "scenario": "chat",
+    "description": "纯命理问答与日常闲聊",
+    "query": "祭司大人，我最近在工作上面临瓶颈，周末想换个气场充电，五行有什么指引吗？",
+    "context": {
+      "username": "迷茫的中产",
+      "luckyElement": "土",
+      "city": "南京"
+    },
+    "expectedIntent": "chat",
+    "expectedTag": "none"
+  },
+  {
+    "id": 12,
+    "scenario": "router",
+    "description": "意图路由测试 - 强干扰混合意图",
+    "query": "我想查一下明天去苏州的火车票，另外到了之后有附近足疗店的团购优惠可以领吗？",
+    "context": {
+      "username": "差旅人",
+      "luckyElement": "金",
+      "city": "上海"
+    },
+    "expectedIntent": "ticket",
+    "expectedTag": "ticket_deal"
+  },
+  {
+    "id": 13,
+    "scenario": "router",
+    "description": "意图路由测试 - 模糊的外卖词",
+    "query": "有点感冒，想买点 999 感冒灵冲剂送过来，要快",
+    "context": {
+      "username": "感冒的猫",
+      "luckyElement": "木",
+      "city": "南京"
+    },
+    "expectedIntent": "venue",
+    "expectedTag": "none"
+  },
+  {
+    "id": 14,
+    "scenario": "router",
+    "description": "意图路由测试 - 极度模糊生活意图",
+    "query": "今天下午很无聊，不知道该干啥",
+    "context": {
+      "username": "无聊星人",
+      "luckyElement": "水",
+      "city": "杭州"
+    },
+    "expectedIntent": "weekend",
+    "expectedTag": "none"
+  },
+  {
+    "id": 15,
+    "scenario": "router",
+    "description": "意图路由测试 - 纯打招呼",
+    "query": "嗨，祭司大人，你今天心情怎么样？",
+    "context": {
+      "username": "好奇宝宝",
+      "luckyElement": "火",
+      "city": "深圳"
+    },
+    "expectedIntent": "chat",
+    "expectedTag": "none"
+  },
+  {
+    "id": 16,
+    "scenario": "ticket_deal",
+    "description": "机票查询 - 包含不可用数据（应处理无票或输出错误提示，不凭空造票）",
+    "query": "查一下明天去夏威夷的机票航班",
+    "context": {
+      "username": "环球旅行者",
+      "luckyElement": "木",
+      "city": "南京",
+      "ticketSupplies": "⚠️ 目标航线暂无直飞航班。仅有以下中转联程方案：\n[MU587 上海→夏威夷 乘车日期: 6月8日 出发: 11:30 经济舱 ¥5800](http://dpurl.cn/intlHawai)"
+    },
+    "expectedTag": "ticket_deal"
+  },
+  {
+    "id": 17,
+    "scenario": "travel_deal",
+    "description": "周边游规划 - 适合老年人/慢节奏幽静地点",
+    "query": "我想带父母在周边走走，他们腿脚不方便，有没有适合老年人的、节奏慢一点的幽静地方推荐？",
+    "context": {
+      "username": "孝顺的果果",
+      "luckyElement": "木",
+      "city": "南京"
+    },
+    "expectedTag": "travel_deal"
+  },
+  {
+    "id": 18,
+    "scenario": "travel_deal",
+    "description": "周边游规划 - 适合单人放空的避世星空露营",
+    "query": "求推荐一个适合单人放空、能看到满天繁星的野奢露营地，我想远离社交",
+    "context": {
+      "username": "独行侠",
+      "luckyElement": "土",
+      "city": "北京"
+    },
+    "expectedTag": "travel_deal"
+  },
+  {
+    "id": 19,
+    "scenario": "ticket_deal",
+    "description": "车票查询 - 高等级席位指定（一等座/商务座）",
+    "query": "帮我查一下后天有没有上海到北京的高铁，要一等座或者商务座",
+    "context": {
+      "username": "商务行者",
+      "luckyElement": "金",
+      "city": "上海",
+      "ticketSupplies": "【时空天命枢纽真实车票/机票供给数据】：\n[G102 上海虹桥→北京南 乘车日期: 6月9日 出发: 08:00 到达: 12:30 商务座 ¥2318 一等座 ¥1035](http://dpurl.cn/bizG102)\n[G6 上海虹桥→北京南 乘车日期: 6月9日 出发: 09:00 到达: 13:18 一等座 ¥1035](http://dpurl.cn/firstG6)"
+    },
+    "expectedTag": "ticket_deal"
+  },
+  {
+    "id": 20,
+    "scenario": "ticket_deal",
+    "description": "车票查询 - 包含无座在内的低价余票选项",
+    "query": "我想买一张明天去广州的火车票，随便什么席位都行，只要能到",
+    "context": {
+      "username": "归乡人",
+      "luckyElement": "火",
+      "city": "武汉",
+      "ticketSupplies": "【时空天命枢纽真实车票/机票供给数据】：\n[G81 武汉→广州南 乘车日期: 6月8日 出发: 10:15 到达: 14:05 无座 ¥463](http://dpurl.cn/noneSeatG81)"
+    },
+    "expectedTag": "ticket_deal"
+  },
+  {
+    "id": 21,
+    "scenario": "weekend_deal",
+    "description": "周末出行 - 多闺蜜聚会（拍照打卡 + 低碳减脂）",
+    "query": "周末我和几个闺蜜想聚聚，有的人要减肥，有的人喜欢拍照打卡，有没有什么好的吃喝玩乐安排？",
+    "context": {
+      "username": "小仙女团队",
+      "luckyElement": "水",
+      "city": "成都",
+      "boundMembers": [
+        {
+          "role": "闺蜜A",
+          "divinationMethod": "八字五行",
+          "baziInfo": "五行喜木，追求拍照出片和低卡饮食"
+        },
+        {
+          "role": "闺蜜B",
+          "divinationMethod": "塔罗牌",
+          "tarotCardIndex": 3
+        }
+      ]
+    },
+    "expectedTag": "weekend_deal"
+  },
+  {
+    "id": 22,
+    "scenario": "weekend_deal",
+    "description": "周末出行 - 新手家庭带娃多诉求融合行程",
+    "query": "我和我老公周末想带两岁半的宝宝出门玩，宝宝要午睡，我想做个美甲，老公想喝咖啡，能把这些拼成个下午的行程吗？",
+    "context": {
+      "username": "新手宝妈",
+      "luckyElement": "金",
+      "city": "广州",
+      "boundMembers": [
+        {
+          "role": "老公",
+          "divinationMethod": "八字五行",
+          "baziInfo": "喜木"
+        },
+        {
+          "role": "宝宝",
+          "divinationMethod": "塔罗牌",
+          "tarotCardIndexes": [1, 2]
+        }
+      ]
+    },
+    "expectedTag": "weekend_deal"
+  },
+  {
+    "id": 23,
+    "scenario": "venue",
+    "description": "生活服务 - 送药上门（不输出 XML 卡片）",
+    "query": "我感冒流鼻涕了，附近药店有没有小柴胡颗粒或者美林，帮我送一份到家",
+    "context": {
+      "username": "病号小李",
+      "luckyElement": "火",
+      "city": "杭州"
+    },
+    "expectedIntent": "venue",
+    "expectedTag": "none"
+  },
+  {
+    "id": 24,
+    "scenario": "venue",
+    "description": "生活服务 - 超市便利店急送（不输出 XML 卡片）",
+    "query": "家里没盐了，帮我到附近超市买包精盐，再带两瓶可乐",
+    "context": {
+      "username": "小厨神",
+      "luckyElement": "木",
+      "city": "深圳"
+    },
+    "expectedIntent": "venue",
+    "expectedTag": "none"
+  },
+  {
+    "id": 25,
+    "scenario": "coupon",
+    "description": "领红包与外卖立减（不输出 XML 卡片）",
+    "query": "今天点外卖有什么大额优惠券吗？想薅点外卖红包",
+    "context": {
+      "username": "省钱达人",
+      "luckyElement": "金",
+      "city": "南京"
+    },
+    "expectedIntent": "coupon",
+    "expectedTag": "none"
+  },
+  {
+    "id": 26,
+    "scenario": "chat",
+    "description": "八字与情感日常闲聊（不输出 XML 卡片）",
+    "query": "祭司，我女朋友今天跟我吵架了，我该怎么哄她？我们俩八字合不合？",
+    "context": {
+      "username": "伤心小张",
+      "luckyElement": "火",
+      "city": "南京"
+    },
+    "expectedIntent": "chat",
+    "expectedTag": "none"
+  },
+  {
+    "id": 27,
+    "scenario": "router",
+    "description": "意图路由测试 - 带娃出游+点餐混合需求",
+    "query": "明天下午想带娃去附近的游乐场，玩累了点个肯德基外卖送到游乐场，怎么安排比较好？",
+    "context": {
+      "username": "带娃狂魔",
+      "luckyElement": "木",
+      "city": "南京"
+    },
+    "expectedIntent": "weekend",
+    "expectedTag": "weekend_deal"
+  },
+  {
+    "id": 28,
+    "scenario": "router",
+    "description": "意图路由测试 - 查票+同城购药混合意图",
+    "query": "帮我查一下明天去青岛的机票，顺便买两盒晕车药送到家",
+    "context": {
+      "username": "晕机行者",
+      "luckyElement": "金",
+      "city": "北京"
+    },
+    "expectedIntent": "ticket",
+    "expectedTag": "ticket_deal"
+  },
+  {
+    "id": 29,
+    "scenario": "router",
+    "description": "意图路由测试 - 白嫖大额新人红包",
+    "query": "有什么新人专享的大额美团红包可以白嫖？",
+    "context": {
+      "username": "羊毛猎手",
+      "luckyElement": "水",
+      "city": "深圳"
+    },
+    "expectedIntent": "coupon",
+    "expectedTag": "none"
+  },
+  {
+    "id": 30,
+    "scenario": "ticket_deal",
+    "description": "车票查询 - 中转乘车方案供给提取",
+    "query": "帮我定明天去深圳的火车票。如果没有直达，就帮我安排一个随便什么地方的中转方案",
+    "context": {
+      "username": "差旅特工",
+      "luckyElement": "火",
+      "city": "西安",
+      "ticketSupplies": "【时空天命枢纽真实车票/机票供给数据】：\n[G824 西安北→深圳北 乘车日期: 6月8日 出发: 09:30 到达: 18:40 二等座 ¥880](http://dpurl.cn/transferDirect)"
+    },
+    "expectedTag": "ticket_deal"
+  }
+]

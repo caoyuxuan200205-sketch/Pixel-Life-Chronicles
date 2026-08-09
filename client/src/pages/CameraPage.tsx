@@ -1,6 +1,6 @@
 import { useRef, useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Save, ShoppingCart, MapPin, Scissors, Info, Loader2, Sparkles, X, ChevronRight } from 'lucide-react';
+import { Ban, ChevronRight, Info, Loader2, MapPin, Save, Scissors, ShoppingCart, Sparkles, X } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { track } from "@vercel/analytics";
 import { saveStamp, type StampRecord, getLatestJointPlan, getCurrentUser, type BeadPattern } from '../store';
@@ -244,7 +244,7 @@ export const CameraPage = () => {
     return (
       <div className="page" style={{ justifyContent: 'center', padding: '20px' }}>
         <div className="pixel-panel" style={{ padding: '40px 24px', textAlign: 'center' }}>
-          <div style={{ fontSize: '64px', marginBottom: '24px' }}>🚫</div>
+          <div className="camera-state-icon"><Ban size={28} /></div>
           <h2 className="font-mystic" style={{ color: 'var(--primary)', marginBottom: '16px' }}>契约尚未开启</h2>
           <button onClick={() => navigate('/')} className="btn btn-primary" style={{ width: '100%' }}>返回占卜</button>
         </div>
@@ -514,9 +514,9 @@ export const CameraPage = () => {
   };
 
   return (
-    <div className="page page--fullscreen" style={{ position: 'relative', overflow: 'hidden', background: '#000' }}>
+    <div className="page page--fullscreen" style={{ position: 'relative', overflow: 'hidden', background: 'var(--app-camera-gradient)' }}>
       {/* 扫码框/取景框 - 占据全屏背景 */}
-      <div style={{ position: 'absolute', inset: 0, zIndex: 0, background: '#000' }}>
+      <div style={{ position: 'absolute', inset: 0, zIndex: 0, background: 'var(--app-camera-gradient)' }}>
         <video 
           ref={videoRef} 
           autoPlay 
@@ -783,7 +783,7 @@ export const CameraPage = () => {
 
             {/* 商业化模块 */}
             <div className="pixel-panel" style={{ padding: '20px', background: 'rgba(226, 181, 83, 0.05)', borderStyle: 'dashed' }}>
-              <h4 className="font-mystic" style={{ color: 'var(--primary)', marginBottom: '16px', fontSize: '0.9rem' }}>🛒 实体化你的命定印章</h4>
+              <h4 className="font-mystic section-title" style={{ color: 'var(--primary)', marginBottom: '16px', fontSize: '0.9rem' }}><ShoppingCart size={15} /> 实体化你的命定印章</h4>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 <button className="btn btn-primary" onClick={() => setShowMeituanModal(true)} style={{ justifyContent: 'flex-start', padding: '16px', background: 'linear-gradient(45deg, #FFD000, #FFA500)', border: 'none', color: '#000' }}>
                   <ShoppingCart size={20} />
@@ -864,7 +864,7 @@ export const CameraPage = () => {
               </div>
             </div>
             <div style={{ marginTop: '20px', color: 'var(--text-secondary)', fontSize: '0.75rem' }}>
-              💡 提示：每一格代表一颗拼豆，请对照颜色进行排列。
+              <Info size={14} /> 提示：每一格代表一颗拼豆，请对照颜色进行排列。
             </div>
           </motion.div>
         )}

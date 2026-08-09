@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Compass, Navigation, ChevronRight, ChevronLeft, Calendar } from 'lucide-react';
+import { Calendar, ChevronLeft, ChevronRight, Compass, Navigation, Palette, UserRound } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import AMapLoader from '@amap/amap-jsapi-loader';
 import { track } from "@vercel/analytics";
@@ -173,7 +173,7 @@ export const MapPage = () => {
           markerOptions: {
             content: `
               <div style="width: 20px; height: 20px; background: #fff; border: 2px solid #000; box-shadow: 2px 2px 0 #3366ff; display: flex; align-items: center; justify-content: center; font-size: 10px;">
-                🤠
+                <UserRound size={22} />
               </div>
             `,
             offset: new AMap.Pixel(-10, -10)
@@ -238,7 +238,7 @@ export const MapPage = () => {
             <span style={{ fontSize: '0.75rem', fontWeight: 'bold', color: '#fff' }}>命定结界轨迹开启</span>
           </div>
           <div style={{ fontSize: '0.65rem', color: 'var(--primary)' }}>
-            {routeInfo ? `🏃 连线总长: ${routeInfo.distance} (${routeInfo.duration})` : '📡 定位并匹配星轨连线中...'}
+            {routeInfo ? `连线总长: ${routeInfo.distance} (${routeInfo.duration})` : '定位并匹配星轨连线中...'}
           </div>
         </div>
       </div>
@@ -315,7 +315,7 @@ export const MapPage = () => {
                 fontFamily: 'var(--font-main)'
               }}
             >
-              🎨 创作“命运纪念印章”
+              <Palette size={16} /> 创作“命运纪念印章”
             </button>
           </motion.div>
         </AnimatePresence>
