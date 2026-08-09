@@ -11,8 +11,12 @@ export async function streamGraphToSSE(
   res.setHeader("Cache-Control", "no-cache");
   res.setHeader("Connection", "keep-alive");
   res.setHeader("X-Accel-Buffering", "no");
+  res.flushHeaders();
 
-  // 2. Heartbeat Keepalive (Every 3 seconds)
+  // 2. Immediately send initial ping to notify reverse proxy (e.g. Vercel Edge) to open stream
+  res.write('data: {"type":"ping"}\n\n');
+
+  // 3. Heartbeat Keepalive (Every 3 seconds)
   const heartbeat = setInterval(() => {
     try {
       res.write('data: {"type":"ping"}\n\n');

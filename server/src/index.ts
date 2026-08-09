@@ -594,6 +594,10 @@ async function streamingAIProxy(
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Connection', 'keep-alive');
   res.setHeader('X-Accel-Buffering', 'no');
+  res.flushHeaders();
+
+  // 立即推送首个 ping 包，触发中转代理（如 Vercel Edge / Nginx）第一时间接收 200 OK 标头并打开流通道
+  res.write('data: {"type":"ping"}\n\n');
 
   // 心跳定时器：每 3 秒发送一次保活 ping
   const heartbeat = setInterval(() => {
