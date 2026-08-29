@@ -1477,32 +1477,6 @@ async function extractTicketIntent(userText: string, defaultCity: string) {
   }
 }
 
-async function queryMeituanTravelCLI(city: string, query: string) {
-  const mtToken = process.env.MEITUAN_TRAVEL_TOKEN;
-  if (!mtToken) {
-    throw new Error('服务端未配置 MEITUAN_TRAVEL_TOKEN 环境变量，无法查询车票');
-  }
-
-  // 动态注入 config.json 以兼容部署环境
-  const mtConfigDir = path.join(os.homedir(), '.config', 'meituan-travel');
-  if (!fs.existsSync(mtConfigDir)) {
-    fs.mkdirSync(mtConfigDir, { recursive: true });
-  }
-  fs.writeFileSync(path.join(mtConfigDir, 'config.json'), JSON.stringify({ key: mtToken }), 'utf-8');
-
-  console.log(`Executing Meituan CLI: mttravel "${city}" "${query}"`);
-  const { stdout, stderr } = await execFileAsync('npx', [
-    '-p', '@meituan-travel/travel-cli', 'mttravel',
-    city.trim(), query.trim()
-  ], {
-    timeout: 45000,
-    maxBuffer: 1024 * 1024 * 5,
-    windowsHide: true,
-    shell: process.platform === 'win32'
-  });
-  return [stdout, stderr].map(String).filter(Boolean).join('\n');
-}
-
 // ==========================================
 // 美团分销推广 Skill (领券专属通道)
 // ==========================================

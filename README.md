@@ -1,6 +1,10 @@
-# 👾 Pixel Life Chronicles | 像素生活志
+# 🔮 玄途 Agent | Xuantu
 
-**Pixel Life Chronicles** 是一个基于 React 19 + Vite + Express + Node.js 的城市探索与 AIGC 决策引擎原型项目。它创造性地将“玄学八字 / 塔罗神谕”与现代城市出行规划完美结合，并深度融入美团即时酒旅、导购生态与像素拼豆创作，为用户提供复古像素风（8-bit）的沉浸式行走与决策体验。
+**玄途 Agent** 是一个基于 React 19 + Vite + Express + Node.js 的 AI-Native 玄学行程规划 Agent。它融合 **八字命理、塔罗占卜** 与 **美团即时酒旅、导购生态**，为用户提供从"拿不定主意"到"行程落地"的端到端决策体验，并提供复古像素风（8-bit）的沉浸式交互。
+
+> 定位语：**首个融合八字、塔罗与真实地点的玄学行程规划 Agent。**
+
+> 英文代号沿用仓库历史名 `Pixel Life Chronicles`，`package.json` 内 `name` 字段保留为 `pixel-life-chronicles` 以兼容历史依赖。
 
 ---
 
@@ -9,7 +13,7 @@
 本项目在原有基础上进行了重大架构重构与交互升级，核心亮点包括：
 
 1. **🤖 LangGraph.js 多智能体架构 (Multi-Agent System)**
-   - **StateGraph 决策工作流**：基于 LangGraph.js 重构了后端的 AI 决策链路，采用 StateGraph 编排多智能体协同网络。
+   - **StateGraph 决策工作流**：基于 LangGraph.js 重构了玄途后端的 AI 决策链路，采用 StateGraph 编排多智能体协同网络。
    - **Router 智能路由节点**：整合高性能正则表达式与大语言模型（LLM）的双重校验，实时解析用户意图。
    - **专项专家节点协同**：
      - `Coupon Agent`：智能分发美团大额隐藏优惠券与专享红包福利。
@@ -32,7 +36,7 @@
    - 在“我的”个人档案页面，为“结界契约伙伴”增加了快捷“修改 (📝)”入口，支持对旅伴称呼、关系标签和玄学八字时空/塔罗参数进行实时回显与保存，实现本地及云端数据的闭环修改。
 
 5. **🎫 美团酒旅 CLI 直连与车票契约卡 (Real Travel Booking)**
-   - **星耀AI** 直连 **美团酒旅服务**。通过大模型提取出行意图，后端运行美团酒旅 CLI 工具（配置 `MEITUAN_TRAVEL_TOKEN`），拉取真实班次并生成复古像素风的“时空列车/飞行契约”实体卡。
+   - **玄途** 直连 **美团酒旅服务**。通过大模型提取出行意图，后端运行美团酒旅 CLI 工具（配置 `MEITUAN_TRAVEL_TOKEN`），拉取真实班次并生成复古像素风的"时空列车/飞行契约"实体卡。
    - 修复了车票卡片中日期和标签文本可能与分割线重合的遮挡缺陷，改用标准垂直 Flex 布局，保证在各种分辨率下清晰可读。
 
 6. **🛍️ 唤醒美团 App 原生协议 (App Deep Linking)**
@@ -46,22 +50,33 @@
 ```text
 FreeWeek/
 ├── api/
-│   └── index.ts          # Vercel Serverless 入口，导出 server Express app
+│   └── index.ts          # 可选 Vercel Serverless 入口（re-export server 的 Express 实例，当前线上未启用）
 ├── client/
 │   ├── public/
 │   ├── src/
-│   │   ├── pages/        # 前端页面（AIPortalPage, HomePage, MapPage 等）
-│   │   ├── services/     # API 服务 (SSE/AI等客户端请求)
-│   │   ├── lib/          # 工具库 (fetchSSE, Map API 等)
-│   │   └── store.ts      # Zustand 状态管理 (包含旅伴、塔罗等)
+│   │   ├── pages/        # 前端页面（AIPortalPage / HomePage / MapPage / PlanResultPage 等）
+│   │   ├── services/     # API 服务 (SSE/AI 等客户端请求)
+│   │   ├── lib/          # 工具库 (fetchSSE / Map API 等)
+│   │   └── store.ts      # Zustand 状态管理（含旅伴、塔罗等）
 │   ├── package.json
 │   └── tsconfig.json
 ├── docs/                 # 产品需求与架构设计文档
 ├── server/
 │   ├── data/             # 静态拼豆色卡及业务数据
 │   ├── src/
-│   │   ├── agents/       # LangGraph 智能体网络 (nodes, tools, state, prompts)
+│   │   ├── agents/       # LangGraph 多智能体网络
+│   │   │   ├── chatGraph.ts    # 主编排图（StateGraph 入口）
+│   │   │   ├── state.ts        # 多智能体共享状态定义
+│   │   │   ├── nodes/          # 节点实现：chat / router / coupon / ticket / venue / weekend
+│   │   │   ├── tools/          # 节点工具：ticketTools / weekendTools（美团酒旅 CLI 等）
+│   │   │   ├── prompts/        # 各节点的 system prompt
+│   │   │   └── utils/          # 智能体内部工具方法
+│   │   ├── lib/         # 核心基础设施
+│   │   │   ├── llm.ts           # LangChain ChatOpenAI 工厂（Qwen 主链路 + Doubao fallback）
+│   │   │   ├── streaming.ts     # LangGraph → SSE 桥接（含心跳保活）
+│   │   │   └── skillsService.ts # 美团券/会场 OpenAPI 直连（非 LLM）
 │   │   ├── baziHelper.ts # 八字干支计算逻辑
+│   │   ├── evaluate.ts   # 结果评估脚本
 │   │   └── index.ts      # Express 核心 API、SSE 路由与拼豆图像渲染
 │   ├── package.json
 │   └── tsconfig.json
@@ -82,14 +97,22 @@ FreeWeek/
 - **AMap JS API v2.0** (高德地图探索与定位)
 - **Supabase Client** (数据同步与第三方登录)
 
-### 后端 (Server & Serverless)
-- **Node.js + Express**
+### 后端 (Server)
+- **Node.js + Express**（线上常驻进程，端口 3002）
 - **TypeScript**
-- **@langchain/langgraph** & **@langchain/core** (智能体流式编排)
-- **Server-Sent Events (SSE)** (大模型流式传输)
-- **Sharp** (拼豆图纸高像素网格化处理)
-- **PDF-Lib** (拼豆制作图纸 PDF 导出)
-- **Supabase SDK** (后端数据持久化)
+- **@langchain/langgraph** & **@langchain/core**（智能体流式编排）
+- **@langchain/langgraph-checkpoint** / **@langchain/langgraph-sdk**（状态检查点与 SDK）
+- **Server-Sent Events (SSE)**（大模型流式传输）
+- **Sharp**（拼豆图纸高像素网格化处理）
+- **PDF-Lib**（拼豆制作图纸 PDF 导出）
+- **Supabase SDK**（后端数据持久化）
+- **@mtuser/pt-passport**（美团通行证 SDK，用于酒旅 CLI 鉴权）
+- **qrcode** / **uuid**（二维码生成与会话标识）
+
+### AI 模型链路
+- **主模型**：魔搭 ModelScope 免费推理 — `Qwen3.5-35B-A3B`（对话/规划节点）
+- **路由模型**：魔搭 — `Qwen3-8B`（轻量意图识别节点）
+- **降级模型**：火山豆包 Doubao（魔搭 429/超时自动 fallback）
 
 ---
 
@@ -108,24 +131,35 @@ npm install
 ```env
 VITE_AMAP_KEY=你的高德地图Key
 VITE_AMAP_SECURITY_JS_CODE=你的高德地图安全码
-VITE_BACKEND_URL=http://localhost:3000
+VITE_BACKEND_URL=http://localhost:3002
 VITE_DOUBAO_API_KEY=你的豆包APIKey
 VITE_DOUBAO_MODEL_ID=你的豆包模型ID
 VITE_SUPABASE_URL=你的SupabaseUrl
 VITE_SUPABASE_ANON_KEY=你的SupabaseAnonKey
 ```
 
-#### 后端配置 (`server/.env` 或 Vercel 环境变量)
-新建并配置如下变量：
+#### 后端配置 (`server/.env` 或腾讯云环境变量)
+后端 AI 主链路走魔搭 ModelScope 免费推理（Qwen 系列），火山豆包作为降级备份。完整变量如下：
 ```env
+# ===== 主模型：魔搭 ModelScope（线上实际链路） =====
+QWEN_API_KEY=你的魔搭APIKey
+QWEN_BASE_URL=https://api-inference.modelscope.cn/v1     # 可省略，已内置默认
+QWEN_MODEL=Qwen/Qwen3.5-35B-A3B                          # 可省略，已内置默认
+QWEN_ROUTER_MODEL=Qwen/Qwen3-8B                          # 可省略，已内置默认（轻量路由节点）
+
+# ===== 降级模型：火山豆包（魔搭失效时启用） =====
+DOUBAO_API_KEY=你的豆包APIKey
+DOUBAO_MODEL_ID=你的豆包模型ID
+
+# ===== 业务依赖 =====
 VITE_SUPABASE_URL=你的SupabaseUrl
 VITE_SUPABASE_ANON_KEY=你的SupabaseAnonKey
 MEITUAN_TRAVEL_TOKEN=你的美团酒旅CLI_Token
-# 如果后端需要直接请求大模型，也可以在这里配 Doubao 或 OpenAI 的 Key
 ```
+> ⚠️ 注意：魔搭免费 API 有 QPS/排队限制，无 SLA，高峰期可能返回 429/500，此时会自动 fallback 到豆包模型。
 
 ### 3. 启动本地开发
-在根目录下运行以下命令，将同时启动前端 `client`（运行在 5173 端口）与后端 `server`（运行在 3000 端口）：
+在根目录下运行以下命令，将同时启动前端 `client`（运行在 5173 端口）与后端 `server`（运行在 **3002** 端口，与 `vercel.json` rewrite 目标一致）：
 ```bash
 npm run dev
 ```
@@ -154,24 +188,30 @@ npm run dev
 
 ## 🗺️ 主要路由说明
 
-- `/`：系统探索主界面 (`HomePage.tsx`)
-- `/ai`：星耀 AI 对话中心，包含 LangGraph 推演与实时行程定制 (`AIPortalPage.tsx`)
-- `/plan`：命定出游结果页，展示 3D 翻转卡牌与行程契约 (`PlanPage.tsx`)
+- `/`：系统探索主界面 (`HomePage mode="landing"`)
+- `/planner`：行程规划入口 (`HomePage mode="planner"`)
+- `/ai`：玄途 Agent 对话中心，包含 LangGraph 推演与实时行程定制 (`AIPortalPage.tsx`)
+- `/plan`：命定出游结果页，展示 3D 翻转卡牌与行程契约 (`PlanResultPage.tsx`)
 - `/map`：像素风高德地图冒险页，支持 AR 景点寻找 (`MapPage.tsx`)
 - `/camera`：相机印章页，生成 AR 贴纸像素相片 (`CameraPage.tsx`)
 - `/collection`：我的收藏与拼豆图纸导出 (`CollectionPage.tsx`)
 - `/profile`：个人中心，支持配置并修改结界契约旅伴信息 (`ProfilePage.tsx`)
-- `/auth`：玄学结界身份登录 (`AuthPage.tsx`)
+- `/auth`：玄学结界身份登录，当前线上版本使用 `AuthPageV2.tsx`（`AuthPage.tsx` 为旧版保留）
 
 ---
 
-## ☁️ Vercel 部署说明
+## ☁️ 部署架构说明
 
-项目已通过 `vercel.json` 完美适配 Vercel Serverless 架构：
-- 根目录 `api/index.ts`（导出 `server/src/index.ts` 的 Express 实例）承接所有 `/api/*` 请求。
-- 非 `/api` 请求将自动重写回前端根目录，由前端 `react-router` 承接单页路由。
-- 部署时，请在 Vercel 控制台将前端和后端的环境变量统一配入 **Environment Variables** 中。
+当前线上采用 **Vercel + 腾讯云轻量** 的混合部署模式（非纯 Serverless）：
+
+- **前端**：托管于 Vercel，静态构建产物由 `npm run build --workspace=client` 生成。
+- **后端**：独立部署在腾讯云轻量服务器（`106.55.102.61:3002`），Node + Express 常驻进程，**不走 Vercel Serverless**。
+- **路由规则**（`vercel.json`）：
+  - `/api/*` 请求 → rewrite 到腾讯云 `http://106.55.102.61:3002/api/*`（公网 HTTP，无 HTTPS，SSE 长连接易受网络抖动影响）
+  - 其他请求 → 重写到 `/index.html`，由前端 react-router 承接单页路由。
+- 仓库根目录的 `api/index.ts` 为可选 Serverless 入口（仅 re-export Express 实例），**当前线上未启用**，保留用于未来切换到 Vercel Serverless 部署。
+- 部署前端时，请在 Vercel 控制台配齐环境变量（前端相关）；后端环境变量配在腾讯云服务器进程环境里。
 
 ---
 
-© 2026 Pixel Life Chronicles
+© 2026 玄途 Agent · Xuantu (Pixel Life Chronicles)

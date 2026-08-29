@@ -15,6 +15,8 @@
     "@langchain/langgraph-checkpoint": "1.0.3",
     "@langchain/langgraph-sdk": "1.0.3",
     "@langchain/openai": "^1.4.7",
+    "@meituan-travel/travel-cli": "1.0.16",
+    "@mtuser/pt-passport": "file:skills/meituan-venue-guide/scripts/mtuser-pt-passport-0.1.4.tgz",
     "@supabase/supabase-js": "^2.105.4",
     "axios": "^1.6.8",
     "cors": "^2.8.5",
@@ -23,8 +25,7 @@
     "pdf-lib": "^1.17.1",
     "qrcode": "^1.5.4",
     "sharp": "^0.34.4",
-    "uuid": "^10.0.0",
-    "@mtuser/pt-passport": "file:skills/meituan-venue-guide/scripts/mtuser-pt-passport-0.1.4.tgz"
+    "uuid": "^10.0.0"
   },
   "devDependencies": {
     "@types/cors": "^2.8.17",

@@ -1,5 +1,6 @@
 import { CompiledGraph } from "@langchain/langgraph";
 import express from "express";
+import type { ExecutionTraceEvent } from "../agents/trace.js";
 
 export async function streamGraphToSSE(
   res: express.Response,
@@ -25,12 +26,16 @@ export async function streamGraphToSSE(
 
   try {
     // 3. Stream graph events and filter for tagged generation chunks
-    const stream = graph.streamEvents(input, { version: "v2" });
+    const traceSink = (event: ExecutionTraceEvent) => {
+      res.write(`data: ${JSON.stringify({ type: "trace", event })}\n\n`);
+    };
+    const stream = graph.streamEvents({ ...input, traceSink }, { version: "v2" });
     let finalState: any = null;
     let chunkSentCount = 0;
 
     for await (const event of stream) {
       console.log(`[streamGraphToSSE] Event: ${event.event}, Name: ${event.name}`);
+
       if (event.event === "on_chat_model_stream") {
         const tags = event.tags || [];
         if (tags.includes("generation")) {

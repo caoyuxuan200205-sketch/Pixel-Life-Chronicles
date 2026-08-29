@@ -3,10 +3,22 @@
  * 从 SSE 流中读取数据，忽略 ping 心跳，提取最终 JSON 结果
  * 用于解决 Vercel 10s Serverless 超时问题
  */
+export type ExecutionTraceStatus = 'running' | 'success' | 'warning' | 'error' | 'info';
+
+export interface ExecutionTraceEvent {
+  id: string;
+  title: string;
+  detail: string;
+  status: ExecutionTraceStatus;
+  timestamp: number;
+}
+
 export async function fetchSSEJSON<T = any>(
   url: string,
   options: RequestInit,
-  onChunk?: (text: string) => void
+  onChunk?: (text: string) => void,
+  onStatus?: (step: number) => void,
+  onTrace?: (event: ExecutionTraceEvent) => void
 ): Promise<T> {
   const response = await fetch(url, options);
 
@@ -53,6 +65,16 @@ export async function fetchSSEJSON<T = any>(
         const parsed = JSON.parse(data);
 
         if (parsed.type === 'ping') continue; // 心跳，忽略
+
+        if (parsed.type === 'status' && onStatus) {
+          onStatus(parsed.step);
+          continue;
+        }
+
+        if (parsed.type === 'trace' && parsed.event && onTrace) {
+          onTrace(parsed.event as ExecutionTraceEvent);
+          continue;
+        }
 
         if (parsed.type === 'chunk' && onChunk) {
           onChunk(parsed.content);

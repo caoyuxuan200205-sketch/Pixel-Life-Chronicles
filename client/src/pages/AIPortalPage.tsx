@@ -71,97 +71,6 @@ function calculateFrontBazi(birthDateStr: string, birthTimeStr: string) {
   return { mainElement, luckyElement };
 }
 
-// ==========================================
-// 模拟美团周边游酒旅常驻数据集 (兜底用)
-// ==========================================
-const MEITUAN_MOCK_DATA: Record<string, { hotel: any; scenic: any }> = {
-  '金': {
-    hotel: {
-      name: '🏨 莫干山白金私汤庄园',
-      rating: '4.9分 (美团金牌推荐)',
-      tag: '五行金火开运 | 私山汤池',
-      price: '￥580/晚',
-      room: '翠竹独栋私汤大床房 (今日特惠8.8折)',
-      desc: '依傍西方白虎余脉，庄园以纯白金石质感结合恒温竹林汤泉设计，完美契合您的补金开运属性。'
-    },
-    scenic: {
-      name: '🏕️ 白虎岩野奢矿坑探险景区',
-      rating: '4.8分 (本周自驾热度No.1)',
-      tag: '五行金木互补 | 矿脉越野',
-      price: '￥98 (门票+玻璃桥套票)',
-      desc: '位于您西偏北方位，独特的白垩纪金石矿脉奇观，内设高空玻璃天桥与越野车，吸纳金刚生威之气。'
-    }
-  },
-  '水': {
-    hotel: {
-      name: '🏨 千岛湖玄武临水木屋度假村',
-      rating: '4.9分 (避世临水榜No.1)',
-      tag: '五行水木相生 | 临湖星空',
-      price: '￥620/晚',
-      room: '玄武临湖星空软顶大床房',
-      desc: '北临玄武湖湾，全屋木质榫卯浮于清波之上，清晨薄雾弥漫，对于缺水命格具有极佳的水系元气疗愈效果。'
-    },
-    scenic: {
-      name: '🏕️ 玄河大峡谷瀑布湿地公园',
-      rating: '4.7分 (亲水徒步圣地)',
-      tag: '五行坎水共鸣 | 瀑布徒步',
-      price: '￥75 (湿地游船联票)',
-      desc: '正北坎水位，拥有三级悬空飞瀑与万亩原始湿地，水汽充沛。游船于碧波中，洗涤心流杂质。'
-    }
-  },
-  '木': {
-    hotel: {
-      name: '🏨 安吉青龙翠竹隐奢山庄',
-      rating: '4.9分 (美团必住榜)',
-      tag: '五行木土稳固 | 万亩竹海',
-      price: '￥699/晚',
-      room: '青龙观竹露台豪华大床房',
-      desc: '向东行进，山庄隐匿于安吉万亩毛竹林深处，富氧离子爆棚，是舒缓肝木之气的绝对开运避世所。'
-    },
-    scenic: {
-      name: '🏕️ 青龙山国家森林古道景区',
-      rating: '4.8分 (避暑康养名胜)',
-      tag: '五行木水互补 | 森林徒步',
-      price: '￥45 (古道漫步门票)',
-      desc: '正东青龙方位，千年青石古道蜿蜒于高大参天古树之下。林下有溪，行进其中可调和经脉，吸纳木气灵性。'
-    }
-  },
-  '火': {
-    hotel: {
-      name: '🏨 临安朱雀地热温泉古镇民宿',
-      rating: '4.8分 (温泉必去榜)',
-      tag: '五行火土双耀 | 碳酸硫磺泉',
-      price: '￥480/晚',
-      room: '朱雀暖玉私汤榻榻米房 (赠送欢迎水果)',
-      desc: '正南方朱雀大吉位，直引地下 1500 米碳酸热泉。红枫古木环绕，温泉暖流汇聚，最能温养火红本元。'
-    },
-    scenic: {
-      name: '🏕️ 红叶谷地火山地热大峡谷',
-      rating: '4.7分 (特色峡谷风情)',
-      tag: '五行火木双生 | 熔岩温泉',
-      price: '￥80 (大门票+地热体验)',
-      desc: '向南行进，拥有远古火山地壳断层遗迹，山崖常年赤红，内设熔岩观赏台与温暖峡谷攀爬步道。'
-    }
-  },
-  '土': {
-    hotel: {
-      name: '🏨 中原古城勾陈厚土庭院客栈',
-      rating: '4.9分 (历史印记金牌店)',
-      tag: '五行土金生财 | 砖雕古宅',
-      price: '￥399/晚',
-      room: '勾陈厚土雕花大床房',
-      desc: '客栈居于古城中轴核心，采用非遗青砖灰瓦结构，厚德载物。稳重的中土气场能牢固财运本根。'
-    },
-    scenic: {
-      name: '🏕️ 勾陈大峡谷手作陶瓷艺术景区',
-      rating: '4.6分 (人文非遗景区)',
-      tag: '五行土木同源 | 柴窑拉胚',
-      price: '￥60 (包含非遗拉胚泥塑体验)',
-      desc: '中西部地段，集黄土断崖、古法柴窑、拉胚泥塑手作为一体。亲手抚摸厚土，接引地心最稳健能量。'
-    }
-  }
-};
-
 // 五行动态主题包 (提供极奢像素玄学质感)
 const ELEMENT_THEME_MAP: Record<string, {
   color: string;
@@ -231,6 +140,24 @@ const CouponWidget = () => {
   const [showCodeInput, setShowCodeInput] = useState(false);
   const [dailyReminder, setDailyReminder] = useState(false);
   const [focusInput, setFocusInput] = useState<string>('');
+
+  const getCouponPresentation = (coupon: any) => {
+    const info = String(coupon?.discount_info || '专属优惠');
+    const reduction = info.match(/减\s*(\d+(?:\.\d+)?)\s*元?/);
+    const discount = info.match(/(\d+(?:\.\d+)?)\s*折/);
+    const category = /外卖/.test(coupon?.name) ? '外卖'
+      : /闪购|数码/.test(coupon?.name) ? '闪购'
+        : /洗衣|洗鞋|保洁|维修|家政/.test(coupon?.name) ? '到家'
+          : '神券';
+
+    if (reduction) {
+      return { category, value: reduction[1], unit: '元', condition: info.replace(/减\s*\d+(?:\.\d+)?\s*元?/, '可用') };
+    }
+    if (discount) {
+      return { category, value: discount[1], unit: '折', condition: '折扣券' };
+    }
+    return { category, value: info, unit: '', condition: '专属优惠' };
+  };
 
   useEffect(() => {
     const accepted = localStorage.getItem('coupon_terms_accepted');
@@ -496,57 +423,83 @@ const CouponWidget = () => {
         <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
           {couponResult.success && couponResult.coupon_count > 0 ? (
             <div>
-              <div style={{ fontSize: '1.2rem', fontWeight: 'bold', background: 'linear-gradient(90deg, #4caf50, #81c784)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <CheckCircle size={22} color="#4caf50" /> 成功获得 {couponResult.coupon_count} 张专属神券！
+              <div style={{ fontSize: '0.88rem', fontWeight: 'bold', color: '#76D27D', marginBottom: '12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><CheckCircle size={17} color="#66C96F" />专属福袋已入账</span>
+                <span style={{ fontSize: '0.58rem', color: '#E2B553', border: '1px solid rgba(226,181,83,0.4)', borderRadius: '999px', padding: '3px 7px' }}>{couponResult.coupon_count} 张</span>
               </div>
 
-              {/* 世界级美团金卡 UI */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                {couponResult.coupons?.map((c:any, i:number) => (
-                  <motion.div
-                    key={i}
-                    whileHover={{ scale: 1.02, y: -2 }}
-                    style={{
-                      background: 'linear-gradient(135deg, #FFF8E1 0%, #F4D03F 30%, #D4AC0D 70%, #F9E79F 100%)',
-                      backgroundSize: '200% auto',
-                      animation: 'gradientFlow 4s ease infinite',
-                      borderRadius: '12px',
-                      padding: '18px 20px',
-                      color: '#3A2703',
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      boxShadow: '0 6px 20px rgba(212, 172, 13, 0.3), inset 0 1px 1px rgba(255,255,255,0.8)',
-                      position: 'relative',
-                      overflow: 'hidden'
-                    }}
-                  >
-                    {/* 卡券两侧的半圆打孔装饰 */}
-                    <div style={{ position: 'absolute', left: '-10px', width: '20px', height: '20px', borderRadius: '50%', background: '#1c1524', boxShadow: 'inset -2px 0 4px rgba(0,0,0,0.3)' }} />
-                    <div style={{ position: 'absolute', right: '-10px', width: '20px', height: '20px', borderRadius: '50%', background: '#1c1524', boxShadow: 'inset 2px 0 4px rgba(0,0,0,0.3)' }} />
+              {/* 参考美团券的信息层级，保留玄途深色金系视觉 */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '9px' }}>
+                {couponResult.coupons?.map((c:any, i:number) => {
+                  const presentation = getCouponPresentation(c);
+                  const useLink = couponResult.activity_link || 'https://click.meituan.com/t?t=1&c=2&p=Zcjq1Lxzawjj';
+                  return (
+                    <motion.div
+                      key={i}
+                      whileHover={{ y: -2, borderColor: 'rgba(226,181,83,0.72)' }}
+                      style={{
+                        minWidth: 0,
+                        height: '108px',
+                        boxSizing: 'border-box',
+                        padding: 0,
+                        borderRadius: '12px',
+                        border: '1px solid rgba(226,181,83,0.26)',
+                        background: 'linear-gradient(145deg, rgba(39,36,48,0.98), rgba(21,22,32,0.98))',
+                        boxShadow: '0 5px 14px rgba(0,0,0,0.24)',
+                        position: 'relative',
+                        overflow: 'hidden',
+                        display: 'flex',
+                        alignItems: 'stretch'
+                      }}
+                    >
+                      <div style={{ position: 'absolute', inset: '0 auto 0 0', width: '3px', background: 'linear-gradient(180deg, #F4CF63, #9D7730)' }} />
+                      {/* 左侧：标签、券名和规则，结构与美团券保持一致 */}
+                      <div style={{ flex: 1, minWidth: 0, padding: '10px 8px 9px 12px', display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', height: '18px' }}>
+                          {presentation.category !== '神券' && (
+                            <span style={{ color: '#17130A', background: 'linear-gradient(135deg, #E2B553, #F4D875)', borderRadius: '5px 0 0 5px', padding: '2px 5px', fontSize: '0.48rem', fontWeight: 'bold' }}>
+                              神券
+                            </span>
+                          )}
+                          <span style={{ color: '#E9DCA9', background: 'rgba(226,181,83,0.12)', border: '1px solid rgba(226,181,83,0.22)', borderRadius: presentation.category !== '神券' ? '0 5px 5px 0' : '5px', padding: '2px 5px', fontSize: '0.48rem', fontWeight: 'bold' }}>
+                            {presentation.category}
+                          </span>
+                        </div>
 
-                    {/* 卡券发光扫光动画层 (通过CSS注入，见外层) */}
+                        <div style={{ marginTop: '8px', width: '100%', color: '#F5F2EA', fontSize: '0.86rem', fontWeight: '800', lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', textAlign: 'left', letterSpacing: '0.01em' }}>
+                          {c.name}
+                        </div>
 
-                    <div style={{ zIndex: 1, paddingLeft: '8px', maxWidth: '65%' }}>
-                      <div style={{ fontSize: '1.25rem', fontWeight: '900', letterSpacing: '0.5px', textShadow: '0 1px 1px rgba(255,255,255,0.6)' }}>
-                        {c.name}
+                        <div style={{ marginTop: 'auto', width: '100%', color: '#9696A2', fontSize: '0.48rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', textAlign: 'left' }}>
+                          {c.valid_period ? `${c.valid_period.split(' ')[0]}到期` : '有效期以页面为准'}　<span style={{ color: '#B6B3BD' }}>规则 ›</span>
+                        </div>
                       </div>
-                      <div style={{ fontSize: '0.85rem', fontWeight: 'bold', opacity: 0.85, marginTop: '4px', background: 'rgba(58, 39, 3, 0.1)', display: 'inline-block', padding: '2px 8px', borderRadius: '4px' }}>
-                        {c.discount_info}
+
+                      {/* 右侧：优惠额、门槛和使用按钮 */}
+                      <div style={{ width: '88px', flexShrink: 0, padding: '19px 10px 10px 6px', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', alignItems: 'center', borderLeft: '1px dashed rgba(226,181,83,0.14)' }}>
+                        <div style={{ color: '#F0C84C', whiteSpace: 'nowrap', lineHeight: 1 }}>
+                          <strong style={{ fontSize: presentation.unit ? '1.42rem' : '0.72rem' }}>{presentation.value}</strong>
+                          <span style={{ fontSize: '0.62rem', marginLeft: '1px' }}>{presentation.unit}</span>
+                        </div>
+                        <div style={{ marginTop: '4px', color: '#A9A8B3', fontSize: '0.48rem', maxWidth: '100%', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {presentation.condition}
+                        </div>
+                        <a
+                          href={useLink}
+                          target="_blank"
+                          rel="noreferrer"
+                          style={{ marginTop: 'auto', width: '66px', padding: '6px 0', borderRadius: '999px', background: 'linear-gradient(135deg, #E2B553, #F2D677)', color: '#17130A', textDecoration: 'none', textAlign: 'center', fontSize: '0.56rem', fontWeight: 'bold', boxShadow: '0 2px 7px rgba(226,181,83,0.2)' }}
+                        >
+                          去使用
+                        </a>
                       </div>
-                    </div>
-                    <div style={{ zIndex: 1, textAlign: 'right', paddingRight: '8px', borderLeft: '1px dashed rgba(58, 39, 3, 0.2)', paddingLeft: '14px', minWidth: '35%' }}>
-                      <div style={{ fontSize: '0.7rem', opacity: 0.7, fontWeight: 'bold' }}>有效期至</div>
-                      <div style={{ fontSize: '0.85rem', fontWeight: 'bold', fontFamily: 'monospace', marginTop: '2px', whiteSpace: 'nowrap' }}>
-                        {c.valid_period?.split(' ')[0]}
-                      </div>
-                    </div>
-                  </motion.div>
-                ))}
+                    </motion.div>
+                  );
+                })}
               </div>
 
-              <div style={{ marginTop: '20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(0,0,0,0.3)', padding: '12px 16px', borderRadius: '8px', border: '1px solid rgba(226, 181, 83, 0.2)' }}>
-                <span style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.8)' }}>🛍️ 券已自动入账！</span>
+              <div style={{ marginTop: '12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', padding: '0 2px' }}>
+                <span style={{ fontSize: '0.58rem', color: 'rgba(255,255,255,0.68)' }}>优惠券已存入美团账户</span>
                 <motion.a
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
@@ -555,12 +508,12 @@ const CouponWidget = () => {
                   rel="noreferrer"
                   style={{
                     display: 'flex', alignItems: 'center', gap: '4px',
-                    padding: '8px 16px', background: 'linear-gradient(90deg, #FF9800, #FF5722)',
-                    color: '#fff', textDecoration: 'none', borderRadius: '20px',
-                    fontSize: '0.85rem', fontWeight: 'bold', boxShadow: '0 4px 10px rgba(255, 152, 0, 0.4)'
+                    padding: '6px 10px', background: 'rgba(226,181,83,0.12)', border: '1px solid rgba(226,181,83,0.3)',
+                    color: '#E2B553', textDecoration: 'none', borderRadius: '20px',
+                    fontSize: '0.55rem', fontWeight: 'bold'
                   }}
                 >
-                  去美团使用 <ChevronRight size={16} />
+                  查看全部 <ChevronRight size={12} />
                 </motion.a>
               </div>
             </div>
@@ -568,18 +521,6 @@ const CouponWidget = () => {
             <div style={{ fontSize: '0.95rem', color: '#ff9800', background: 'rgba(255, 152, 0, 0.1)', padding: '16px', borderRadius: '8px', border: '1px solid rgba(255, 152, 0, 0.3)' }}>
               {couponResult.code === 1014 ? '🌟 今天您已经领取过专属红包啦！可以直接去美团 App 尽情挑选心水商品哦。' : (couponResult.msg || '当前美团专属红包暂未上新，请晚些再来。')}
             </div>
-          )}
-
-          {couponResult.activity_name && (
-            <motion.div initial={{ y: 10, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.2 }} style={{ background: 'rgba(255, 223, 141, 0.1)', border: '1px solid rgba(255, 223, 141, 0.3)', padding: '14px 16px', borderRadius: '12px', marginTop: '10px' }}>
-              <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.6)', marginBottom: '4px' }}>🔥 专属高优会场推荐</div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontWeight: 'bold', color: '#FFDF8D', fontSize: '1.05rem' }}>{couponResult.activity_name}</span>
-                {couponResult.activity_link && (
-                  <a href={couponResult.activity_link} target="_blank" rel="noreferrer" style={{ color: '#FFDF8D', textDecoration: 'none', fontSize: '0.85rem', display: 'flex', alignItems: 'center', background: 'rgba(226, 181, 83, 0.2)', padding: '4px 10px', borderRadius: '12px' }}>前往参与 <ChevronRight size={14} /></a>
-                )}
-              </div>
-            </motion.div>
           )}
 
           {/* Step 4: 提醒功能 */}
@@ -625,53 +566,29 @@ const CouponWidget = () => {
 interface LoadingStepsPanelProps {
   theme: any;
   isLoading: boolean;
+  events: import('../lib/fetchSSE').ExecutionTraceEvent[];
 }
 
-const LoadingStepsPanel = ({ theme, isLoading }: LoadingStepsPanelProps) => {
-  const [currentStep, setCurrentStep] = useState(0);
+const LoadingStepsPanel = ({ theme, isLoading, events }: LoadingStepsPanelProps) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
-
-  const steps = [
-    { title: '理解宿命任务', desc: '已解析您的出行意图与星盘时空方位', activeDesc: '正在分析您的出游场景与上下文...' },
-    { title: '唤醒美团星轨', desc: '已成功连接美团即时生活导购星轨', activeDesc: '正在检索美团精选商家与专属特惠...' },
-    { title: '推演天命行程', desc: '已为您定制吃喝玩乐一体化出行契约', activeDesc: '正在编排最佳出行路线与时间组合...' },
-    { title: '编织运势脑波', desc: '时空箴言已编织完成，正在召来', activeDesc: '正在润色祭司箴言与避世开运契约...' }
-  ];
-
-  useEffect(() => {
-    if (!isLoading) {
-      setCurrentStep(4);
-      return;
-    }
-
-    setCurrentStep(0);
-
-    const t1 = setTimeout(() => {
-      setCurrentStep(1);
-    }, 800);
-
-    const t2 = setTimeout(() => {
-      setCurrentStep(2);
-    }, 1800);
-
-    const t3 = setTimeout(() => {
-      setCurrentStep(3);
-    }, 3000);
-
-    return () => {
-      clearTimeout(t1);
-      clearTimeout(t2);
-      clearTimeout(t3);
-    };
-  }, [isLoading]);
-
-  const getStepStatus = (index: number) => {
-    if (currentStep > index) return 'done';
-    if (currentStep === index) return 'active';
-    return 'pending';
+  const statusLabel = { running: '进行中', success: '已完成', warning: '已降级', error: '失败', info: '已记录' } as const;
+  const statusColor = (status: import('../lib/fetchSSE').ExecutionTraceStatus) => {
+    if (status === 'success') return '#3CD070';
+    if (status === 'warning') return '#E8B84A';
+    if (status === 'error') return '#E66A6A';
+    if (status === 'info') return '#7EA6E0';
+    return theme.color;
   };
-
-  const completedCount = Math.min(currentStep, 4);
+  const doneCount = events.filter(event => event.status !== 'running').length;
+  const summary = events.length === 0
+    ? (isLoading ? '等待后端返回真实执行事件…' : '本次请求没有执行记录')
+    : events.some(event => event.status === 'running')
+      ? `正在执行 · ${doneCount} 项已有结果`
+      : events.some(event => event.status === 'error')
+        ? '执行结束，部分能力调用失败'
+        : events.some(event => event.status === 'warning')
+          ? '执行结束，部分数据已明确降级'
+          : '本次实际执行已完成';
 
   return (
     <div
@@ -716,7 +633,7 @@ const LoadingStepsPanel = ({ theme, isLoading }: LoadingStepsPanelProps) => {
 
       {/* 进度说明 */}
       <div style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', textAlign: 'left', marginTop: '-4px' }}>
-        {completedCount === 4 ? '推演已全部完成' : `已完成 ${completedCount} / 4 步`}
+        {summary}
       </div>
 
       {/* 步骤列表 */}
@@ -734,27 +651,12 @@ const LoadingStepsPanel = ({ theme, isLoading }: LoadingStepsPanelProps) => {
             zIndex: 0
           }} />
 
-          {/* 动态连接线 */}
-          <div style={{
-            position: 'absolute',
-            left: '11px',
-            top: '8px',
-            height: `${Math.max(0, completedCount - 1) * 33.3}%`,
-            width: '2px',
-            background: `linear-gradient(180deg, ${theme.color} 0%, ${completedCount === 4 ? theme.color : theme.accent || theme.color} 100%)`,
-            boxShadow: `0 0 4px ${theme.glow}`,
-            transition: 'height 0.5s ease',
-            zIndex: 0
-          }} />
-
-          {steps.map((step, index) => {
-            const status = getStepStatus(index);
-            const isDone = status === 'done';
-            const isActive = status === 'active';
-            const isPending = status === 'pending';
+          {events.map((event) => {
+            const isActive = event.status === 'running';
+            const color = statusColor(event.status);
 
             return (
-              <div key={index} style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', zIndex: 1 }}>
+              <div key={event.id} style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', zIndex: 1 }}>
 
                 {/* 节点图标 */}
                 <div style={{
@@ -766,24 +668,17 @@ const LoadingStepsPanel = ({ theme, isLoading }: LoadingStepsPanelProps) => {
                   flexShrink: 0,
                   marginTop: '2px'
                 }}>
-                  {isDone ? (
+                  {!isActive ? (
                     <div style={{
                       width: '8px',
                       height: '8px',
                       borderRadius: '50%',
-                      background: theme.color,
-                      boxShadow: `0 0 8px ${theme.glow}`,
+                      background: color,
+                      boxShadow: `0 0 8px ${color}66`,
                       transition: 'all 0.3s'
                     }} />
-                  ) : isActive ? (
-                    <RefreshCw size={10} className="spinner-icon" style={{ animation: 'spin 1.5s linear infinite', color: theme.color }} />
                   ) : (
-                    <div style={{
-                      width: '6px',
-                      height: '6px',
-                      borderRadius: '50%',
-                      background: 'rgba(255,255,255,0.15)'
-                    }} />
+                    <RefreshCw size={10} className="spinner-icon" style={{ animation: 'spin 1.5s linear infinite', color: theme.color }} />
                   )}
                 </div>
 
@@ -792,30 +687,30 @@ const LoadingStepsPanel = ({ theme, isLoading }: LoadingStepsPanelProps) => {
                   <div style={{
                     fontSize: '0.75rem',
                     fontWeight: 'bold',
-                    color: isPending ? 'rgba(255,255,255,0.3)' : '#fff',
+                    color: '#fff',
                     transition: 'color 0.3s'
                   }}>
-                    {step.title}
+                    {event.title}
                   </div>
                   <div style={{
                     fontSize: '0.65rem',
-                    color: isActive ? theme.color : isPending ? 'rgba(255,255,255,0.2)' : 'var(--text-secondary)',
+                    color: isActive ? theme.color : 'var(--text-secondary)',
                     marginTop: '2px',
                     textAlign: 'left',
                     transition: 'color 0.3s'
                   }}>
-                    {isActive ? step.activeDesc : step.desc}
+                    {event.detail}
                   </div>
                 </div>
 
                 {/* 状态文字 */}
                 <div style={{
                   fontSize: '0.65rem',
-                  color: isDone ? '#3CD070' : isActive ? theme.color : 'rgba(255,255,255,0.2)',
+                  color,
                   fontWeight: isActive ? 'bold' : 'normal',
                   flexShrink: 0
                 }}>
-                  {isDone ? '已完成' : isActive ? '推演中...' : '等待中'}
+                  {statusLabel[event.status]}
                 </div>
 
               </div>
@@ -1021,6 +916,7 @@ export const AIPortalPage = () => {
   const [inputValue, setInputValue] = useState(() => sessionStorage.getItem('xuantu_initial_prompt') || '');
 
   const [isLoading, setIsLoading] = useState(false);
+  const [traceEvents, setTraceEvents] = useState<import('../lib/fetchSSE').ExecutionTraceEvent[]>([]);
 
   // 记录每个消息卡片的多路 Booking 预订状态和截屏状态
   const [bookingSuccessMap, setBookingSuccessMap] = useState<Record<number, boolean>>({});
@@ -1102,6 +998,7 @@ export const AIPortalPage = () => {
 
     setMessages(updatedHistory);
     setIsLoading(true);
+    setTraceEvents([]);
 
     try {
       const baseUrl = import.meta.env.VITE_BACKEND_URL || window.location.origin;
@@ -1137,6 +1034,16 @@ export const AIPortalPage = () => {
             }
             return newMsgs;
           });
+        },
+        undefined,
+        (event) => {
+          setTraceEvents(prev => {
+            const existingIndex = prev.findIndex(item => item.id === event.id);
+            if (existingIndex < 0) return [...prev, event];
+            const next = [...prev];
+            next[existingIndex] = event;
+            return next;
+          });
         }
       );
 
@@ -1155,6 +1062,16 @@ export const AIPortalPage = () => {
       });
     } catch (err: any) {
       console.error('Chat AI query error:', err);
+      setTraceEvents(prev => {
+        const event: import('../lib/fetchSSE').ExecutionTraceEvent = {
+          id: 'request-error',
+          title: '请求执行失败',
+          detail: err.message || String(err) || '未知错误',
+          status: 'error',
+          timestamp: Date.now()
+        };
+        return [...prev.filter(item => item.id !== event.id), event];
+      });
 
       // 真实反馈错误，完全禁用降级兜底方案
       await new Promise(r => setTimeout(r, 800));
@@ -1183,18 +1100,21 @@ export const AIPortalPage = () => {
       setMessages([]);
       setBookingSuccessMap({});
       setInputValue('');
+      setTraceEvents([]);
     }
   };
 
-  // 辅助 JSON 解析器 (扫描 XML 标签，支持 travel_deal, ticket_deal, weekend_deal 和 coupon_deal)
+  // 辅助 JSON 解析器（交易数据均由后端真实工具结果生成）
   const parseMessageContent = (text: string) => {
     const dealRegex = /<travel_deal>([\s\S]*?)<\/travel_deal>/;
+    const hotelRegex = /<hotel_deal>([\s\S]*?)<\/hotel_deal>/;
     const ticketRegex = /<ticket_deal>([\s\S]*?)<\/ticket_deal>/;
     const weekendRegex = /<weekend_deal>([\s\S]*?)<\/weekend_deal>/;
     const couponRegex = /<coupon_deal>([\s\S]*?)<\/coupon_deal>/;
 
     let textWithoutDeals = text;
     let deal = null;
+    let hotelDeal = null;
     let ticketDeal = null;
     let weekendDeal = null;
     let couponDeal = null;
@@ -1204,6 +1124,13 @@ export const AIPortalPage = () => {
       const rawJson = dealMatch[1].trim();
       textWithoutDeals = textWithoutDeals.replace(dealRegex, '').trim();
       try { deal = JSON.parse(rawJson); } catch (e) {}
+    }
+
+    const hotelMatch = text.match(hotelRegex);
+    if (hotelMatch) {
+      const rawJson = hotelMatch[1].trim();
+      textWithoutDeals = textWithoutDeals.replace(hotelRegex, '').trim();
+      try { hotelDeal = JSON.parse(rawJson); } catch (e) {}
     }
 
     const ticketMatch = text.match(ticketRegex);
@@ -1227,7 +1154,7 @@ export const AIPortalPage = () => {
       try { couponDeal = JSON.parse(rawJson); } catch (e) {}
     }
 
-    return { text: textWithoutDeals, deal, ticketDeal, weekendDeal, couponDeal };
+    return { text: textWithoutDeals, deal, hotelDeal, ticketDeal, weekendDeal, couponDeal };
   };
 
   // AI PM 对齐反馈日志推送：将优质样本（如用户保存图片、一键预订）记录为对齐数据飞轮
@@ -1258,6 +1185,16 @@ export const AIPortalPage = () => {
       [index]: true
     }));
     sendPMFeedback(index, 'positive_booking');
+  };
+
+  const scrollHotelCarousel = (messageIndex: number, direction: -1 | 1) => {
+    const carousel = document.getElementById(`hotel-carousel-${messageIndex}`);
+    if (!carousel) return;
+    const total = carousel.children.length;
+    if (total === 0) return;
+    const current = Math.round(carousel.scrollLeft / carousel.clientWidth);
+    const next = (current + direction + total) % total;
+    carousel.scrollTo({ left: next * carousel.clientWidth, behavior: 'smooth' });
   };
 
   // 模拟分享给老婆/朋友并收到反馈
@@ -1411,7 +1348,7 @@ export const AIPortalPage = () => {
   // 渲染单条对话气泡组件 (包含 inline 卡片展示)
   const renderMessage = (msg: typeof messages[0], index: number) => {
     const isUser = msg.role === 'user';
-    const { text, deal, ticketDeal, weekendDeal, couponDeal } = parseMessageContent(msg.content);
+    const { text, deal, hotelDeal, ticketDeal, weekendDeal, couponDeal } = parseMessageContent(msg.content);
     const isBooked = bookingSuccessMap[index];
 
     const isResponseToUser = !isUser && index > 0 && messages[index - 1]?.role === 'user';
@@ -1423,14 +1360,14 @@ export const AIPortalPage = () => {
       return (
         <div key={`steps-${index}`} style={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'flex-start', padding: '0 4px', marginBottom: '20px', width: '100%' }}>
           <div style={{ marginLeft: '46px', width: '100%', maxWidth: '320px' }}>
-            <LoadingStepsPanel theme={theme} isLoading={isLoading} />
+            <LoadingStepsPanel theme={theme} isLoading={isLoading} events={traceEvents} />
           </div>
         </div>
       );
     };
 
     // 如果是助理回复，且内容为空，且没有卡片，暂不渲染气泡（但要渲染上方的推演过程面板）
-    if (!isUser && !text.trim() && !deal && !ticketDeal && !weekendDeal && !couponDeal) {
+    if (!isUser && !text.trim() && !deal && !hotelDeal && !ticketDeal && !weekendDeal && !couponDeal) {
       return renderSteps();
     }
 
@@ -1760,6 +1697,244 @@ export const AIPortalPage = () => {
                 )}
               </div>
 
+            </motion.div>
+          )}
+
+          {/* 美团实时酒店卡片 HotelDeal */}
+          {hotelDeal?.hotels?.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              id={`hotel-card-${index}`}
+              style={{
+                width: '100%',
+                maxWidth: '320px',
+                boxSizing: 'border-box',
+                border: `1px solid ${theme.color}88`,
+                borderRadius: '16px',
+                overflow: 'hidden',
+                background: 'linear-gradient(160deg, rgba(31,36,52,0.98), rgba(14,17,28,0.98))',
+                boxShadow: `0 10px 28px rgba(0,0,0,0.38), 0 0 18px ${theme.glow}`,
+                position: 'relative'
+              }}
+            >
+              <div style={{
+                padding: '14px 14px 12px',
+                borderBottom: '1px solid rgba(255,255,255,0.08)',
+                background: `linear-gradient(120deg, ${theme.color}18, transparent)`
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
+                  <div className="font-mystic" style={{ color: theme.color, fontWeight: 'bold', fontSize: '0.9rem' }}>
+                    🏨 天命旅宿候选
+                  </div>
+                  <span style={{ color: '#3CD070', fontSize: '0.52rem', border: '1px solid #3CD07088', borderRadius: '999px', padding: '3px 7px', whiteSpace: 'nowrap' }}>
+                    {hotelDeal.hotels.length} 家实时供给
+                  </span>
+                </div>
+                <div style={{ marginTop: '7px', display: 'flex', gap: '9px', flexWrap: 'wrap', color: 'var(--text-secondary)', fontSize: '0.58rem' }}>
+                  {hotelDeal.destination && <span><MapPin size={10} style={{ verticalAlign: '-2px', marginRight: '3px' }} />{hotelDeal.destination}</span>}
+                  {hotelDeal.checkIn && <span><Clock size={10} style={{ verticalAlign: '-2px', marginRight: '3px' }} />{hotelDeal.checkIn}入住</span>}
+                  <span>来自{hotelDeal.source || '美团旅行'}</span>
+                </div>
+              </div>
+
+              <div
+                id={`hotel-carousel-${index}`}
+                style={{
+                  display: 'flex',
+                  overflowX: 'auto',
+                  overflowY: 'hidden',
+                  scrollSnapType: 'x mandatory',
+                  scrollBehavior: 'smooth',
+                  scrollbarWidth: 'none',
+                  overscrollBehaviorX: 'contain',
+                  touchAction: 'pan-x'
+                }}
+              >
+                {hotelDeal.hotels.map((hotel: any, hotelIndex: number) => (
+                  <div
+                    key={`${hotel.link}-${hotelIndex}`}
+                    style={{
+                      width: '100%',
+                      minWidth: '100%',
+                      flex: '0 0 100%',
+                      boxSizing: 'border-box',
+                      scrollSnapAlign: 'start',
+                      scrollSnapStop: 'always',
+                      height: '380px',
+                      overflow: 'hidden'
+                    }}
+                  >
+                    {hotel.image && (
+                      <div style={{ position: 'relative', height: '142px', overflow: 'hidden', background: '#111522' }}>
+                        <img
+                          src={hotel.image}
+                          alt={hotel.name}
+                          loading="lazy"
+                          referrerPolicy="no-referrer"
+                          onError={(event) => { event.currentTarget.style.display = 'none'; }}
+                          style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                        />
+                        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, transparent 45%, rgba(10,12,20,0.92) 100%)' }} />
+                        {hotelDeal.hotels.length > 1 && (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => scrollHotelCarousel(index, -1)}
+                              aria-label="上一家酒店"
+                              style={{
+                                position: 'absolute',
+                                left: '7px',
+                                top: '50%',
+                                transform: 'translateY(-50%)',
+                                zIndex: 8,
+                                width: '30px',
+                                height: '30px',
+                                padding: 0,
+                                borderRadius: '50%',
+                                border: '1px solid rgba(255,255,255,0.34)',
+                                background: 'rgba(8,11,18,0.42)',
+                                backdropFilter: 'blur(5px)',
+                                color: 'rgba(255,255,255,0.9)',
+                                display: 'grid',
+                                placeItems: 'center',
+                                cursor: 'pointer',
+                                boxShadow: '0 2px 8px rgba(0,0,0,0.24)'
+                              }}
+                            >
+                              <ChevronLeft size={18} />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => scrollHotelCarousel(index, 1)}
+                              aria-label="下一家酒店"
+                              style={{
+                                position: 'absolute',
+                                right: '7px',
+                                top: '50%',
+                                transform: 'translateY(-50%)',
+                                zIndex: 8,
+                                width: '30px',
+                                height: '30px',
+                                padding: 0,
+                                borderRadius: '50%',
+                                border: '1px solid rgba(255,255,255,0.34)',
+                                background: 'rgba(8,11,18,0.42)',
+                                backdropFilter: 'blur(5px)',
+                                color: 'rgba(255,255,255,0.9)',
+                                display: 'grid',
+                                placeItems: 'center',
+                                cursor: 'pointer',
+                                boxShadow: '0 2px 8px rgba(0,0,0,0.24)'
+                              }}
+                            >
+                              <ChevronRight size={18} />
+                            </button>
+                          </>
+                        )}
+                        <span style={{ position: 'absolute', left: '12px', bottom: '9px', fontSize: '0.56rem', color: '#fff', background: 'rgba(10,12,20,0.7)', padding: '3px 7px', borderRadius: '999px', backdropFilter: 'blur(6px)' }}>
+                          候选 {hotelIndex + 1} · {hotel.category}
+                        </span>
+                      </div>
+                    )}
+
+                    <div style={{ padding: '12px 13px 10px', height: '238px', boxSizing: 'border-box', display: 'flex', flexDirection: 'column' }}>
+                      <div style={{
+                        fontSize: '0.83rem',
+                        lineHeight: 1.35,
+                        fontWeight: 'bold',
+                        color: '#fff',
+                        textAlign: 'left',
+                        minHeight: '36px',
+                        overflow: 'hidden',
+                        display: '-webkit-box',
+                        WebkitBoxOrient: 'vertical',
+                        WebkitLineClamp: 2,
+                        textOverflow: 'ellipsis'
+                      }}>
+                        {hotel.name}
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '5px', height: '18px', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+                        {hotel.rating && <span style={{ color: '#FFD66B', fontSize: '0.62rem', fontWeight: 'bold' }}>★ {hotel.rating} 分</span>}
+                        {hotel.distance && <span style={{ color: '#9DB4D7', fontSize: '0.58rem' }}>距目的地 {hotel.distance}</span>}
+                        {hotel.opening && <span style={{ color: 'var(--text-muted)', fontSize: '0.55rem' }}>{hotel.opening}</span>}
+                      </div>
+
+                      <p style={{
+                        margin: '7px 0 0',
+                        color: 'var(--text-secondary)',
+                        fontSize: '0.62rem',
+                        lineHeight: 1.5,
+                        textAlign: 'left',
+                        height: '45px',
+                        overflow: 'hidden',
+                        display: '-webkit-box',
+                        WebkitBoxOrient: 'vertical',
+                        WebkitLineClamp: 3,
+                        textOverflow: 'ellipsis'
+                      }}>
+                        {hotel.description}
+                      </p>
+
+                      {hotel.perks?.length > 0 && (
+                        <div style={{ display: 'flex', gap: '3px', flexWrap: 'nowrap', marginTop: '8px', height: '23px', overflow: 'hidden', alignItems: 'flex-start' }}>
+                          {hotel.perks.slice(0, 6).map((perk: string, perkIndex: number) => (
+                            <span key={`${perk}-${perkIndex}`} style={{ flexShrink: 0, fontSize: '0.48rem', color: '#D7DCE8', background: 'rgba(255,255,255,0.055)', border: '1px solid rgba(255,255,255,0.09)', borderRadius: '5px', padding: '2px 4px', whiteSpace: 'nowrap' }}>
+                              {perk}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+
+                      <div style={{ marginTop: 'auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px', minHeight: '36px' }}>
+                        <div style={{ color: theme.color, fontWeight: 'bold', fontSize: '0.92rem', whiteSpace: 'nowrap' }}>
+                          {hotel.price || '查看实时价'}
+                        </div>
+                        <a
+                          href={hotel.link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{
+                            flex: 1,
+                            maxWidth: '132px',
+                            padding: '9px 10px',
+                            borderRadius: '8px',
+                            background: `linear-gradient(135deg, ${theme.color}, ${theme.accent})`,
+                            color: '#111',
+                            textAlign: 'center',
+                            textDecoration: 'none',
+                            fontSize: '0.62rem',
+                            fontWeight: 'bold',
+                            boxShadow: '0 3px 9px rgba(0,0,0,0.28)'
+                          }}
+                        >
+                          去美团查看房型
+                        </a>
+                      </div>
+                      <div style={{ marginTop: '7px', height: '5px', display: 'flex', justifyContent: 'center', gap: '5px', flexShrink: 0 }}>
+                        {hotelDeal.hotels.map((_: any, dotIndex: number) => (
+                          <span
+                            key={dotIndex}
+                            style={{
+                              width: dotIndex === hotelIndex ? '14px' : '5px',
+                              height: '5px',
+                              borderRadius: '999px',
+                              background: dotIndex === hotelIndex ? theme.color : 'rgba(255,255,255,0.2)'
+                            }}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {hotelDeal.note && (
+                <div style={{ padding: '10px 13px 12px', borderTop: '1px dashed rgba(255,255,255,0.1)', color: 'var(--text-muted)', fontSize: '0.55rem', lineHeight: 1.5, textAlign: 'left' }}>
+                  {hotelDeal.note}
+                </div>
+              )}
             </motion.div>
           )}
 

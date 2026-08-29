@@ -1,4 +1,5 @@
 import { Annotation } from "@langchain/langgraph";
+import type { TraceSink } from "./trace.js";
 
 export interface Message {
   role: string;
@@ -41,9 +42,13 @@ export const ChatGraphState = Annotation.Root({
     reducer: (x, y) => y ?? x,
     default: () => [],
   }),
+  traceSink: Annotation<TraceSink | undefined>({
+    reducer: (x, y) => y ?? x,
+    default: () => undefined,
+  }),
 
   // Middle/Transitional States
-  intent: Annotation<"coupon" | "ticket" | "weekend" | "venue" | "chat">({
+  intent: Annotation<"coupon" | "ticket" | "hotel" | "weekend" | "venue" | "chat">({
     reducer: (x, y) => y ?? x,
     default: () => "chat",
   }),
@@ -52,6 +57,10 @@ export const ChatGraphState = Annotation.Root({
     default: () => "",
   }),
   ticketParams: Annotation<TicketParams>({
+    reducer: (x, y) => y ?? x,
+    default: () => ({ city: "杭州", query: "" }),
+  }),
+  hotelParams: Annotation<TicketParams>({
     reducer: (x, y) => y ?? x,
     default: () => ({ city: "杭州", query: "" }),
   }),

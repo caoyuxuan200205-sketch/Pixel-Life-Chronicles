@@ -33,3 +33,24 @@ export function getChatModel(): ChatOpenAI {
   });
 }
 export type LLMType = ChatOpenAI;
+
+export function getRouterModel(): ChatOpenAI {
+  const qwenApiKey = process.env.QWEN_API_KEY;
+  const routerModelName = (process.env.QWEN_ROUTER_MODEL || 'Qwen/Qwen3-8B').trim();
+
+  if (qwenApiKey && qwenApiKey !== 'YOUR_QWEN_API_KEY_HERE' && qwenApiKey.trim() !== '') {
+    console.log(`[getRouterModel] Using lightweight router model: ${routerModelName}`);
+    return new ChatOpenAI({
+      apiKey: qwenApiKey.trim(),
+      configuration: {
+        baseURL: (process.env.QWEN_BASE_URL || 'https://api-inference.modelscope.cn/v1').trim(),
+        timeout: 10000, // Router 需要快速响应，10 秒超时
+      },
+      modelName: routerModelName,
+      temperature: 0.1, // 低温度，确保分类结果稳定
+    });
+  }
+
+  // Fallback: 如果没有配置 Qwen，退回主模型
+  return getChatModel();
+}

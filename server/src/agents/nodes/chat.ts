@@ -1,9 +1,11 @@
 import { ChatGraphState } from "../state.js";
 import { getChatModel } from "../../lib/llm.js";
 import { getGeneralSystemPrompt, VENUE_UNACTIVATED_PROMPT } from "../prompts/systemPrompts.js";
+import { emitTrace } from "../trace.js";
 
 export async function chatNode(state: typeof ChatGraphState.State) {
   console.log(`[Chat Node] Handling chat interaction for user: ${state.username}`);
+  emitTrace(state, { id: "chat-generate", title: "生成自然语言答复", detail: "正在结合对话上下文与命理信息回答", status: "running" });
 
   let systemPrompt = getGeneralSystemPrompt(
     state.username,
@@ -31,6 +33,7 @@ export async function chatNode(state: typeof ChatGraphState.State) {
   for await (const chunk of responseStream) {
     reply += chunk.content;
   }
+  emitTrace(state, { id: "chat-generate", title: "生成自然语言答复", detail: "答复已生成；未调用票务、酒店或本地生活实时接口", status: "success" });
 
   return { reply };
 }
